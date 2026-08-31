@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Control Dashboard | EPC PMIS | Power BI</title>
+  <title>Yusran — PMIS & Project Control Portfolio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -21,6 +21,7 @@
       --amber-light: #f5c842;
       --green: #27ae60;
       --red: #e74c3c;
+      --purple: #9b59b6;
       --white: #ffffff;
       --gray-100: #f0f4f8;
       --gray-200: #d5e0ec;
@@ -30,230 +31,170 @@
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--navy-800);
-      color: var(--white);
-      overflow-x: hidden;
-    }
+    body { font-family: 'Inter', sans-serif; background: var(--navy-800); color: var(--white); overflow-x: hidden; }
 
-    /* ── NAVBAR ─────────────────────────────────── */
+    /* ── NAVBAR ── */
     nav {
       position: fixed; top: 0; width: 100%; z-index: 1000;
-      background: rgba(5,13,26,0.92);
-      backdrop-filter: blur(12px);
+      background: rgba(5,13,26,0.92); backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--glass-border);
-      padding: 0 5%;
-      display: flex; align-items: center; justify-content: space-between;
-      height: 64px;
+      padding: 0 5%; display: flex; align-items: center; justify-content: space-between; height: 64px;
     }
-    .nav-logo {
-      display: flex; align-items: center; gap: 10px;
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 1.3rem; font-weight: 700; color: var(--white);
-      text-decoration: none;
-    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--white); text-decoration: none; }
+    .nav-logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, var(--amber), var(--blue-300)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
     .nav-logo span { color: var(--amber); }
-    .nav-logo-icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--amber), var(--blue-300));
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
-    }
-    .nav-links { display: flex; gap: 8px; list-style: none; }
-    .nav-links a {
-      color: var(--gray-200); text-decoration: none;
-      padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 500;
-      transition: all 0.2s;
-    }
+    .nav-links { display: flex; gap: 4px; list-style: none; }
+    .nav-links a { color: var(--gray-200); text-decoration: none; padding: 8px 13px; border-radius: 6px; font-size: 0.83rem; font-weight: 500; transition: all 0.2s; }
     .nav-links a:hover { background: var(--glass); color: var(--amber); }
-    .nav-cta {
-      background: var(--amber); color: var(--navy-800) !important;
-      font-weight: 700 !important; border-radius: 6px !important;
-    }
-    .nav-cta:hover { background: var(--amber-light) !important; color: var(--navy-800) !important; }
+    .nav-cta { background: var(--amber) !important; color: var(--navy-800) !important; font-weight: 700 !important; }
+    .nav-cta:hover { background: var(--amber-light) !important; }
     .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
     .hamburger span { width: 24px; height: 2px; background: var(--white); border-radius: 2px; transition: 0.3s; }
 
-    /* ── HERO ─────────────────────────────────────── */
+    /* ── HERO ── */
     #hero {
       min-height: 100vh;
       background: radial-gradient(ellipse at 20% 50%, rgba(30,58,95,0.8) 0%, transparent 60%),
-                  radial-gradient(ellipse at 80% 20%, rgba(41,128,185,0.3) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 20%, rgba(41,128,185,0.25) 0%, transparent 50%),
                   linear-gradient(160deg, var(--navy-900) 0%, var(--navy-800) 50%, #0c1e38 100%);
       display: flex; align-items: center; justify-content: center;
-      padding: 120px 5% 80px;
-      position: relative; overflow: hidden;
+      padding: 120px 5% 80px; position: relative; overflow: hidden;
     }
     .hero-grid {
       position: absolute; inset: 0;
-      background-image:
-        linear-gradient(rgba(41,128,185,0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(41,128,185,0.06) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(41,128,185,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(41,128,185,0.06) 1px, transparent 1px);
       background-size: 60px 60px;
     }
-    .hero-content { max-width: 900px; text-align: center; position: relative; z-index: 2; }
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(243,156,18,0.15); border: 1px solid rgba(243,156,18,0.3);
-      color: var(--amber); border-radius: 50px; padding: 6px 18px;
-      font-size: 0.78rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-      margin-bottom: 28px;
+    .hero-particles { position: absolute; inset: 0; pointer-events: none; }
+    .particle {
+      position: absolute; border-radius: 50%; background: var(--amber); opacity: 0.15;
+      animation: float linear infinite;
     }
-    .hero-badge i { font-size: 0.75rem; }
-    .hero-title {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: clamp(2.4rem, 6vw, 5rem);
-      font-weight: 700; line-height: 1.1;
-      margin-bottom: 24px;
-    }
-    .hero-title .highlight { color: var(--amber); }
-    .hero-title .blue { color: var(--blue-300); }
-    .hero-subtitle {
-      font-size: clamp(1rem, 2vw, 1.25rem);
-      color: var(--gray-400); line-height: 1.7;
-      max-width: 680px; margin: 0 auto 40px;
-    }
-    .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--amber), #e67e22);
-      color: var(--navy-800); font-weight: 700;
-      padding: 14px 32px; border-radius: 8px; border: none;
-      font-size: 0.95rem; cursor: pointer; text-decoration: none;
-      display: inline-flex; align-items: center; gap: 8px;
-      transition: all 0.3s; box-shadow: 0 4px 20px rgba(243,156,18,0.35);
-    }
+    @keyframes float { 0%{transform:translateY(100vh) rotate(0deg);opacity:0} 10%{opacity:0.15} 90%{opacity:0.15} 100%{transform:translateY(-100px) rotate(720deg);opacity:0} }
+    .hero-inner { max-width: 1100px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; position: relative; z-index: 2; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(243,156,18,0.15); border: 1px solid rgba(243,156,18,0.3); color: var(--amber); border-radius: 50px; padding: 6px 18px; font-size: 0.76rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
+    .hero-name { font-family: 'Rajdhani', sans-serif; font-size: clamp(2.8rem, 6vw, 5.2rem); font-weight: 700; line-height: 1; margin-bottom: 12px; }
+    .hero-name .highlight { color: var(--amber); }
+    .hero-title-line { font-size: clamp(1rem, 2vw, 1.3rem); color: var(--blue-200); font-weight: 600; margin-bottom: 20px; letter-spacing: 0.5px; }
+    .hero-desc { font-size: 0.95rem; color: var(--gray-400); line-height: 1.75; margin-bottom: 32px; }
+    .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 40px; }
+    .btn-primary { background: linear-gradient(135deg, var(--amber), #e67e22); color: var(--navy-800); font-weight: 700; padding: 13px 28px; border-radius: 8px; border: none; font-size: 0.9rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s; box-shadow: 0 4px 20px rgba(243,156,18,0.35); }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(243,156,18,0.5); }
-    .btn-secondary {
-      background: transparent; color: var(--white); font-weight: 600;
-      padding: 14px 32px; border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.25);
-      font-size: 0.95rem; cursor: pointer; text-decoration: none;
-      display: inline-flex; align-items: center; gap: 8px;
-      transition: all 0.3s;
-    }
+    .btn-secondary { background: transparent; color: var(--white); font-weight: 600; padding: 13px 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.25); font-size: 0.9rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s; }
     .btn-secondary:hover { background: var(--glass); border-color: var(--blue-300); }
-    .hero-stats {
-      display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;
-      margin-top: 60px; padding-top: 40px;
-      border-top: 1px solid var(--glass-border);
+    .hero-social { display: flex; gap: 12px; }
+    .social-btn { width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--glass); display: flex; align-items: center; justify-content: center; color: var(--gray-400); font-size: 1rem; text-decoration: none; transition: all 0.3s; }
+    .social-btn:hover { border-color: var(--amber); color: var(--amber); transform: translateY(-2px); }
+    /* Hero right — profile card */
+    .hero-card {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
+      border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 24px;
+      backdrop-filter: blur(10px);
     }
-    .hero-stat { text-align: center; }
-    .hero-stat-number {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 2.2rem; font-weight: 700; color: var(--amber);
-    }
-    .hero-stat-label { font-size: 0.78rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; }
+    .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--amber), var(--blue-300)); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin-bottom: 4px; }
+    .profile-name { font-family: 'Rajdhani', sans-serif; font-size: 1.4rem; font-weight: 700; }
+    .profile-sub { font-size: 0.8rem; color: var(--amber); font-weight: 600; }
+    .profile-divider { height: 1px; background: var(--glass-border); }
+    .profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .profile-stat { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 14px; text-align: center; }
+    .profile-stat-num { font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--amber); line-height: 1; }
+    .profile-stat-lbl { font-size: 0.7rem; color: var(--gray-400); margin-top: 4px; }
+    .profile-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .profile-tag { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; background: rgba(52,152,219,0.1); border: 1px solid rgba(52,152,219,0.25); color: var(--blue-200); font-weight: 500; }
+    .profile-status { display: flex; align-items: center; gap: 10px; background: rgba(39,174,96,0.08); border: 1px solid rgba(39,174,96,0.2); border-radius: 10px; padding: 12px 14px; font-size: 0.8rem; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
 
-    /* ── SECTIONS ─────────────────────────────────── */
+    /* ── SECTIONS ── */
     section { padding: 90px 5%; }
-    .section-tag {
-      display: inline-block; color: var(--amber);
-      font-size: 0.75rem; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase; margin-bottom: 12px;
-    }
-    .section-title {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700;
-      line-height: 1.2; margin-bottom: 16px;
-    }
-    .section-desc { color: var(--gray-400); font-size: 1.05rem; line-height: 1.7; max-width: 620px; }
-    .section-header { margin-bottom: 60px; }
+    .section-tag { display: inline-block; color: var(--amber); font-size: 0.73rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+    .section-title { font-family: 'Rajdhani', sans-serif; font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700; line-height: 1.15; margin-bottom: 14px; }
+    .section-desc { color: var(--gray-400); font-size: 1rem; line-height: 1.75; max-width: 620px; }
+    .section-header { margin-bottom: 56px; }
     .section-header.center { text-align: center; }
     .section-header.center .section-desc { margin: 0 auto; }
 
-    /* ── ABOUT / EPC OVERVIEW ────────────────────── */
+    /* ── ABOUT ── */
     #about { background: var(--navy-900); }
-    .about-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
-    }
-    .about-visual {
-      position: relative;
-    }
-    .epc-pipeline {
-      display: flex; flex-direction: column; gap: 16px;
-    }
-    .epc-phase {
-      display: flex; align-items: center; gap: 20px;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 12px; padding: 20px 24px;
-      transition: all 0.3s; cursor: default;
-    }
-    .epc-phase:hover { border-color: var(--amber); background: rgba(243,156,18,0.05); }
-    .epc-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; flex-shrink: 0;
-    }
-    .epc-phase:nth-child(1) .epc-icon { background: rgba(52,152,219,0.2); color: var(--blue-300); }
-    .epc-phase:nth-child(2) .epc-icon { background: rgba(243,156,18,0.2); color: var(--amber); }
-    .epc-phase:nth-child(3) .epc-icon { background: rgba(39,174,96,0.2); color: var(--green); }
-    .epc-phase:nth-child(4) .epc-icon { background: rgba(231,76,60,0.2); color: var(--red); }
-    .epc-phase-label { font-weight: 700; font-size: 0.95rem; }
-    .epc-phase-desc { font-size: 0.82rem; color: var(--gray-400); margin-top: 3px; }
-    .epc-connector {
-      width: 2px; height: 16px; background: var(--glass-border);
-      margin-left: 43px;
-    }
+    .about-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 64px; align-items: center; }
+    .about-img-wrap { position: relative; }
+    .about-card-main { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 36px; }
+    .about-card-main .profile-avatar { width: 90px; height: 90px; font-size: 2.5rem; margin-bottom: 16px; }
+    .about-card-name { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+    .about-card-role { color: var(--amber); font-size: 0.85rem; font-weight: 600; margin-bottom: 20px; }
+    .about-mini-stats { display: flex; gap: 20px; padding: 20px 0; border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); margin-bottom: 20px; }
+    .about-mini-stat { text-align: center; flex: 1; }
+    .about-mini-num { font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--amber); }
+    .about-mini-lbl { font-size: 0.68rem; color: var(--gray-400); margin-top: 2px; }
+    .cert-badges { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+    .cert-badge { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 10px 14px; font-size: 0.78rem; }
+    .cert-badge i { color: var(--amber); width: 16px; }
+    .about-text h2 { margin-bottom: 16px; }
+    .about-text .section-desc { margin-bottom: 16px; }
+    .about-text .section-desc:last-child { margin-bottom: 0; }
+    .highlight-word { color: var(--white); font-weight: 600; }
+    .amber { color: var(--amber); }
 
-    /* ── FEATURES ─────────────────────────────────── */
+    /* ── EXPERIENCE ── */
+    #experience { background: var(--navy-800); }
+    .exp-timeline { position: relative; padding-left: 32px; }
+    .exp-timeline::before { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(to bottom, var(--blue-300), var(--amber), var(--green)); border-radius: 2px; }
+    .exp-item { position: relative; margin-bottom: 40px; }
+    .exp-item:last-child { margin-bottom: 0; }
+    .exp-dot { position: absolute; left: -40px; top: 6px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--amber); background: var(--navy-800); }
+    .exp-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 14px; padding: 24px 28px; transition: all 0.3s; }
+    .exp-card:hover { border-color: rgba(243,156,18,0.3); transform: translateX(4px); }
+    .exp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+    .exp-role { font-weight: 700; font-size: 1rem; margin-bottom: 3px; }
+    .exp-company { color: var(--amber); font-size: 0.85rem; font-weight: 600; }
+    .exp-period { font-size: 0.75rem; color: var(--gray-400); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+    .exp-desc { font-size: 0.85rem; color: var(--gray-400); line-height: 1.65; margin-bottom: 14px; }
+    .exp-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .exp-tag { font-size: 0.68rem; padding: 3px 10px; border-radius: 20px; background: rgba(52,152,219,0.1); border: 1px solid rgba(52,152,219,0.2); color: var(--blue-200); }
+
+    /* ── SKILLS ── */
+    #skills { background: var(--navy-900); }
+    .skills-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+    .skill-group { margin-bottom: 36px; }
+    .skill-group-title { font-weight: 700; font-size: 0.9rem; color: var(--white); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .skill-group-title i { color: var(--amber); }
+    .skill-item { margin-bottom: 16px; }
+    .skill-meta { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .skill-name { font-size: 0.83rem; color: var(--gray-200); font-weight: 500; }
+    .skill-pct { font-size: 0.78rem; color: var(--amber); font-weight: 700; }
+    .skill-bar-bg { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+    .skill-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--blue-300), var(--amber)); transform: scaleX(0); transform-origin: left; transition: transform 1s ease; }
+    .skill-bar-fill.animate { transform: scaleX(1); }
+    .tools-cloud { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tool-chip { display: flex; align-items: center; gap: 7px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 14px; font-size: 0.78rem; font-weight: 500; transition: all 0.25s; cursor: default; }
+    .tool-chip:hover { border-color: rgba(243,156,18,0.4); color: var(--amber); }
+    .tool-chip i { font-size: 0.9rem; }
+
+    /* ── FEATURES (PMIS) ── */
     #features { background: var(--navy-800); }
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-    }
-    .feature-card {
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px; padding: 28px;
-      transition: all 0.3s;
-      position: relative; overflow: hidden;
-    }
-    .feature-card::before {
-      content: ''; position: absolute;
-      top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, var(--amber), transparent);
-      opacity: 0; transition: 0.3s;
-    }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
+    .feature-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 26px; transition: all 0.3s; position: relative; overflow: hidden; }
+    .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--amber), transparent); opacity: 0; transition: 0.3s; }
     .feature-card:hover { border-color: rgba(243,156,18,0.3); transform: translateY(-4px); }
     .feature-card:hover::before { opacity: 1; }
-    .feature-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem; margin-bottom: 20px;
-    }
+    .feature-icon { width: 50px; height: 50px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 18px; }
     .feature-card:nth-child(1) .feature-icon { background: rgba(52,152,219,0.15); color: var(--blue-300); }
     .feature-card:nth-child(2) .feature-icon { background: rgba(243,156,18,0.15); color: var(--amber); }
     .feature-card:nth-child(3) .feature-icon { background: rgba(39,174,96,0.15); color: var(--green); }
     .feature-card:nth-child(4) .feature-icon { background: rgba(231,76,60,0.15); color: var(--red); }
-    .feature-card:nth-child(5) .feature-icon { background: rgba(155,89,182,0.15); color: #9b59b6; }
+    .feature-card:nth-child(5) .feature-icon { background: rgba(155,89,182,0.15); color: var(--purple); }
     .feature-card:nth-child(6) .feature-icon { background: rgba(241,196,15,0.15); color: #f1c40f; }
     .feature-card:nth-child(7) .feature-icon { background: rgba(26,188,156,0.15); color: #1abc9c; }
     .feature-card:nth-child(8) .feature-icon { background: rgba(230,126,34,0.15); color: #e67e22; }
-    .feature-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; }
-    .feature-desc { font-size: 0.85rem; color: var(--gray-400); line-height: 1.6; }
-    .feature-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
-    .feature-tag {
-      font-size: 0.7rem; font-weight: 600; padding: 3px 10px;
-      border-radius: 20px; background: var(--glass);
-      border: 1px solid var(--glass-border); color: var(--gray-200);
-    }
+    .feature-title { font-weight: 700; font-size: 1rem; margin-bottom: 9px; }
+    .feature-desc { font-size: 0.83rem; color: var(--gray-400); line-height: 1.6; }
+    .feature-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+    .feature-tag { font-size: 0.68rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-border); color: var(--gray-200); }
 
-    /* ── DASHBOARD MOCKUP ─────────────────────────── */
+    /* ── DASHBOARD MOCKUP ── */
     #dashboard { background: var(--navy-900); }
-    .dashboard-frame {
-      background: #0d1b2e;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px; overflow: hidden;
-      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
-    }
-    .dashboard-topbar {
-      background: #071120; padding: 12px 20px;
-      display: flex; align-items: center; gap: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
+    .dashboard-frame { background: #0d1b2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
+    .dashboard-topbar { background: #071120; padding: 12px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .db-dots { display: flex; gap: 6px; }
     .db-dot { width: 10px; height: 10px; border-radius: 50%; }
     .db-dot:nth-child(1) { background: var(--red); }
@@ -262,317 +203,211 @@
     .db-title { font-size: 0.78rem; color: var(--gray-400); margin-left: 8px; font-weight: 500; }
     .db-date { font-size: 0.72rem; color: var(--gray-400); margin-left: auto; }
     .dashboard-body { padding: 20px; }
-    .db-header-row {
-      display: flex; align-items: center; gap: 16px;
-      margin-bottom: 20px; flex-wrap: wrap;
-    }
-    .db-project-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.1rem; }
-    .db-status-badge {
-      background: rgba(39,174,96,0.15); border: 1px solid rgba(39,174,96,0.3);
-      color: var(--green); font-size: 0.7rem; font-weight: 700;
-      padding: 3px 12px; border-radius: 20px;
-    }
-    .db-filter-row {
-      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
-    }
-    .db-filter {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 6px; padding: 5px 14px; font-size: 0.72rem; color: var(--gray-200);
-      cursor: default;
-    }
+    .db-header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+    .db-project-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.05rem; }
+    .db-status-badge { background: rgba(39,174,96,0.15); border: 1px solid rgba(39,174,96,0.3); color: var(--green); font-size: 0.68rem; font-weight: 700; padding: 3px 12px; border-radius: 20px; }
+    .db-filter-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .db-filter { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 5px 13px; font-size: 0.7rem; color: var(--gray-200); }
     .db-filter.active { background: rgba(243,156,18,0.15); border-color: rgba(243,156,18,0.4); color: var(--amber); }
-    /* KPI row */
-    .db-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-    .db-kpi-card {
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 10px; padding: 14px 16px;
-    }
-    .db-kpi-label { font-size: 0.65rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; }
-    .db-kpi-value { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; margin: 4px 0 2px; }
-    .db-kpi-delta { font-size: 0.68rem; font-weight: 600; }
+    .db-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .db-kpi-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 13px 15px; }
+    .db-kpi-label { font-size: 0.63rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; }
+    .db-kpi-value { font-family: 'Rajdhani', sans-serif; font-size: 1.55rem; font-weight: 700; margin: 4px 0 2px; }
+    .db-kpi-delta { font-size: 0.66rem; font-weight: 600; }
     .db-kpi-delta.up { color: var(--green); }
     .db-kpi-delta.down { color: var(--red); }
     .db-kpi-delta.neutral { color: var(--amber); }
-    /* Charts row */
-    .db-charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .db-chart-panel {
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 10px; padding: 16px;
-    }
-    .db-panel-title { font-size: 0.72rem; font-weight: 600; color: var(--gray-200); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
-    /* S-Curve SVG */
+    .db-charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 12px; }
+    .db-chart-panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 14px; }
+    .db-panel-title { font-size: 0.7rem; font-weight: 600; color: var(--gray-200); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
     .scurve-container { width: 100%; height: 120px; }
-    /* Donut chart CSS */
-    .donut-wrap { display: flex; align-items: center; gap: 16px; }
-    .donut-chart {
-      width: 90px; height: 90px; border-radius: 50%; flex-shrink: 0;
-      background: conic-gradient(
-        var(--blue-300) 0% 67%,
-        var(--amber) 67% 82%,
-        var(--navy-700) 82% 100%
-      );
-      display: flex; align-items: center; justify-content: center;
-      position: relative;
-    }
-    .donut-center {
-      width: 60px; height: 60px; border-radius: 50%;
-      background: #0d1b2e;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.1rem;
-    }
-    .donut-legend { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-    .donut-item { display: flex; align-items: center; gap: 8px; font-size: 0.68rem; color: var(--gray-400); }
+    .donut-wrap { display: flex; align-items: center; gap: 14px; }
+    .donut-chart { width: 86px; height: 86px; border-radius: 50%; flex-shrink: 0; background: conic-gradient(var(--blue-300) 0% 67%, var(--amber) 67% 82%, var(--navy-700) 82% 100%); display: flex; align-items: center; justify-content: center; position: relative; }
+    .donut-center { width: 58px; height: 58px; border-radius: 50%; background: #0d1b2e; display: flex; align-items: center; justify-content: center; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.05rem; }
+    .donut-legend { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+    .donut-item { display: flex; align-items: center; gap: 7px; font-size: 0.67rem; color: var(--gray-400); }
     .donut-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    /* Bar chart CSS */
-    .db-bar-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    .db-bar-panel {
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 10px; padding: 16px;
-    }
-    .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 70px; margin-top: 10px; }
+    .db-bar-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .db-bar-panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 14px; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 68px; margin-top: 8px; }
     .bar-col { display: flex; align-items: flex-end; gap: 3px; flex: 1; }
-    .bar {
-      flex: 1; border-radius: 3px 3px 0 0; min-height: 4px;
-      transition: all 0.3s;
-    }
-    /* Table row */
-    .db-table-panel {
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 10px; padding: 16px; grid-column: 1 / -1;
-    }
-    .db-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
-    .db-table th {
-      text-align: left; padding: 6px 10px; color: var(--gray-400);
-      font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.06);
-      text-transform: uppercase; letter-spacing: 0.5px;
-    }
+    .bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; }
+    .db-table { width: 100%; border-collapse: collapse; font-size: 0.68rem; }
+    .db-table th { text-align: left; padding: 6px 10px; color: var(--gray-400); font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.06); text-transform: uppercase; letter-spacing: 0.5px; }
     .db-table td { padding: 8px 10px; color: var(--gray-200); border-bottom: 1px solid rgba(255,255,255,0.04); }
     .db-table tr:last-child td { border-bottom: none; }
-    .status-pill {
-      display: inline-block; padding: 2px 10px; border-radius: 20px;
-      font-weight: 600; font-size: 0.65rem;
-    }
+    .status-pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-weight: 600; font-size: 0.63rem; }
     .status-pill.on-track { background: rgba(39,174,96,0.15); color: var(--green); border: 1px solid rgba(39,174,96,0.3); }
     .status-pill.delayed { background: rgba(231,76,60,0.15); color: var(--red); border: 1px solid rgba(231,76,60,0.3); }
     .status-pill.at-risk { background: rgba(243,156,18,0.15); color: var(--amber); border: 1px solid rgba(243,156,18,0.3); }
     .progress-bar-wrap { width: 80px; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; }
     .progress-bar-fill { height: 100%; border-radius: 2px; }
 
-    /* ── POWER BI SECTION ─────────────────────────── */
-    #powerbi { background: var(--navy-800); }
+    /* ── PROJECTS ── */
+    #projects { background: var(--navy-800); }
+    .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+    .project-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 18px; overflow: hidden; transition: all 0.3s; }
+    .project-card:hover { border-color: rgba(243,156,18,0.35); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+    .project-thumb { height: 160px; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; position: relative; overflow: hidden; }
+    .project-thumb::before { content: ''; position: absolute; inset: 0; }
+    .project-thumb.pmis { background: linear-gradient(135deg, #0f2240 0%, #1a3158 100%); }
+    .project-thumb.pmis::before { background: radial-gradient(circle at 30% 50%, rgba(52,152,219,0.3), transparent 60%); }
+    .project-thumb.evm { background: linear-gradient(135deg, #1a0f0f 0%, #3d1515 100%); }
+    .project-thumb.evm::before { background: radial-gradient(circle at 70% 30%, rgba(231,76,60,0.3), transparent 60%); }
+    .project-thumb.procurement { background: linear-gradient(135deg, #0f1a10 0%, #1a3d1c 100%); }
+    .project-thumb.procurement::before { background: radial-gradient(circle at 50% 60%, rgba(39,174,96,0.3), transparent 60%); }
+    .project-thumb.schedule { background: linear-gradient(135deg, #1a1a0a 0%, #3d350a 100%); }
+    .project-thumb.schedule::before { background: radial-gradient(circle at 40% 40%, rgba(243,156,18,0.3), transparent 60%); }
+    .project-thumb-icon { position: relative; z-index: 1; }
+    .project-badge { position: absolute; top: 12px; right: 12px; font-size: 0.65rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; z-index: 2; }
+    .project-badge.featured { background: rgba(243,156,18,0.2); border: 1px solid rgba(243,156,18,0.4); color: var(--amber); }
+    .project-badge.new { background: rgba(39,174,96,0.2); border: 1px solid rgba(39,174,96,0.4); color: var(--green); }
+    .project-body { padding: 22px; }
+    .project-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 8px; }
+    .project-desc { font-size: 0.83rem; color: var(--gray-400); line-height: 1.6; margin-bottom: 16px; }
+    .project-stack { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+    .project-tech { font-size: 0.67rem; padding: 3px 9px; border-radius: 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: var(--gray-200); }
+    .project-links { display: flex; gap: 10px; }
+    .project-link { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; text-decoration: none; padding: 8px 14px; border-radius: 8px; transition: all 0.25s; }
+    .project-link.demo { background: rgba(243,156,18,0.15); color: var(--amber); border: 1px solid rgba(243,156,18,0.3); }
+    .project-link.demo:hover { background: rgba(243,156,18,0.25); }
+    .project-link.code { background: rgba(255,255,255,0.05); color: var(--gray-200); border: 1px solid rgba(255,255,255,0.12); }
+    .project-link.code:hover { background: rgba(255,255,255,0.1); }
+
+    /* ── POWERBI SECTION ── */
+    #powerbi { background: var(--navy-900); }
     .powerbi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
-    .powerbi-features { display: flex; flex-direction: column; gap: 20px; }
-    .pbi-item {
-      display: flex; gap: 16px; align-items: flex-start;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 12px; padding: 20px;
-      transition: all 0.3s;
-    }
+    .powerbi-features { display: flex; flex-direction: column; gap: 18px; }
+    .pbi-item { display: flex; gap: 15px; align-items: flex-start; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; padding: 18px; transition: all 0.3s; }
     .pbi-item:hover { border-color: rgba(243,156,18,0.3); background: rgba(243,156,18,0.04); }
-    .pbi-icon {
-      width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-      background: rgba(243,156,18,0.15); color: var(--amber);
-      display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-    }
-    .pbi-label { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
-    .pbi-desc { font-size: 0.83rem; color: var(--gray-400); line-height: 1.5; }
-    .pbi-visual {
-      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px; padding: 28px;
-      display: flex; flex-direction: column; gap: 20px;
-    }
-    .pbi-logo {
-      display: flex; align-items: center; gap: 12px;
-      font-family: 'Rajdhani', sans-serif; font-size: 1.4rem; font-weight: 700;
-    }
-    .pbi-logo-icon {
-      width: 44px; height: 44px; border-radius: 10px;
-      background: linear-gradient(135deg, #f2c811, #e87722);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem; color: #1a1a1a;
-    }
-    .pbi-stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .pbi-stat-box {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 10px; padding: 16px; text-align: center;
-    }
-    .pbi-stat-num { font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--amber); }
-    .pbi-stat-lbl { font-size: 0.72rem; color: var(--gray-400); margin-top: 2px; }
-    .pbi-refresh-indicator {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(39,174,96,0.08); border: 1px solid rgba(39,174,96,0.2);
-      border-radius: 8px; padding: 12px 16px; font-size: 0.8rem;
-    }
-    .refresh-dot {
-      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+    .pbi-icon { width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0; background: rgba(243,156,18,0.15); color: var(--amber); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .pbi-label { font-weight: 700; font-size: 0.9rem; margin-bottom: 4px; }
+    .pbi-desc { font-size: 0.81rem; color: var(--gray-400); line-height: 1.5; }
+    .pbi-visual { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 26px; display: flex; flex-direction: column; gap: 18px; }
+    .pbi-logo { display: flex; align-items: center; gap: 12px; font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; font-weight: 700; }
+    .pbi-logo-icon { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #f2c811, #e87722); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #1a1a1a; }
+    .pbi-stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pbi-stat-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 14px; text-align: center; }
+    .pbi-stat-num { font-family: 'Rajdhani', sans-serif; font-size: 1.7rem; font-weight: 700; color: var(--amber); }
+    .pbi-stat-lbl { font-size: 0.7rem; color: var(--gray-400); margin-top: 2px; }
+    .pbi-refresh-indicator { display: flex; align-items: center; gap: 10px; background: rgba(39,174,96,0.08); border: 1px solid rgba(39,174,96,0.2); border-radius: 8px; padding: 11px 15px; font-size: 0.78rem; }
+    .refresh-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
 
-    /* ── METRICS / COUNTERS ──────────────────────── */
-    #metrics { background: var(--navy-900); }
-    .metrics-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 24px;
-    }
-    .metric-card {
-      text-align: center;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 16px; padding: 36px 24px;
-      transition: all 0.3s;
-    }
-    .metric-card:hover { border-color: rgba(243,156,18,0.4); transform: translateY(-4px); }
-    .metric-icon { font-size: 2rem; color: var(--amber); margin-bottom: 16px; }
-    .metric-number {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 3rem; font-weight: 700; color: var(--white);
-      line-height: 1;
-    }
-    .metric-number span { color: var(--amber); }
-    .metric-label { font-size: 0.85rem; color: var(--gray-400); margin-top: 8px; font-weight: 500; }
-
-    /* ── EPC PHASES TIMELINE ─────────────────────── */
+    /* ── EPC PHASES ── */
     #phases { background: var(--navy-800); }
-    .phases-timeline {
-      display: grid; grid-template-columns: repeat(4, 1fr);
-      gap: 0; position: relative;
-    }
-    .phases-timeline::before {
-      content: ''; position: absolute;
-      top: 56px; left: 12.5%; right: 12.5%; height: 2px;
-      background: linear-gradient(90deg, var(--blue-300), var(--amber), var(--green), #e67e22);
-      z-index: 0;
-    }
-    .phase-item { text-align: center; padding: 0 16px; position: relative; }
-    .phase-dot {
-      width: 40px; height: 40px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 24px; font-size: 1.1rem; font-weight: 700;
-      position: relative; z-index: 1;
-    }
+    .phases-timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; }
+    .phases-timeline::before { content: ''; position: absolute; top: 52px; left: 12.5%; right: 12.5%; height: 2px; background: linear-gradient(90deg, var(--blue-300), var(--amber), var(--green), #e67e22); z-index: 0; }
+    .phase-item { text-align: center; padding: 0 14px; position: relative; }
+    .phase-dot { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 22px; font-size: 1rem; font-weight: 700; position: relative; z-index: 1; }
     .phase-item:nth-child(1) .phase-dot { background: rgba(52,152,219,0.2); border: 2px solid var(--blue-300); color: var(--blue-300); }
     .phase-item:nth-child(2) .phase-dot { background: rgba(243,156,18,0.2); border: 2px solid var(--amber); color: var(--amber); }
     .phase-item:nth-child(3) .phase-dot { background: rgba(39,174,96,0.2); border: 2px solid var(--green); color: var(--green); }
     .phase-item:nth-child(4) .phase-dot { background: rgba(230,126,34,0.2); border: 2px solid #e67e22; color: #e67e22; }
-    .phase-name { font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
-    .phase-kpis { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-    .phase-kpis li {
-      font-size: 0.77rem; color: var(--gray-400);
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 6px; padding: 6px 10px; text-align: left;
-    }
+    .phase-name { font-family: 'Rajdhani', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; }
+    .phase-kpis { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    .phase-kpis li { font-size: 0.75rem; color: var(--gray-400); background: var(--glass); border: 1px solid var(--glass-border); border-radius: 6px; padding: 5px 9px; text-align: left; }
     .phase-kpis li::before { content: '▸ '; color: var(--amber); }
 
-    /* ── TECH STACK ──────────────────────────────── */
+    /* ── TECH STACK ── */
     #stack { background: var(--navy-900); }
-    .stack-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
-    .stack-item {
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 12px; padding: 20px 28px;
-      display: flex; align-items: center; gap: 14px;
-      transition: all 0.3s; min-width: 180px;
-    }
+    .stack-grid { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+    .stack-item { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; padding: 18px 24px; display: flex; align-items: center; gap: 12px; transition: all 0.3s; min-width: 170px; }
     .stack-item:hover { border-color: rgba(243,156,18,0.4); transform: translateY(-3px); }
-    .stack-icon { font-size: 2rem; }
-    .stack-label { font-weight: 700; font-size: 0.95rem; }
-    .stack-desc { font-size: 0.75rem; color: var(--gray-400); }
+    .stack-icon { font-size: 1.8rem; }
+    .stack-label { font-weight: 700; font-size: 0.9rem; }
+    .stack-desc { font-size: 0.72rem; color: var(--gray-400); }
 
-    /* ── CONTACT / CTA ───────────────────────────── */
-    #contact {
-      background: linear-gradient(135deg, var(--navy-900) 0%, #071a3e 100%);
-      text-align: center;
-    }
-    .contact-card {
-      max-width: 680px; margin: 0 auto;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 24px; padding: 60px 48px;
-    }
-    .contact-avatar {
-      width: 80px; height: 80px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--amber), var(--blue-300));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem; margin: 0 auto 24px;
-    }
-    .contact-name { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; }
-    .contact-role { color: var(--amber); font-weight: 600; margin: 6px 0 20px; }
-    .contact-bio { color: var(--gray-400); font-size: 0.9rem; line-height: 1.7; margin-bottom: 32px; }
+    /* ── METRICS ── */
+    #metrics { background: var(--navy-800); }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 20px; }
+    .metric-card { text-align: center; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 16px; padding: 32px 20px; transition: all 0.3s; }
+    .metric-card:hover { border-color: rgba(243,156,18,0.4); transform: translateY(-4px); }
+    .metric-icon { font-size: 1.8rem; color: var(--amber); margin-bottom: 14px; }
+    .metric-number { font-family: 'Rajdhani', sans-serif; font-size: 2.8rem; font-weight: 700; color: var(--white); line-height: 1; }
+    .metric-number span { color: var(--amber); }
+    .metric-label { font-size: 0.82rem; color: var(--gray-400); margin-top: 8px; font-weight: 500; }
+
+    /* ── CONTACT ── */
+    #contact { background: linear-gradient(135deg, var(--navy-900) 0%, #071a3e 100%); text-align: center; }
+    .contact-card { max-width: 700px; margin: 0 auto; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 24px; padding: 56px 48px; }
+    .contact-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--amber), var(--blue-300)); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 20px; }
+    .contact-name { font-family: 'Rajdhani', sans-serif; font-size: 1.7rem; font-weight: 700; }
+    .contact-role { color: var(--amber); font-weight: 600; margin: 6px 0 18px; font-size: 0.9rem; }
+    .contact-bio { color: var(--gray-400); font-size: 0.88rem; line-height: 1.75; margin-bottom: 28px; }
     .contact-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .contact-link {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 11px 22px; border-radius: 8px; font-size: 0.88rem; font-weight: 600;
-      text-decoration: none; transition: all 0.3s;
-    }
+    .contact-link { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: 8px; font-size: 0.86rem; font-weight: 600; text-decoration: none; transition: all 0.3s; }
     .contact-link.github { background: rgba(255,255,255,0.08); color: var(--white); border: 1px solid rgba(255,255,255,0.15); }
     .contact-link.github:hover { background: rgba(255,255,255,0.14); }
-    .contact-link.linkedin { background: rgba(10,102,194,0.2); color: #0a66c2; border: 1px solid rgba(10,102,194,0.35); }
+    .contact-link.linkedin { background: rgba(10,102,194,0.2); color: #4d9de0; border: 1px solid rgba(10,102,194,0.35); }
     .contact-link.linkedin:hover { background: rgba(10,102,194,0.3); }
     .contact-link.email { background: rgba(243,156,18,0.15); color: var(--amber); border: 1px solid rgba(243,156,18,0.35); }
     .contact-link.email:hover { background: rgba(243,156,18,0.25); }
 
-    /* ── FOOTER ──────────────────────────────────── */
-    footer {
-      background: var(--navy-900); border-top: 1px solid var(--glass-border);
-      padding: 28px 5%; text-align: center;
-      font-size: 0.8rem; color: var(--gray-400);
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: gap;
-    }
+    /* ── FOOTER ── */
+    footer { background: var(--navy-900); border-top: 1px solid var(--glass-border); padding: 26px 5%; text-align: center; font-size: 0.78rem; color: var(--gray-400); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
     footer .footer-brand { color: var(--amber); font-weight: 600; }
 
-    /* ── ANIMATIONS ──────────────────────────────── */
-    .fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    /* ── ANIMATIONS ── */
+    .fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
-    .fade-up:nth-child(2) { transition-delay: 0.1s; }
-    .fade-up:nth-child(3) { transition-delay: 0.2s; }
-    .fade-up:nth-child(4) { transition-delay: 0.3s; }
-    .fade-up:nth-child(5) { transition-delay: 0.4s; }
-    .fade-up:nth-child(6) { transition-delay: 0.5s; }
-    .fade-up:nth-child(7) { transition-delay: 0.6s; }
-    .fade-up:nth-child(8) { transition-delay: 0.7s; }
+    .fade-up:nth-child(2) { transition-delay: 0.08s; }
+    .fade-up:nth-child(3) { transition-delay: 0.16s; }
+    .fade-up:nth-child(4) { transition-delay: 0.24s; }
+    .fade-up:nth-child(5) { transition-delay: 0.32s; }
+    .fade-up:nth-child(6) { transition-delay: 0.40s; }
+    .fade-up:nth-child(7) { transition-delay: 0.48s; }
+    .fade-up:nth-child(8) { transition-delay: 0.56s; }
 
-    /* ── RESPONSIVE ──────────────────────────────── */
-    @media (max-width: 1024px) {
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .hero-inner { grid-template-columns: 1fr; max-width: 640px; text-align: center; }
+      .hero-buttons, .hero-social { justify-content: center; }
+      .hero-card { display: none; }
+      .about-grid, .powerbi-grid { grid-template-columns: 1fr; }
+      .skills-layout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+      .phases-timeline { grid-template-columns: 1fr 1fr; }
+      .phases-timeline::before { display: none; }
       .db-kpi-row { grid-template-columns: repeat(2, 1fr); }
       .db-charts-row { grid-template-columns: 1fr; }
     }
-    @media (max-width: 900px) {
-      .about-grid, .powerbi-grid { grid-template-columns: 1fr; }
-      .phases-timeline { grid-template-columns: 1fr 1fr; }
-      .phases-timeline::before { display: none; }
-    }
     @media (max-width: 768px) {
       nav { padding: 0 4%; }
-      .nav-links { display: none; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--navy-900); padding: 16px; border-bottom: 1px solid var(--glass-border); }
+      .nav-links { display: none; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--navy-900); padding: 16px; border-bottom: 1px solid var(--glass-border); z-index: 999; }
       .nav-links.open { display: flex; }
       .hamburger { display: flex; }
-      section { padding: 60px 4%; }
+      section { padding: 64px 4%; }
       .features-grid { grid-template-columns: 1fr; }
       .phases-timeline { grid-template-columns: 1fr; }
-      .db-kpi-row { grid-template-columns: 1fr 1fr; }
       .db-bar-row { grid-template-columns: 1fr; }
       .contact-card { padding: 40px 24px; }
       .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .projects-grid { grid-template-columns: 1fr; }
+      .exp-timeline { padding-left: 24px; }
     }
     @media (max-width: 480px) {
-      .db-kpi-row { grid-template-columns: 1fr; }
-      .metrics-grid { grid-template-columns: 1fr; }
-      .hero-stats { gap: 24px; }
+      .db-kpi-row { grid-template-columns: 1fr 1fr; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .pbi-stats-row { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
 <body>
 
-<!-- ═══════════════════ NAVBAR ═══════════════════ -->
+<!-- NAVBAR -->
 <nav id="navbar">
   <a href="#hero" class="nav-logo">
     <div class="nav-logo-icon"><i class="fas fa-chart-line"></i></div>
-    EPC<span>Control</span>
+    Yusran<span>09</span>
   </a>
   <ul class="nav-links" id="navLinks">
     <li><a href="#about">About</a></li>
-    <li><a href="#features">Features</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#features">PMIS</a></li>
     <li><a href="#dashboard">Dashboard</a></li>
-    <li><a href="#powerbi">Power BI</a></li>
-    <li><a href="#phases">EPC Phases</a></li>
+    <li><a href="#projects">Projects</a></li>
     <li><a href="#stack">Tech Stack</a></li>
     <li><a href="#contact" class="nav-cta">Contact</a></li>
   </ul>
@@ -581,246 +416,376 @@
   </div>
 </nav>
 
-<!-- ═══════════════════ HERO ═══════════════════ -->
+<!-- HERO -->
 <section id="hero">
   <div class="hero-grid"></div>
-  <div class="hero-content">
-    <div class="hero-badge"><i class="fas fa-bolt"></i> Power BI · PMIS · EPC Project</div>
-    <h1 class="hero-title">
-      Project Control<br>
-      <span class="highlight">Dashboard</span> for<br>
-      <span class="blue">EPC Projects</span>
-    </h1>
-    <p class="hero-subtitle">
-      Solusi terintegrasi Project Management Information System berbasis Power BI
-      untuk monitoring, controlling, dan pelaporan proyek EPC secara real-time —
-      dari Engineering hingga Commissioning.
-    </p>
-    <div class="hero-buttons">
-      <a href="#dashboard" class="btn-primary"><i class="fas fa-play"></i> Lihat Dashboard</a>
-      <a href="#features" class="btn-secondary"><i class="fas fa-th-large"></i> Explore Features</a>
+  <div class="hero-particles" id="particles"></div>
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="hero-badge"><i class="fas fa-bolt"></i> Project Control · PMIS · Power BI</div>
+      <div class="hero-name">Hi, I'm <span class="highlight">Yusran</span></div>
+      <div class="hero-title-line">Project Control Engineer & PMIS Developer</div>
+      <p class="hero-desc">
+        Spesialis dalam membangun <strong>Project Management Information System (PMIS)</strong>
+        berbasis Power BI untuk proyek-proyek EPC berskala besar.
+        Mengintegrasikan data Engineering, Procurement, dan Construction ke dalam
+        satu dashboard yang actionable dan real-time.
+      </p>
+      <div class="hero-buttons">
+        <a href="#dashboard" class="btn-primary"><i class="fas fa-play"></i> Lihat Dashboard</a>
+        <a href="#projects" class="btn-secondary"><i class="fas fa-th-large"></i> Lihat Proyek</a>
+      </div>
+      <div class="hero-social">
+        <a href="https://github.com/Yusran09" class="social-btn" target="_blank" rel="noopener"><i class="fab fa-github"></i></a>
+        <a href="#contact" class="social-btn"><i class="fab fa-linkedin"></i></a>
+        <a href="mailto:udcang@gmail.com" class="social-btn"><i class="fas fa-envelope"></i></a>
+      </div>
     </div>
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="hero-stat-number" data-count="50">0</div>
-        <div class="hero-stat-label">KPI Metrics</div>
+    <div class="hero-card">
+      <div>
+        <div class="profile-avatar"><i class="fas fa-user-tie"></i></div>
+        <div class="profile-name">Yusran</div>
+        <div class="profile-sub">Project Control Engineer</div>
       </div>
-      <div class="hero-stat">
-        <div class="hero-stat-number" data-count="4">0</div>
-        <div class="hero-stat-label">EPC Phases</div>
+      <div class="profile-divider"></div>
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="profile-stat-num" data-count="5">0</div>
+          <div class="profile-stat-lbl">Tahun Pengalaman</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-num" data-count="10">0</div>
+          <div class="profile-stat-lbl">Proyek EPC</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-num" data-count="50">0</div>
+          <div class="profile-stat-lbl">KPI Metrics</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-num" data-count="12">0</div>
+          <div class="profile-stat-lbl">Dashboard Pages</div>
+        </div>
       </div>
-      <div class="hero-stat">
-        <div class="hero-stat-number" data-count="12">0</div>
-        <div class="hero-stat-label">Dashboard Pages</div>
+      <div class="profile-tags">
+        <span class="profile-tag">Power BI</span>
+        <span class="profile-tag">EPC Projects</span>
+        <span class="profile-tag">PMIS</span>
+        <span class="profile-tag">Primavera P6</span>
+        <span class="profile-tag">EVM</span>
+        <span class="profile-tag">SQL Server</span>
+        <span class="profile-tag">DAX</span>
+        <span class="profile-tag">Python</span>
       </div>
-      <div class="hero-stat">
-        <div class="hero-stat-number" data-count="360">0</div>
-        <div class="hero-stat-label">° Project View</div>
+      <div class="profile-status">
+        <div class="status-dot"></div>
+        <span>Tersedia untuk proyek baru</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════ ABOUT ═══════════════════ -->
+<!-- ABOUT -->
 <section id="about">
   <div class="about-grid">
-    <div class="about-text">
-      <span class="section-tag">About the Project</span>
-      <h2 class="section-title">PMIS untuk Proyek EPC — Kendalikan Setiap Fase</h2>
-      <p class="section-desc" style="margin-bottom:20px;">
-        Project Management Information System (PMIS) ini dirancang khusus untuk
-        proyek <strong style="color:var(--white)">Engineering, Procurement & Construction (EPC)</strong>
-        yang membutuhkan visibilitas menyeluruh terhadap progres, biaya, sumber daya,
-        dan risiko dalam satu platform terpadu.
+    <div class="about-img-wrap">
+      <div class="about-card-main fade-up">
+        <div class="profile-avatar"><i class="fas fa-user-tie"></i></div>
+        <div class="about-card-name">Yusran</div>
+        <div class="about-card-role"><i class="fas fa-map-marker-alt" style="margin-right:6px"></i>Indonesia · Project Control Engineer</div>
+        <div class="about-mini-stats">
+          <div class="about-mini-stat">
+            <div class="about-mini-num">5+</div>
+            <div class="about-mini-lbl">Tahun</div>
+          </div>
+          <div class="about-mini-stat">
+            <div class="about-mini-num">10</div>
+            <div class="about-mini-lbl">Proyek EPC</div>
+          </div>
+          <div class="about-mini-stat">
+            <div class="about-mini-num">100%</div>
+            <div class="about-mini-lbl">EPC Coverage</div>
+          </div>
+        </div>
+        <div class="cert-badges">
+          <div class="cert-badge"><i class="fas fa-certificate"></i> Microsoft Power BI Data Analyst</div>
+          <div class="cert-badge"><i class="fas fa-award"></i> PMI — Project Management Professional</div>
+          <div class="cert-badge"><i class="fas fa-star"></i> Primavera P6 Certified Specialist</div>
+        </div>
+      </div>
+    </div>
+    <div class="about-text fade-up">
+      <span class="section-tag">Tentang Saya</span>
+      <h2 class="section-title">Membangun PMIS yang Mengubah Data Menjadi Keputusan</h2>
+      <p class="section-desc" style="margin-bottom:16px">
+        Saya adalah <span class="highlight-word">Project Control Engineer</span> dengan keahlian khusus
+        dalam membangun <span class="amber">Project Management Information System (PMIS)</span>
+        untuk proyek-proyek EPC berskala besar di sektor migas, petrokimia, dan infrastruktur.
+      </p>
+      <p class="section-desc" style="margin-bottom:16px">
+        Keahlian utama saya adalah mengintegrasikan data dari berbagai sumber —
+        <span class="highlight-word">Primavera P6</span>, SQL Server, Excel, dan SharePoint —
+        kemudian mentransformasinya menjadi <span class="amber">dashboard Power BI yang interaktif dan actionable</span>
+        untuk tim project control, management, hingga stakeholder eksekutif.
       </p>
       <p class="section-desc">
-        Menggunakan <strong style="color:var(--amber)">Microsoft Power BI</strong> sebagai
-        engine visualisasi data, dashboard ini menghubungkan data dari lapangan
-        langsung ke ruang rapat — memungkinkan pengambilan keputusan berbasis data
-        secara cepat dan akurat.
+        Saya percaya bahwa data yang tepat, disajikan dengan cara yang benar,
+        dapat mengubah cara tim mengambil keputusan — dari reaktif menjadi
+        <span class="highlight-word">proaktif dan berbasis data</span>.
       </p>
     </div>
-    <div class="about-visual">
-      <div class="epc-pipeline">
-        <div class="epc-phase">
-          <div class="epc-icon"><i class="fas fa-drafting-compass"></i></div>
+  </div>
+</section>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="section-header">
+    <span class="section-tag">Work Experience</span>
+    <h2 class="section-title">Pengalaman Kerja</h2>
+    <p class="section-desc">Rekam jejak dalam dunia project control dan PMIS development untuk proyek EPC.</p>
+  </div>
+  <div class="exp-timeline">
+    <div class="exp-item fade-up">
+      <div class="exp-dot"></div>
+      <div class="exp-card">
+        <div class="exp-header">
           <div>
-            <div class="epc-phase-label">E — Engineering</div>
-            <div class="epc-phase-desc">Desain teknis, dokumen gambar, spesifikasi material, vendor list</div>
+            <div class="exp-role">Senior Project Control Engineer</div>
+            <div class="exp-company">PT. EPC Nusantara — Oil & Gas Division</div>
           </div>
+          <div class="exp-period">2022 — Sekarang</div>
         </div>
-        <div class="epc-connector"></div>
-        <div class="epc-phase">
-          <div class="epc-icon"><i class="fas fa-boxes"></i></div>
-          <div>
-            <div class="epc-phase-label">P — Procurement</div>
-            <div class="epc-phase-desc">Purchase order, pengiriman material, inspeksi, expediting</div>
-          </div>
+        <div class="exp-desc">
+          Memimpin pengembangan dan implementasi PMIS berbasis Power BI untuk proyek refinery upgrade senilai $200M.
+          Mengelola integrasi data dari Primavera P6, SQL Server, dan 6 sumber data lainnya.
+          Menghasilkan penghematan 40% waktu pelaporan mingguan dan meningkatkan akurasi data hingga 95%.
         </div>
-        <div class="epc-connector"></div>
-        <div class="epc-phase">
-          <div class="epc-icon"><i class="fas fa-hard-hat"></i></div>
-          <div>
-            <div class="epc-phase-label">C — Construction</div>
-            <div class="epc-phase-desc">Pelaksanaan lapangan, manpower, progres fisik, quality</div>
-          </div>
+        <div class="exp-tags">
+          <span class="exp-tag">Power BI</span>
+          <span class="exp-tag">Primavera P6</span>
+          <span class="exp-tag">EVM</span>
+          <span class="exp-tag">SQL Server</span>
+          <span class="exp-tag">DAX</span>
+          <span class="exp-tag">Python ETL</span>
         </div>
-        <div class="epc-connector"></div>
-        <div class="epc-phase">
-          <div class="epc-icon"><i class="fas fa-cogs"></i></div>
+      </div>
+    </div>
+    <div class="exp-item fade-up">
+      <div class="exp-dot"></div>
+      <div class="exp-card">
+        <div class="exp-header">
           <div>
-            <div class="epc-phase-label">Commissioning</div>
-            <div class="epc-phase-desc">Pre-commissioning, startup, handover, punch list</div>
+            <div class="exp-role">Project Control Engineer</div>
+            <div class="exp-company">PT. Rekayasa Industri — Petrochemical Projects</div>
           </div>
+          <div class="exp-period">2020 — 2022</div>
+        </div>
+        <div class="exp-desc">
+          Bertanggung jawab atas monitoring progres, cost control, dan pelaporan untuk 3 proyek EPC
+          senilai total $80M. Membangun S-curve tracking system dan EVM dashboard otomatis
+          menggunakan Excel dan Power Query.
+        </div>
+        <div class="exp-tags">
+          <span class="exp-tag">Cost Control</span>
+          <span class="exp-tag">S-Curve</span>
+          <span class="exp-tag">Power Query</span>
+          <span class="exp-tag">Excel</span>
+          <span class="exp-tag">Risk Register</span>
+        </div>
+      </div>
+    </div>
+    <div class="exp-item fade-up">
+      <div class="exp-dot"></div>
+      <div class="exp-card">
+        <div class="exp-header">
+          <div>
+            <div class="exp-role">Planning & Scheduling Engineer</div>
+            <div class="exp-company">PT. Hutama Karya — Infrastructure Division</div>
+          </div>
+          <div class="exp-period">2018 — 2020</div>
+        </div>
+        <div class="exp-desc">
+          Mengembangkan dan memelihara jadwal proyek konstruksi infrastruktur menggunakan
+          Primavera P6. Menyusun baseline schedule, resource loading, dan weekly progress report
+          untuk proyek jalan tol senilai Rp 1,2 Triliun.
+        </div>
+        <div class="exp-tags">
+          <span class="exp-tag">Primavera P6</span>
+          <span class="exp-tag">Baseline Schedule</span>
+          <span class="exp-tag">Resource Loading</span>
+          <span class="exp-tag">WBS</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════ FEATURES ═══════════════════ -->
+<!-- SKILLS -->
+<section id="skills">
+  <div class="section-header center">
+    <span class="section-tag">Expertise</span>
+    <h2 class="section-title">Keahlian & Teknologi</h2>
+    <p class="section-desc">Kumpulan skill teknis yang dibangun dari pengalaman nyata di lapangan proyek EPC.</p>
+  </div>
+  <div class="skills-layout">
+    <div>
+      <div class="skill-group">
+        <div class="skill-group-title"><i class="fas fa-chart-bar"></i> Data Visualization & BI</div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">Microsoft Power BI</span><span class="skill-pct">95%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:95%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">DAX & Power Query</span><span class="skill-pct">90%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:90%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">Microsoft Excel (Advanced)</span><span class="skill-pct">95%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:95%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">SQL Server / T-SQL</span><span class="skill-pct">80%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:80%"></div></div>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-title"><i class="fas fa-hard-hat"></i> Project Control</div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">Earned Value Management (EVM)</span><span class="skill-pct">95%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:95%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">Primavera P6 (Schedule)</span><span class="skill-pct">90%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:90%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">Cost Control & Budgeting</span><span class="skill-pct">88%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:88%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">Risk Management</span><span class="skill-pct">80%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:80%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="skill-group">
+        <div class="skill-group-title"><i class="fas fa-code"></i> Programming & Data</div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">Python (Pandas, ETL)</span><span class="skill-pct">75%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:75%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">VBA / Macro Excel</span><span class="skill-pct">82%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:82%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">SharePoint Administration</span><span class="skill-pct">70%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:70%"></div></div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-meta"><span class="skill-name">HTML / CSS (Portfolio)</span><span class="skill-pct">65%</span></div>
+          <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:65%"></div></div>
+        </div>
+      </div>
+      <div class="skill-group">
+        <div class="skill-group-title"><i class="fas fa-tools"></i> Tools & Platform</div>
+        <div class="tools-cloud">
+          <div class="tool-chip"><i class="fas fa-chart-bar" style="color:#f2c811"></i> Power BI Desktop</div>
+          <div class="tool-chip"><i class="fas fa-cloud" style="color:#0078d4"></i> Power BI Service</div>
+          <div class="tool-chip"><i class="fas fa-database" style="color:#cc2927"></i> SQL Server</div>
+          <div class="tool-chip"><i class="fas fa-sitemap" style="color:#ff6c37"></i> Primavera P6</div>
+          <div class="tool-chip"><i class="fab fa-python" style="color:#3776ab"></i> Python</div>
+          <div class="tool-chip"><i class="fab fa-microsoft" style="color:#0078d4"></i> SharePoint</div>
+          <div class="tool-chip"><i class="fas fa-file-excel" style="color:#1d6f42"></i> Excel</div>
+          <div class="tool-chip"><i class="fab fa-git-alt" style="color:#f05032"></i> Git</div>
+          <div class="tool-chip"><i class="fab fa-github" style="color:#fff"></i> GitHub</div>
+          <div class="tool-chip"><i class="fas fa-project-diagram" style="color:#9b59b6"></i> MS Project</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES / PMIS MODULES -->
 <section id="features">
   <div class="section-header center">
-    <span class="section-tag">Dashboard Features</span>
-    <h2 class="section-title">Fitur Unggulan Project Control</h2>
+    <span class="section-tag">PMIS Features</span>
+    <h2 class="section-title">Modul Project Control Dashboard</h2>
     <p class="section-desc">
       Delapan modul utama yang mencakup seluruh aspek pengendalian proyek EPC
-      secara komprehensif dan terintegrasi.
+      secara komprehensif dan terintegrasi dalam satu platform Power BI.
     </p>
   </div>
   <div class="features-grid">
     <div class="feature-card fade-up">
       <div class="feature-icon"><i class="fas fa-chart-area"></i></div>
       <div class="feature-title">S-Curve Progress Tracking</div>
-      <div class="feature-desc">
-        Visualisasi kurva-S planned vs actual vs earned untuk monitoring progres
-        kumulatif proyek secara keseluruhan maupun per disiplin kerja.
-      </div>
-      <div class="feature-tags">
-        <span class="feature-tag">Planned vs Actual</span>
-        <span class="feature-tag">Weekly Update</span>
-        <span class="feature-tag">Drill-down</span>
-      </div>
+      <div class="feature-desc">Visualisasi kurva-S planned vs actual vs earned untuk monitoring progres kumulatif proyek secara keseluruhan maupun per disiplin kerja.</div>
+      <div class="feature-tags"><span class="feature-tag">Planned vs Actual</span><span class="feature-tag">Weekly Update</span><span class="feature-tag">Drill-down</span></div>
     </div>
     <div class="feature-card fade-up">
       <div class="feature-icon"><i class="fas fa-dollar-sign"></i></div>
       <div class="feature-title">Earned Value Management</div>
-      <div class="feature-desc">
-        Analisis EVM lengkap meliputi PV, EV, AC, BAC beserta indeks CPI, SPI,
-        CV, SV, EAC, ETC untuk peramalan biaya dan jadwal proyek.
-      </div>
-      <div class="feature-tags">
-        <span class="feature-tag">CPI / SPI</span>
-        <span class="feature-tag">EAC Forecast</span>
-        <span class="feature-tag">Variance</span>
-      </div>
+      <div class="feature-desc">Analisis EVM lengkap: PV, EV, AC, BAC beserta indeks CPI, SPI, CV, SV, EAC, ETC untuk peramalan biaya dan jadwal proyek.</div>
+      <div class="feature-tags"><span class="feature-tag">CPI / SPI</span><span class="feature-tag">EAC Forecast</span><span class="feature-tag">Variance</span></div>
     </div>
     <div class="feature-card fade-up">
       <div class="feature-icon"><i class="fas fa-users"></i></div>
       <div class="feature-title">Resource & Manpower</div>
-      <div class="feature-desc">
-        Monitoring jumlah manpower harian, produktivitas tenaga kerja per
-        disiplin, kehadiran, overtime, dan peak manpower planning.
-      </div>
-      <div class="feature-tags">
-        <span class="feature-tag">Daily Headcount</span>
-        <span class="feature-tag">Productivity</span>
-        <span class="feature-tag">Peak Plan</span>
-      </div>
+      <div class="feature-desc">Monitoring jumlah manpower harian, produktivitas tenaga kerja per disiplin, kehadiran, overtime, dan peak manpower planning.</div>
+      <div class="feature-tags"><span class="feature-tag">Daily Headcount</span><span class="feature-tag">Productivity</span><span class="feature-tag">Peak Plan</span></div>
     </div>
     <div class="feature-card fade-up">
       <div class="feature-icon"><i class="fas fa-wallet"></i></div>
       <div class="feature-title">Cost Control & Budget</div>
-      <div class="feature-desc">
-        Monitoring biaya per work package vs budget, variance analysis, cash
-        flow projection, dan alert untuk anggaran yang mendekati batas.
-      </div>
-      <div class="feature-tags">
-        <span class="feature-tag">Budget Variance</span>
-        <span class="feature-tag">Cash Flow</span>
-        <span class="feature-tag">Cost Alert</span>
-      </div>
+      <div class="feature-desc">Monitoring biaya per work package vs budget, variance analysis, cash flow projection, dan alert untuk anggaran yang mendekati batas.</div>
+      <div class="feature-tags"><span class="feature-tag">Budget Variance</span><span class="feature-tag">Cash Flow</span><span class="feature-tag">Cost Alert</span></div>
     </div>
     <div class="feature-card fade-up">
       <div class="feature-icon"><i class="fas fa-calendar-check"></i></div>
       <div class="feature-title">Schedule Adherence</div>
-      <div class="feature-desc">
-        Tracking jadwal milestone, identifikasi activity yang terlambat, analisis
-        float/slack, critical path monitoring, dan look-ahead schedule.
-      </div>
-      <div class="feature-tags">
-        <span class="feature-tag">Milestone</span>
-        <span class="feature-tag">Critical Path</span>
-        <span class="feature-tag">Look-Ahead</span>
-      </div>
+      <div class="feature-desc">Tracking jadwal milestone, identifikasi activity yang terlambat, analisis float/slack, critical path monitoring, dan look-ahead schedule.</div>
+      <div class="feature-tags"><span class="feature-tag">Milestone</span><span class="feature-tag">Critical Path</span><span class="feature-tag">Look-Ahead</span></div>
     </div>
     <div class="feature-card fade-up">
       <div class="feature-icon"><i class="fas fa-exclamation-triangle"></i></div>
       <div class="feature-title">Risk Register & Issues</div>
-      <div class="feature-desc">
-        Manajemen risiko dengan risk matrix, impact-probability scoring, issue
-        log, dan action plan tracker untuk mitigasi risiko proyek.
-      </div>
-      <div class="feature-tags">
-        <span class="feature-tag">Risk Matrix</span>
-        <span class="feature-tag">Issue Log</span>
-        <span class="feature-tag">Action Plan</span>
-      </div>
+      <div class="feature-desc">Manajemen risiko dengan risk matrix, impact-probability scoring, issue log, dan action plan tracker untuk mitigasi risiko proyek.</div>
+      <div class="feature-tags"><span class="feature-tag">Risk Matrix</span><span class="feature-tag">Issue Log</span><span class="feature-tag">Action Plan</span></div>
     </div>
     <div class="feature-card fade-up">
       <div class="feature-icon"><i class="fas fa-file-alt"></i></div>
       <div class="feature-title">Document Control</div>
-      <div class="feature-desc">
-        Tracking status dokumen engineering: IFA, IFR, IFB, AFC — monitoring
-        submission, review cycle, revision, dan approval dari klien.
-      </div>
-      <div class="feature-tags">
-        <span class="feature-tag">IFA / AFC</span>
-        <span class="feature-tag">Submission</span>
-        <span class="feature-tag">Approval</span>
-      </div>
+      <div class="feature-desc">Tracking status dokumen engineering: IFA, IFR, IFB, AFC — monitoring submission, review cycle, revision, dan approval dari klien.</div>
+      <div class="feature-tags"><span class="feature-tag">IFA / AFC</span><span class="feature-tag">Submission</span><span class="feature-tag">Approval</span></div>
     </div>
     <div class="feature-card fade-up">
       <div class="feature-icon"><i class="fas fa-ship"></i></div>
       <div class="feature-title">Procurement Status</div>
-      <div class="feature-desc">
-        Monitoring proses pengadaan dari requisition, bid evaluation, PO, hingga
-        delivery — termasuk expediting, inspection, dan material receiving.
-      </div>
-      <div class="feature-tags">
-        <span class="feature-tag">PO Tracking</span>
-        <span class="feature-tag">Delivery</span>
-        <span class="feature-tag">Expediting</span>
-      </div>
+      <div class="feature-desc">Monitoring proses pengadaan dari requisition, bid evaluation, PO, hingga delivery — termasuk expediting, inspection, dan material receiving.</div>
+      <div class="feature-tags"><span class="feature-tag">PO Tracking</span><span class="feature-tag">Delivery</span><span class="feature-tag">Expediting</span></div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════ DASHBOARD MOCKUP ═══════════════════ -->
+<!-- DASHBOARD MOCKUP -->
 <section id="dashboard">
   <div class="section-header">
     <span class="section-tag">Live Preview</span>
-    <h2 class="section-title">Dashboard Preview</h2>
-    <p class="section-desc">
-      Tampilan aktual Power BI Project Control Dashboard untuk proyek EPC
-      dengan data real-time dan filter interaktif.
-    </p>
+    <h2 class="section-title">Dashboard Preview — Power BI</h2>
+    <p class="section-desc">Tampilan aktual Project Control Dashboard untuk proyek EPC dengan data real-time dan filter interaktif.</p>
   </div>
   <div class="dashboard-frame">
     <div class="dashboard-topbar">
-      <div class="db-dots">
-        <div class="db-dot"></div><div class="db-dot"></div><div class="db-dot"></div>
-      </div>
+      <div class="db-dots"><div class="db-dot"></div><div class="db-dot"></div><div class="db-dot"></div></div>
       <div class="db-title"><i class="fas fa-chart-bar" style="color:var(--amber);margin-right:6px"></i>Project Control Dashboard — Power BI</div>
-      <div class="db-date">Updated: 12 Jun 2026 · 08:00 WIB</div>
+      <div class="db-date">Updated: Jun 2026 · 08:00 WIB</div>
     </div>
     <div class="dashboard-body">
-      <!-- Header row -->
       <div class="db-header-row">
         <div class="db-project-title">PROJECT: REFINERY UPGRADE EPC — PHASE 2</div>
         <div class="db-status-badge"><i class="fas fa-circle" style="font-size:6px;margin-right:4px"></i>ON TRACK</div>
       </div>
-      <!-- Filters -->
       <div class="db-filter-row">
         <div class="db-filter active">All Disciplines</div>
         <div class="db-filter">Civil</div>
@@ -830,7 +795,6 @@
         <div class="db-filter">Piping</div>
         <div class="db-filter active" style="margin-left:auto">Week 23</div>
       </div>
-      <!-- KPI Cards -->
       <div class="db-kpi-row">
         <div class="db-kpi-card">
           <div class="db-kpi-label">Overall Progress</div>
@@ -853,9 +817,7 @@
           <div class="db-kpi-delta down"><i class="fas fa-arrow-down"></i> -3% vs Peak Plan</div>
         </div>
       </div>
-      <!-- Charts -->
       <div class="db-charts-row">
-        <!-- S-Curve -->
         <div class="db-chart-panel">
           <div class="db-panel-title"><i class="fas fa-chart-area" style="color:var(--amber);margin-right:6px"></i>S-Curve — Cumulative Progress (%)</div>
           <svg class="scurve-container" viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg">
@@ -869,37 +831,24 @@
                 <stop offset="100%" stop-color="#f39c12" stop-opacity="0"/>
               </linearGradient>
             </defs>
-            <!-- Grid lines -->
             <line x1="0" y1="96" x2="500" y2="96" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
             <line x1="0" y1="72" x2="500" y2="72" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
             <line x1="0" y1="48" x2="500" y2="48" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
             <line x1="0" y1="24" x2="500" y2="24" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-            <!-- Planned S-Curve fill -->
-            <path d="M0,108 C20,108 40,104 80,98 C120,92 150,82 200,68 C250,54 290,36 340,24 C380,15 420,12 500,10 L500,116 L0,116 Z"
-                  fill="url(#planGrad)"/>
-            <!-- Planned S-Curve line -->
-            <path d="M0,108 C20,108 40,104 80,98 C120,92 150,82 200,68 C250,54 290,36 340,24 C380,15 420,12 500,10"
-                  fill="none" stroke="#3498db" stroke-width="2" stroke-dasharray="5,3"/>
-            <!-- Actual fill (up to current point) -->
-            <path d="M0,108 C20,108 40,104 80,99 C120,93 150,83 200,70 C250,57 280,43 336,32 L336,116 L0,116 Z"
-                  fill="url(#actualGrad)"/>
-            <!-- Actual line -->
-            <path d="M0,108 C20,108 40,104 80,99 C120,93 150,83 200,70 C250,57 280,43 336,32"
-                  fill="none" stroke="#f39c12" stroke-width="2.5"/>
-            <!-- Current point dot -->
+            <path d="M0,108 C20,108 40,104 80,98 C120,92 150,82 200,68 C250,54 290,36 340,24 C380,15 420,12 500,10 L500,116 L0,116 Z" fill="url(#planGrad)"/>
+            <path d="M0,108 C20,108 40,104 80,98 C120,92 150,82 200,68 C250,54 290,36 340,24 C380,15 420,12 500,10" fill="none" stroke="#3498db" stroke-width="2" stroke-dasharray="5,3"/>
+            <path d="M0,108 C20,108 40,104 80,99 C120,93 150,83 200,70 C250,57 280,43 336,32 L336,116 L0,116 Z" fill="url(#actualGrad)"/>
+            <path d="M0,108 C20,108 40,104 80,99 C120,93 150,83 200,70 C250,57 280,43 336,32" fill="none" stroke="#f39c12" stroke-width="2.5"/>
             <circle cx="336" cy="32" r="5" fill="#f39c12"/>
-            <!-- Labels -->
             <text x="8" y="112" fill="rgba(255,255,255,0.3)" font-size="9">0%</text>
             <text x="8" y="18" fill="rgba(255,255,255,0.3)" font-size="9">100%</text>
             <text x="270" y="112" fill="rgba(255,255,255,0.3)" font-size="9">W23</text>
-            <!-- Legend -->
             <line x1="340" y1="14" x2="360" y2="14" stroke="#3498db" stroke-width="2" stroke-dasharray="4,2"/>
             <text x="364" y="18" fill="#8ba3c0" font-size="9">Plan</text>
             <line x1="395" y1="14" x2="415" y2="14" stroke="#f39c12" stroke-width="2"/>
             <text x="419" y="18" fill="#8ba3c0" font-size="9">Actual</text>
           </svg>
         </div>
-        <!-- Donut progress -->
         <div class="db-chart-panel">
           <div class="db-panel-title"><i class="fas fa-circle-notch" style="color:var(--amber);margin-right:6px"></i>Discipline Progress</div>
           <div class="donut-wrap">
@@ -914,7 +863,6 @@
           </div>
         </div>
       </div>
-      <!-- Bar charts row -->
       <div class="db-bar-row">
         <div class="db-bar-panel">
           <div class="db-panel-title"><i class="fas fa-chart-bar" style="color:var(--blue-300);margin-right:6px"></i>Weekly Progress (%)</div>
@@ -950,46 +898,31 @@
           </div>
         </div>
       </div>
-      <!-- Activity Table -->
-      <div style="margin-top:16px">
+      <div style="margin-top:12px">
         <div class="db-chart-panel">
           <div class="db-panel-title"><i class="fas fa-list" style="color:var(--amber);margin-right:6px"></i>Critical Milestone Status</div>
           <table class="db-table">
             <thead>
-              <tr>
-                <th>Milestone</th>
-                <th>Planned</th>
-                <th>Forecast</th>
-                <th>Progress</th>
-                <th>Status</th>
-              </tr>
+              <tr><th>Milestone</th><th>Planned</th><th>Forecast</th><th>Progress</th><th>Status</th></tr>
             </thead>
             <tbody>
               <tr>
-                <td>60% Engineering Complete</td>
-                <td>W20</td>
-                <td>W20</td>
+                <td>60% Engineering Complete</td><td>W20</td><td>W20</td>
                 <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:100%;background:var(--green)"></div></div></td>
                 <td><span class="status-pill on-track">Completed</span></td>
               </tr>
               <tr>
-                <td>First Equipment Delivery</td>
-                <td>W22</td>
-                <td>W23</td>
+                <td>First Equipment Delivery</td><td>W22</td><td>W23</td>
                 <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:90%;background:var(--amber)"></div></div></td>
                 <td><span class="status-pill at-risk">At Risk</span></td>
               </tr>
               <tr>
-                <td>Civil Foundation Complete</td>
-                <td>W25</td>
-                <td>W25</td>
+                <td>Civil Foundation Complete</td><td>W25</td><td>W25</td>
                 <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:72%;background:var(--blue-300)"></div></div></td>
                 <td><span class="status-pill on-track">On Track</span></td>
               </tr>
               <tr>
-                <td>Steel Structure Erection</td>
-                <td>W28</td>
-                <td>W30</td>
+                <td>Steel Structure Erection</td><td>W28</td><td>W30</td>
                 <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:35%;background:var(--red)"></div></div></td>
                 <td><span class="status-pill delayed">Delayed</span></td>
               </tr>
@@ -1001,45 +934,106 @@
   </div>
 </section>
 
-<!-- ═══════════════════ POWER BI ═══════════════════ -->
+<!-- PROJECTS -->
+<section id="projects">
+  <div class="section-header center">
+    <span class="section-tag">Portfolio</span>
+    <h2 class="section-title">Proyek Unggulan</h2>
+    <p class="section-desc">Koleksi proyek PMIS dan project control yang telah dibangun dan diimplementasikan.</p>
+  </div>
+  <div class="projects-grid">
+    <div class="project-card fade-up">
+      <div class="project-thumb pmis">
+        <div class="project-thumb-icon"><i class="fas fa-chart-network" style="color:#3498db;font-size:3.5rem"></i></div>
+        <div class="project-badge featured">⭐ Featured</div>
+      </div>
+      <div class="project-body">
+        <div class="project-title">EPC Refinery Upgrade — PMIS Dashboard</div>
+        <div class="project-desc">Dashboard Power BI lengkap untuk proyek refinery upgrade $200M mencakup S-Curve, EVM, Manpower, Cost Control, Risk, dan Procurement dalam 12 halaman dashboard terintegrasi.</div>
+        <div class="project-stack">
+          <span class="project-tech">Power BI</span><span class="project-tech">DAX</span><span class="project-tech">SQL Server</span><span class="project-tech">Primavera P6</span><span class="project-tech">Python</span>
+        </div>
+        <div class="project-links">
+          <a href="#dashboard" class="project-link demo"><i class="fas fa-eye"></i> Preview</a>
+          <a href="https://github.com/Yusran09" class="project-link code" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+        </div>
+      </div>
+    </div>
+    <div class="project-card fade-up">
+      <div class="project-thumb evm">
+        <div class="project-thumb-icon"><i class="fas fa-chart-line" style="color:#e74c3c;font-size:3.5rem"></i></div>
+        <div class="project-badge new">New</div>
+      </div>
+      <div class="project-body">
+        <div class="project-title">EVM Automated Calculator</div>
+        <div class="project-desc">Tool Python + Excel otomatis untuk kalkulasi Earned Value Management — menghitung CPI, SPI, EAC, ETC, dan variance report dari data Primavera P6 export secara batch.</div>
+        <div class="project-stack">
+          <span class="project-tech">Python</span><span class="project-tech">Pandas</span><span class="project-tech">Excel</span><span class="project-tech">Primavera P6</span>
+        </div>
+        <div class="project-links">
+          <a href="https://github.com/Yusran09" class="project-link demo"><i class="fas fa-external-link-alt"></i> Detail</a>
+          <a href="https://github.com/Yusran09" class="project-link code" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+        </div>
+      </div>
+    </div>
+    <div class="project-card fade-up">
+      <div class="project-thumb procurement">
+        <div class="project-thumb-icon"><i class="fas fa-boxes" style="color:#27ae60;font-size:3.5rem"></i></div>
+      </div>
+      <div class="project-body">
+        <div class="project-title">Procurement Tracker Dashboard</div>
+        <div class="project-desc">Dashboard Power BI khusus untuk monitoring status pengadaan material EPC — dari requisition hingga delivery. Terintegrasi dengan SAP MM dan vendor management system.</div>
+        <div class="project-stack">
+          <span class="project-tech">Power BI</span><span class="project-tech">Power Query</span><span class="project-tech">Excel</span><span class="project-tech">SharePoint</span>
+        </div>
+        <div class="project-links">
+          <a href="https://github.com/Yusran09" class="project-link demo"><i class="fas fa-external-link-alt"></i> Detail</a>
+          <a href="https://github.com/Yusran09" class="project-link code" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+        </div>
+      </div>
+    </div>
+    <div class="project-card fade-up">
+      <div class="project-thumb schedule">
+        <div class="project-thumb-icon"><i class="fas fa-calendar-alt" style="color:#f39c12;font-size:3.5rem"></i></div>
+      </div>
+      <div class="project-body">
+        <div class="project-title">Schedule Variance Auto-Report</div>
+        <div class="project-desc">Script Python untuk generate weekly schedule variance report otomatis dari Primavera P6 XER file — output ke Excel dan Power BI, dengan alert email otomatis untuk milestone terlambat.</div>
+        <div class="project-stack">
+          <span class="project-tech">Python</span><span class="project-tech">Primavera P6</span><span class="project-tech">Power BI</span><span class="project-tech">Email Automation</span>
+        </div>
+        <div class="project-links">
+          <a href="https://github.com/Yusran09" class="project-link demo"><i class="fas fa-external-link-alt"></i> Detail</a>
+          <a href="https://github.com/Yusran09" class="project-link code" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- POWERBI -->
 <section id="powerbi">
   <div class="powerbi-grid">
     <div>
       <span class="section-tag">Power BI Integration</span>
       <h2 class="section-title">Kenapa Power BI untuk Project Control?</h2>
-      <p class="section-desc" style="margin-bottom:36px">
-        Power BI menjadi tulang punggung visualisasi data PMIS ini —
-        memberikan kemampuan analitik enterprise-grade dengan kemudahan
-        penggunaan yang intuitif bagi project team.
-      </p>
+      <p class="section-desc" style="margin-bottom:32px">Power BI menjadi tulang punggung visualisasi PMIS ini — memberikan kemampuan analitik enterprise-grade dengan kemudahan penggunaan yang intuitif bagi seluruh project team.</p>
       <div class="powerbi-features">
         <div class="pbi-item">
           <div class="pbi-icon"><i class="fas fa-sync-alt"></i></div>
-          <div>
-            <div class="pbi-label">Real-time Data Refresh</div>
-            <div class="pbi-desc">Refresh otomatis setiap 15 menit dari sumber data SQL Server, Excel, dan SharePoint. Tim lapangan dan kantor selalu melihat data terkini.</div>
-          </div>
+          <div><div class="pbi-label">Real-time Data Refresh</div><div class="pbi-desc">Refresh otomatis setiap 15 menit dari SQL Server, Excel, dan SharePoint. Tim lapangan dan kantor selalu melihat data terkini.</div></div>
         </div>
         <div class="pbi-item">
           <div class="pbi-icon"><i class="fas fa-filter"></i></div>
-          <div>
-            <div class="pbi-label">Interactive Slicers & Filters</div>
-            <div class="pbi-desc">Filter data secara dinamis berdasarkan fase, disiplin, WBS, vendor, atau periode waktu tanpa perlu generate report baru.</div>
-          </div>
+          <div><div class="pbi-label">Interactive Slicers & Filters</div><div class="pbi-desc">Filter data secara dinamis berdasarkan fase, disiplin, WBS, vendor, atau periode waktu tanpa generate report baru.</div></div>
         </div>
         <div class="pbi-item">
           <div class="pbi-icon"><i class="fas fa-search-plus"></i></div>
-          <div>
-            <div class="pbi-label">Drill-down & Cross-filter</div>
-            <div class="pbi-desc">Klik visual untuk menelusuri data dari level project → discipline → work package → activity dalam satu klik.</div>
-          </div>
+          <div><div class="pbi-label">Drill-down & Cross-filter</div><div class="pbi-desc">Klik visual untuk menelusuri data dari level project → discipline → work package → activity dalam satu klik.</div></div>
         </div>
         <div class="pbi-item">
           <div class="pbi-icon"><i class="fas fa-mobile-alt"></i></div>
-          <div>
-            <div class="pbi-label">Mobile & Web Access</div>
-            <div class="pbi-desc">Dashboard dapat diakses melalui browser, Power BI Desktop, atau aplikasi mobile untuk monitoring kapan saja dan di mana saja.</div>
-          </div>
+          <div><div class="pbi-label">Mobile & Web Access</div><div class="pbi-desc">Dashboard dapat diakses melalui browser, Power BI Desktop, atau aplikasi mobile untuk monitoring kapan saja.</div></div>
         </div>
       </div>
     </div>
@@ -1049,101 +1043,34 @@
         Microsoft Power BI
       </div>
       <div class="pbi-stats-row">
-        <div class="pbi-stat-box">
-          <div class="pbi-stat-num">12</div>
-          <div class="pbi-stat-lbl">Dashboard Pages</div>
-        </div>
-        <div class="pbi-stat-box">
-          <div class="pbi-stat-num">50+</div>
-          <div class="pbi-stat-lbl">DAX Measures</div>
-        </div>
-        <div class="pbi-stat-box">
-          <div class="pbi-stat-num">8</div>
-          <div class="pbi-stat-lbl">Data Sources</div>
-        </div>
-        <div class="pbi-stat-box">
-          <div class="pbi-stat-num">15m</div>
-          <div class="pbi-stat-lbl">Refresh Interval</div>
-        </div>
+        <div class="pbi-stat-box"><div class="pbi-stat-num">12</div><div class="pbi-stat-lbl">Dashboard Pages</div></div>
+        <div class="pbi-stat-box"><div class="pbi-stat-num">50+</div><div class="pbi-stat-lbl">DAX Measures</div></div>
+        <div class="pbi-stat-box"><div class="pbi-stat-num">8</div><div class="pbi-stat-lbl">Data Sources</div></div>
+        <div class="pbi-stat-box"><div class="pbi-stat-num">15m</div><div class="pbi-stat-lbl">Refresh Interval</div></div>
       </div>
       <div class="pbi-refresh-indicator">
         <div class="refresh-dot"></div>
-        <span>Data terakhir diperbarui: <strong>12 Jun 2026 · 08:00</strong></span>
+        <span>Data refresh: <strong>Live · Connected</strong></span>
       </div>
       <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px">
-        <div style="font-size:0.72rem;color:var(--gray-400);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Connected Data Sources</div>
+        <div style="font-size:0.7rem;color:var(--gray-400);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Connected Data Sources</div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem">
-            <i class="fas fa-database" style="color:var(--blue-300);width:16px"></i>
-            SQL Server — Project Control DB
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem">
-            <i class="fas fa-file-excel" style="color:var(--green);width:16px"></i>
-            Excel — Weekly Report Master
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem">
-            <i class="fab fa-microsoft" style="color:var(--amber);width:16px"></i>
-            SharePoint — Document Library
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem">
-            <i class="fas fa-project-diagram" style="color:#9b59b6;width:16px"></i>
-            Primavera P6 — Schedule Data
-          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem"><i class="fas fa-database" style="color:var(--blue-300);width:16px"></i>SQL Server — Project Control DB</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem"><i class="fas fa-file-excel" style="color:var(--green);width:16px"></i>Excel — Weekly Report Master</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem"><i class="fab fa-microsoft" style="color:var(--amber);width:16px"></i>SharePoint — Document Library</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem"><i class="fas fa-project-diagram" style="color:#9b59b6;width:16px"></i>Primavera P6 — Schedule Data</div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════ METRICS ═══════════════════ -->
-<section id="metrics">
-  <div class="section-header center">
-    <span class="section-tag">By the Numbers</span>
-    <h2 class="section-title">Cakupan PMIS Project Control</h2>
-  </div>
-  <div class="metrics-grid">
-    <div class="metric-card">
-      <div class="metric-icon"><i class="fas fa-tachometer-alt"></i></div>
-      <div class="metric-number" data-target="50"><span class="counter">0</span>+</div>
-      <div class="metric-label">KPI Metrics Tracked</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-icon"><i class="fas fa-layer-group"></i></div>
-      <div class="metric-number" data-target="4"><span class="counter">0</span></div>
-      <div class="metric-label">EPC Phases Covered</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-icon"><i class="fas fa-file-chart-line"></i></div>
-      <div class="metric-number" data-target="12"><span class="counter">0</span></div>
-      <div class="metric-label">Dashboard Pages</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-icon"><i class="fas fa-database"></i></div>
-      <div class="metric-number" data-target="8"><span class="counter">0</span></div>
-      <div class="metric-label">Data Sources Integrated</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-icon"><i class="fas fa-clock"></i></div>
-      <div class="metric-number" data-target="15"><span class="counter">0</span><span>m</span></div>
-      <div class="metric-label">Auto Refresh Interval</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-icon"><i class="fas fa-code"></i></div>
-      <div class="metric-number" data-target="100"><span class="counter">0</span>%</div>
-      <div class="metric-label">EPC Phase Coverage</div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════ EPC PHASES ═══════════════════ -->
+<!-- EPC PHASES -->
 <section id="phases">
   <div class="section-header center">
     <span class="section-tag">EPC Project Lifecycle</span>
     <h2 class="section-title">Kontrol Penuh di Setiap Fase EPC</h2>
-    <p class="section-desc">
-      Dashboard menyediakan monitoring khusus untuk setiap fase proyek EPC,
-      dengan KPI yang disesuaikan kebutuhan setiap disiplin dan stakeholder.
-    </p>
+    <p class="section-desc">Dashboard menyediakan monitoring khusus untuk setiap fase proyek EPC, dengan KPI yang disesuaikan kebutuhan setiap disiplin dan stakeholder.</p>
   </div>
   <div class="phases-timeline">
     <div class="phase-item">
@@ -1183,7 +1110,7 @@
       </ul>
     </div>
     <div class="phase-item">
-      <div class="phase-dot"><i class="fas fa-cogs" style="font-size:0.9rem"></i></div>
+      <div class="phase-dot"><i class="fas fa-cogs" style="font-size:0.85rem"></i></div>
       <div class="phase-name">Commissioning</div>
       <ul class="phase-kpis">
         <li>Pre-comm Progress</li>
@@ -1197,173 +1124,173 @@
   </div>
 </section>
 
-<!-- ═══════════════════ TECH STACK ═══════════════════ -->
+<!-- METRICS -->
+<section id="metrics">
+  <div class="section-header center">
+    <span class="section-tag">By the Numbers</span>
+    <h2 class="section-title">Cakupan PMIS Project Control</h2>
+  </div>
+  <div class="metrics-grid">
+    <div class="metric-card fade-up">
+      <div class="metric-icon"><i class="fas fa-tachometer-alt"></i></div>
+      <div class="metric-number" data-target="50"><span class="counter">0</span>+</div>
+      <div class="metric-label">KPI Metrics Tracked</div>
+    </div>
+    <div class="metric-card fade-up">
+      <div class="metric-icon"><i class="fas fa-layer-group"></i></div>
+      <div class="metric-number" data-target="4"><span class="counter">0</span></div>
+      <div class="metric-label">EPC Phases Covered</div>
+    </div>
+    <div class="metric-card fade-up">
+      <div class="metric-icon"><i class="fas fa-file-chart-line"></i></div>
+      <div class="metric-number" data-target="12"><span class="counter">0</span></div>
+      <div class="metric-label">Dashboard Pages</div>
+    </div>
+    <div class="metric-card fade-up">
+      <div class="metric-icon"><i class="fas fa-database"></i></div>
+      <div class="metric-number" data-target="8"><span class="counter">0</span></div>
+      <div class="metric-label">Data Sources Integrated</div>
+    </div>
+    <div class="metric-card fade-up">
+      <div class="metric-icon"><i class="fas fa-briefcase"></i></div>
+      <div class="metric-number" data-target="10"><span class="counter">0</span>+</div>
+      <div class="metric-label">Proyek EPC</div>
+    </div>
+    <div class="metric-card fade-up">
+      <div class="metric-icon"><i class="fas fa-clock"></i></div>
+      <div class="metric-number" data-target="5"><span class="counter">0</span></div>
+      <div class="metric-label">Tahun Pengalaman</div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
 <section id="stack">
   <div class="section-header center">
     <span class="section-tag">Technology Stack</span>
     <h2 class="section-title">Tools & Teknologi</h2>
-    <p class="section-desc">
-      Kombinasi platform terbaik untuk membangun PMIS yang handal, scalable, dan mudah digunakan.
-    </p>
+    <p class="section-desc">Kombinasi platform terbaik untuk membangun PMIS yang handal, scalable, dan mudah digunakan.</p>
   </div>
   <div class="stack-grid">
-    <div class="stack-item">
-      <div class="stack-icon" style="color:#f2c811"><i class="fas fa-chart-bar"></i></div>
-      <div>
-        <div class="stack-label">Microsoft Power BI</div>
-        <div class="stack-desc">Visualisasi & Reporting</div>
-      </div>
-    </div>
-    <div class="stack-item">
-      <div class="stack-icon" style="color:#cc2927"><i class="fas fa-database"></i></div>
-      <div>
-        <div class="stack-label">SQL Server</div>
-        <div class="stack-desc">Database & ETL</div>
-      </div>
-    </div>
-    <div class="stack-item">
-      <div class="stack-icon" style="color:#1d6f42"><i class="fas fa-file-excel"></i></div>
-      <div>
-        <div class="stack-label">Microsoft Excel</div>
-        <div class="stack-desc">Data Entry & Template</div>
-      </div>
-    </div>
-    <div class="stack-item">
-      <div class="stack-icon" style="color:#0078d4"><i class="fab fa-microsoft"></i></div>
-      <div>
-        <div class="stack-label">SharePoint</div>
-        <div class="stack-desc">Document Management</div>
-      </div>
-    </div>
-    <div class="stack-item">
-      <div class="stack-icon" style="color:#3776ab"><i class="fab fa-python"></i></div>
-      <div>
-        <div class="stack-label">Python</div>
-        <div class="stack-desc">Data Processing & ETL</div>
-      </div>
-    </div>
-    <div class="stack-item">
-      <div class="stack-icon" style="color:var(--amber)"><i class="fas fa-function"></i></div>
-      <div>
-        <div class="stack-label">DAX / Power Query</div>
-        <div class="stack-desc">Calculations & Transform</div>
-      </div>
-    </div>
-    <div class="stack-item">
-      <div class="stack-icon" style="color:#ff6c37"><i class="fas fa-sitemap"></i></div>
-      <div>
-        <div class="stack-label">Primavera P6</div>
-        <div class="stack-desc">Schedule Management</div>
-      </div>
-    </div>
-    <div class="stack-item">
-      <div class="stack-icon" style="color:#00b4d8"><i class="fas fa-cloud"></i></div>
-      <div>
-        <div class="stack-label">Power BI Service</div>
-        <div class="stack-desc">Cloud Publish & Share</div>
-      </div>
-    </div>
+    <div class="stack-item fade-up"><div class="stack-icon" style="color:#f2c811"><i class="fas fa-chart-bar"></i></div><div><div class="stack-label">Power BI</div><div class="stack-desc">Visualisasi & Reporting</div></div></div>
+    <div class="stack-item fade-up"><div class="stack-icon" style="color:#cc2927"><i class="fas fa-database"></i></div><div><div class="stack-label">SQL Server</div><div class="stack-desc">Database & ETL</div></div></div>
+    <div class="stack-item fade-up"><div class="stack-icon" style="color:#1d6f42"><i class="fas fa-file-excel"></i></div><div><div class="stack-label">Microsoft Excel</div><div class="stack-desc">Data Entry & Template</div></div></div>
+    <div class="stack-item fade-up"><div class="stack-icon" style="color:#0078d4"><i class="fab fa-microsoft"></i></div><div><div class="stack-label">SharePoint</div><div class="stack-desc">Document Management</div></div></div>
+    <div class="stack-item fade-up"><div class="stack-icon" style="color:#3776ab"><i class="fab fa-python"></i></div><div><div class="stack-label">Python</div><div class="stack-desc">Data Processing & ETL</div></div></div>
+    <div class="stack-item fade-up"><div class="stack-icon" style="color:var(--amber)"><i class="fas fa-calculator"></i></div><div><div class="stack-label">DAX / Power Query</div><div class="stack-desc">Calculations & Transform</div></div></div>
+    <div class="stack-item fade-up"><div class="stack-icon" style="color:#ff6c37"><i class="fas fa-sitemap"></i></div><div><div class="stack-label">Primavera P6</div><div class="stack-desc">Schedule Management</div></div></div>
+    <div class="stack-item fade-up"><div class="stack-icon" style="color:#00b4d8"><i class="fas fa-cloud"></i></div><div><div class="stack-label">Power BI Service</div><div class="stack-desc">Cloud Publish & Share</div></div></div>
   </div>
 </section>
 
-<!-- ═══════════════════ CONTACT ═══════════════════ -->
+<!-- CONTACT -->
 <section id="contact">
-  <div class="contact-card">
-    <div class="contact-avatar"><i class="fas fa-user"></i></div>
-    <div class="contact-name">Project Control Engineer</div>
-    <div class="contact-role">PMIS Developer · Power BI Specialist · EPC Projects</div>
+  <div class="contact-card fade-up">
+    <div class="contact-avatar"><i class="fas fa-user-tie"></i></div>
+    <div class="contact-name">Yusran</div>
+    <div class="contact-role">Project Control Engineer · PMIS Developer · Power BI Specialist</div>
     <div class="contact-bio">
       Spesialis dalam pembangunan sistem informasi manajemen proyek (PMIS) untuk
-      proyek-proyek EPC berskala besar. Berpengalaman mengintegrasikan data
-      dari berbagai sumber menjadi dashboard Power BI yang actionable untuk
-      tim project control, management, dan stakeholder.
+      proyek-proyek EPC berskala besar. Berpengalaman mengintegrasikan data dari berbagai
+      sumber menjadi dashboard Power BI yang actionable untuk tim project control,
+      management, dan stakeholder eksekutif. Siap untuk kolaborasi dan proyek baru.
     </div>
     <div class="contact-links">
-      <a href="#" class="contact-link github"><i class="fab fa-github"></i> GitHub</a>
+      <a href="https://github.com/Yusran09" class="contact-link github" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
       <a href="#" class="contact-link linkedin"><i class="fab fa-linkedin"></i> LinkedIn</a>
-      <a href="mailto:udcang@gmail.com" class="contact-link email"><i class="fas fa-envelope"></i> Email</a>
+      <a href="mailto:udcang@gmail.com" class="contact-link email"><i class="fas fa-envelope"></i> udcang@gmail.com</a>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<!-- FOOTER -->
 <footer>
-  <span>© 2026 <span class="footer-brand">EPC Project Control Dashboard</span> — PMIS with Power BI</span>
-  <span style="color:var(--gray-400)">Built for EPC Excellence</span>
+  <span>© 2026 <span class="footer-brand">Yusran</span> — PMIS & Project Control Portfolio</span>
+  <span>Built with <i class="fas fa-heart" style="color:var(--red);margin:0 4px"></i> for EPC Excellence</span>
 </footer>
 
 <script>
-  // ── Mobile nav toggle
+  // Mobile nav
   function toggleNav() {
     document.getElementById('navLinks').classList.toggle('open');
   }
-
-  // ── Smooth nav link close on click
   document.querySelectorAll('.nav-links a').forEach(link => {
-    link.addEventListener('click', () => {
-      document.getElementById('navLinks').classList.remove('open');
-    });
+    link.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open'));
   });
 
-  // ── Intersection Observer for fade-up
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) entry.target.classList.add('visible');
-    });
-  }, { threshold: 0.1 });
-  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+  // Navbar scroll effect
+  window.addEventListener('scroll', () => {
+    const nav = document.getElementById('navbar');
+    nav.style.background = window.scrollY > 50 ? 'rgba(5,13,26,0.98)' : 'rgba(5,13,26,0.92)';
+  });
 
-  // ── Counter animation
-  function animateCounter(el, target, suffix = '') {
-    let current = 0;
-    const duration = 2000;
-    const step = target / (duration / 16);
-    const timer = setInterval(() => {
-      current += step;
-      if (current >= target) {
-        current = target;
-        clearInterval(timer);
+  // Intersection Observer — fade-up
+  const fadeObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => fadeObserver.observe(el));
+
+  // Skill bars animate on scroll
+  const skillObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll('.skill-bar-fill').forEach(bar => bar.classList.add('animate'));
+        skillObserver.unobserve(e.target);
       }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('#skills').forEach(el => skillObserver.observe(el));
+
+  // Counter animation
+  function animateCounter(el, target) {
+    let current = 0;
+    const step = target / (1800 / 16);
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
       el.textContent = Math.floor(current);
+      if (current >= target) clearInterval(timer);
     }, 16);
   }
 
-  // Hero stat counters
-  const heroCounters = document.querySelectorAll('[data-count]');
-  const heroObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const el = entry.target;
-        animateCounter(el, parseInt(el.dataset.count));
-        heroObserver.unobserve(el);
+  // Hero profile stats
+  const profileCounters = document.querySelectorAll('[data-count]');
+  const heroObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        animateCounter(e.target, parseInt(e.target.dataset.count));
+        heroObs.unobserve(e.target);
       }
     });
   }, { threshold: 0.5 });
-  heroCounters.forEach(el => heroObserver.observe(el));
+  profileCounters.forEach(el => heroObs.observe(el));
 
-  // Metrics section counters
-  const metricCounters = document.querySelectorAll('.counter');
-  const metricObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const el = entry.target;
-        const target = parseInt(el.closest('[data-target]').dataset.target);
-        animateCounter(el, target);
-        metricObserver.unobserve(el);
+  // Metrics counters
+  const metricObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const el = e.target.querySelector('.counter');
+        const target = parseInt(e.target.dataset.target);
+        if (el && target) animateCounter(el, target);
+        metricObs.unobserve(e.target);
       }
     });
   }, { threshold: 0.5 });
-  metricCounters.forEach(el => metricObserver.observe(el));
+  document.querySelectorAll('[data-target]').forEach(el => metricObs.observe(el));
 
-  // ── Navbar scroll effect
-  window.addEventListener('scroll', () => {
-    const nav = document.getElementById('navbar');
-    if (window.scrollY > 50) {
-      nav.style.background = 'rgba(5,13,26,0.98)';
-    } else {
-      nav.style.background = 'rgba(5,13,26,0.92)';
-    }
-  });
+  // Floating particles
+  const particlesEl = document.getElementById('particles');
+  for (let i = 0; i < 12; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 4 + 2;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random() * 100}%;
+      animation-duration:${Math.random() * 15 + 10}s;
+      animation-delay:${Math.random() * 10}s;
+    `;
+    particlesEl.appendChild(p);
+  }
 </script>
 </body>
 </html>
