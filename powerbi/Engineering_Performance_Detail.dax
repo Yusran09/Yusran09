@@ -3,6 +3,7 @@ Engineering Performance Detail HTML =
    ENGINEERING PERFORMANCE DETAIL  ·  HTML Content visual (3 flip cards)
    ---------------------------------------------------------------------
    Frame      : root 500 px · panel 484 px · card 400 px   (unchanged)
+   Period     : subtitle shows [PMIS Cut-Off Date] (same source as header / S-curve)
    Style      : monochrome report style · RAG colour only as status accent
    Front      : KPI + RAG status + secondary KPIs + data-driven insight
                 visual (no hard-coded profile bars) + auto narrative
@@ -20,6 +21,10 @@ VAR _ReviewOver14 = COALESCE ( [ENG Review Age > 14 Days], 0 )
 VAR _OpenTQ       = COALESCE ( [ENG TQ Open], 0 )
 VAR _OpenComments = COALESCE ( [ENG Comments Open], 0 )
 VAR _TQClosure    = COALESCE ( [ENG TQ Closure %], 0 )          -- fraction 0–1
+
+-- Reporting period (shared with page header and S-curve)
+VAR _CutOff       = [PMIS Cut-Off Date]
+VAR _sCut         = FORMAT ( _CutOff, "dd mmm yyyy" )
 
 -- 2. THRESHOLDS (RAG rules — adjust to project procedure) ----------------
 VAR _OverdueWatch = 14      -- days : amber zone starts
@@ -145,7 +150,7 @@ RETURN
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:transparent}
 body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
-.eng-root{width:100%;height:500px;min-height:500px;padding:8px;background:#FFFFFF;overflow:hidden}
+.eng-root{width:100%;height:500px;min-height:500px;padding:8px;background:transparent;overflow:hidden}
 .eng-panel{width:100%;height:484px;padding:16px 20px 14px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:16px;box-shadow:0 5px 18px rgba(28,58,94,.05);overflow:hidden}
 
 /* ---------- panel header ---------- */
@@ -165,6 +170,8 @@ body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;c
 .tg:checked+.inner{transform:rotateY(180deg)}
 .card{position:absolute;inset:0;padding:16px 18px 14px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.045);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .front{display:flex;flex-direction:column;padding-bottom:50px}
+.card.front{transition:border-color .18s ease,box-shadow .18s ease}
+.card.front:hover{border-color:#D5DDE7;box-shadow:0 8px 22px rgba(28,58,94,.08)}
 .back{transform:rotateY(180deg);background:linear-gradient(180deg," & _cSoft & " 0%,#FFFFFF 40%)}
 
 /* ---------- info / back button ---------- */
@@ -247,7 +254,7 @@ body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;c
   <div>
    <div class='ph-eb'>Engineering Performance</div>
    <div class='ph-tt'>Engineering Performance Detail</div>
-   <div class='ph-sb'>Deliverable, review and technical exposure across the current reporting period</div>
+   <div class='ph-sb'>Deliverable, review and technical exposure · cut-off " & _sCut & "</div>
   </div>
   <div class='ph-lg'>
    <span><i style='background:" & _cGood & "'></i>On target</span>
@@ -268,7 +275,7 @@ body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;c
     <div class='hd'>
      <div class='ic'>" & _IcoDel & "</div>
      <div style='min-width:0'>
-      <div class='eb'>Performance Detail</div>
+      <div class='eb'>Deliverables</div>
       <div class='tt'>Late Deliverable Performance</div>
       <div class='ds'>Current delivery position and follow-up exposure</div>
      </div>
@@ -348,7 +355,7 @@ body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;c
     <div class='hd'>
      <div class='ic'>" & _IcoRev & "</div>
      <div style='min-width:0'>
-      <div class='eb'>Performance Detail</div>
+      <div class='eb'>Document Review</div>
       <div class='tt'>Review Ageing Performance</div>
       <div class='ds'>Document review workload and ageing exposure</div>
      </div>
@@ -430,7 +437,7 @@ body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;c
     <div class='hd'>
      <div class='ic'>" & _IcoTQ & "</div>
      <div style='min-width:0'>
-      <div class='eb'>Performance Detail</div>
+      <div class='eb'>Technical Queries</div>
       <div class='tt'>Technical Query Performance</div>
       <div class='ds'>Open engineering issues and closure position</div>
      </div>
