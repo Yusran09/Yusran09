@@ -22,6 +22,22 @@ VAR _Subtitle  =
         "Cumulative physical progress · % of selected scope",
         "Cumulative physical progress · weighted to overall project" )
 
+-- PALETTE (matches PMIS dashboard) ---------------------------------------
+VAR _cInk      = "#1C3A5E"   -- titles, values
+VAR _cNavy     = "#243761"   -- badge / brand navy
+VAR _cText     = "#6B7785"   -- subtitle, year labels
+VAR _cMuted    = "#8A9099"   -- secondary text
+VAR _cAxis     = "#9AA3AD"   -- axis labels
+VAR _cGrid     = "#EDF0F4"   -- gridlines
+VAR _cSep      = "#E1E6EC"   -- year separators
+VAR _cActLine  = "#EB666B"   -- Earned / Actual cumulative
+VAR _cPlanLine = "#22A9D8"   -- Planned cumulative
+VAR _cActBar   = "#56698F"   -- Earned / Actual periodic
+VAR _cPlanBar  = "#8AC1BD"   -- Planned periodic
+VAR _cGood     = "#0F9B80"   -- on / ahead of plan
+VAR _cWarn     = "#E39016"   -- slightly behind
+VAR _cBad      = "#D65365"   -- behind plan
+
 -- 2. DATA ---------------------------------------------------------------
 -- Every date is evaluated with Area / Discipline / WP filters kept, date filter replaced
 VAR _Visible =
@@ -70,59 +86,59 @@ VAR _Html =
 <link href='https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap' rel='stylesheet'>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{overflow:hidden;height:100vh;width:100%;background:transparent!important;font-family:'Jost',system-ui,sans-serif;color:#3D2F28}
+html,body{overflow:hidden;height:100vh;width:100%;background:transparent!important;font-family:'Jost',system-ui,sans-serif;color:" & _cInk & "}
 .tc{width:100%;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .hdr{padding:16px 20px 4px;flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.badge{display:inline-flex;align-items:center;gap:5px;background:rgba(201,106,58,0.1);padding:3px 10px;border-radius:999px;margin-bottom:4px}
-.badge span{font-size:9px;font-weight:500;letter-spacing:2px;color:#C96A3A}
-.ttl{font-size:16px;font-weight:500;color:#3D2F28}
-.sub{font-size:11px;font-weight:300;color:#6B5D52;margin-top:1px}
+.badge{display:inline-flex;align-items:center;gap:5px;background:" & _cNavy & "14;padding:3px 10px;border-radius:999px;margin-bottom:4px}
+.badge span{font-size:9px;font-weight:500;letter-spacing:2px;color:" & _cNavy & "}
+.ttl{font-size:16px;font-weight:600;color:" & _cInk & "}
+.sub{font-size:11px;font-weight:300;color:" & _cText & ";margin-top:1px}
 .kpi{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
 .pill{display:flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px}
 .pill span{font-size:12px;font-weight:600}
-.k-l{font-size:11px;font-weight:300;color:#737378}
-.k-v{font-size:11px;font-weight:500;color:#6B5D52}
-.k-r{font-size:10px;font-weight:300;color:#737378}
+.k-l{font-size:11px;font-weight:300;color:" & _cMuted & "}
+.k-v{font-size:11px;font-weight:600;color:" & _cInk & "}
+.k-r{font-size:10px;font-weight:300;color:" & _cMuted & "}
 .rgt{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
-.dd{font-size:8px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:#737378}
+.dd{font-size:8px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:" & _cMuted & "}
 .chip{display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px}
 .chip b{font-size:11px;font-weight:600}
 .chip i{font-style:normal;font-size:8px;font-weight:600;letter-spacing:1.2px}
-.mth{font-size:9px;font-weight:300;color:#737378}
-.mth b{font-weight:500;color:#6B5D52}
+.mth{font-size:9px;font-weight:300;color:" & _cMuted & "}
+.mth b{font-weight:600;color:" & _cInk & "}
 .lg{display:flex;align-items:center;gap:9px;margin-top:4px}
-.lg span{display:inline-flex;align-items:center;gap:4px;font-size:7.5px;font-weight:500;color:#3D2F28;letter-spacing:0.4px}
+.lg span{display:inline-flex;align-items:center;gap:4px;font-size:7.5px;font-weight:500;color:" & _cInk & ";letter-spacing:0.4px}
 .lg em{display:inline-block}
 .chart{flex:1;position:relative;min-height:0}
 .chart svg{width:100%;height:100%;display:block}
-.yr{font-size:8.5px;fill:#737378;text-anchor:middle}
-.yy{font-size:11px;font-weight:500;fill:#6B5D52;text-anchor:middle}
-.ax{font-size:8.5px;fill:#9A9A9E}
-.grid{stroke:#EDE9E3;stroke-width:0.6}
+.yr{font-size:8.5px;fill:" & _cMuted & ";text-anchor:middle}
+.yy{font-size:11px;font-weight:600;fill:" & _cText & ";text-anchor:middle}
+.ax{font-size:8.5px;fill:" & _cAxis & "}
+.grid{stroke:" & _cGrid & ";stroke-width:0.6}
 .halo{paint-order:stroke;stroke:rgba(255,255,255,.9);stroke-width:3px;stroke-linejoin:round}
 .fade{opacity:0;animation:fadeIn .4s ease .8s forwards}
 .pulse{animation:pulse 2s ease-in-out 1.2s infinite}
 @keyframes fadeIn{to{opacity:1}}
 @keyframes pulse{0%,100%{opacity:.3;r:7}50%{opacity:.65;r:10}}
-#tip{position:absolute;pointer-events:none;opacity:0;transition:opacity .15s ease;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-radius:10px;padding:8px 11px;box-shadow:0 2px 12px rgba(61,47,40,.10);border:1px solid rgba(107,93,82,.10);min-width:160px;z-index:5}
-#tip .h{font-size:11px;font-weight:600;color:#3D2F28}
-#tip .pd{font-size:8px;font-weight:300;color:#9A9A9E;margin:1px 0 5px}
-#tip .r{display:flex;align-items:center;gap:6px;font-size:9.5px;color:#737378;margin-top:2px}
-#tip .r b{margin-left:auto;font-weight:600;color:#3D2F28}
+#tip{position:absolute;pointer-events:none;opacity:0;transition:opacity .15s ease;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-radius:10px;padding:8px 11px;box-shadow:0 2px 12px rgba(28,58,94,.12);border:1px solid rgba(28,58,94,.10);min-width:160px;z-index:5}
+#tip .h{font-size:11px;font-weight:600;color:" & _cInk & "}
+#tip .pd{font-size:8px;font-weight:300;color:" & _cAxis & ";margin:1px 0 5px}
+#tip .r{display:flex;align-items:center;gap:6px;font-size:9.5px;color:" & _cMuted & ";margin-top:2px}
+#tip .r b{margin-left:auto;font-weight:600;color:" & _cInk & "}
 #tip .sw{display:inline-block;width:10px;height:2px;border-radius:1px}
-#tip .sa{background:#6B5D52;height:3px}
-#tip .sp{background:#C96A3A}
-#tip .ba{background:rgba(107,93,82,.55);width:6px;height:8px}
-#tip .bp{background:rgba(201,106,58,.28);width:6px;height:8px}
-#tip .hr{height:1px;background:#EDE9E3;margin:5px 0}
+#tip .sa{background:" & _cActLine & ";height:3px}
+#tip .sp{background:" & _cPlanLine & "}
+#tip .ba{background:" & _cActBar & ";width:6px;height:8px}
+#tip .bp{background:" & _cPlanBar & ";width:6px;height:8px}
+#tip .hr{height:1px;background:" & _cGrid & ";margin:5px 0}
 #tip .fc{font-size:7.5px;font-weight:600;letter-spacing:1px;padding:2px 5px;border-radius:3px;margin-top:5px;display:inline-block}
-#tip .g{color:#4A7A3B}#tip .a{color:#C9913A}#tip .n{color:#A8524B}
-.empty{padding:24px;font-size:12px;color:#737378}
+#tip .g{color:" & _cGood & "}#tip .a{color:" & _cWarn & "}#tip .n{color:" & _cBad & "}
+.empty{padding:24px;font-size:12px;color:" & _cMuted & "}
 </style></head><body>
 <div class='tc'>
  <div class='hdr'>
   <div>
-   <div class='badge'><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='#C96A3A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 20 C9 20 9 4 21 4'/></svg><span>" & _Badge & "</span></div>
+   <div class='badge'><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='" & _cNavy & "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 20 C9 20 9 4 21 4'/></svg><span>" & _Badge & "</span></div>
    <div class='ttl'>" & _Title & "</div>
    <div class='sub'>" & _Subtitle & "</div>
    <div class='kpi'>
@@ -137,10 +153,10 @@ html,body{overflow:hidden;height:100vh;width:100%;background:transparent!importa
    <div class='chip' id='hChip'><b id='hSpi'>SPI —</b><i id='hSt'></i></div>
    <div class='mth' id='hMth'></div>
    <div class='lg'>
-    <span><em style='width:14px;height:2.5px;border-radius:2px;background:#6B5D52'></em>Actual cum.</span>
-    <span><em style='width:14px;height:0;border-top:2px dashed #C96A3A'></em>Plan cum.</span>
-    <span><em style='width:5px;height:8px;border-radius:1px;background:rgba(107,93,82,.55)'></em>Actual period</span>
-    <span><em style='width:5px;height:8px;border-radius:1px;background:rgba(201,106,58,.28)'></em>Plan period</span>
+    <span><em style='width:14px;height:2.5px;border-radius:2px;background:" & _cActLine & "'></em>Actual cum.</span>
+    <span><em style='width:14px;height:0;border-top:2px dashed " & _cPlanLine & "'></em>Plan cum.</span>
+    <span><em style='width:5px;height:8px;border-radius:1px;background:" & _cActBar & "'></em>Actual period</span>
+    <span><em style='width:5px;height:8px;border-radius:1px;background:" & _cPlanBar & "'></em>Plan period</span>
    </div>
   </div>
  </div>
@@ -149,7 +165,7 @@ html,body{overflow:hidden;height:100vh;width:100%;background:transparent!importa
 <script>
 (function(){
 var rd=[" & _D & "],rpp=[" & _PP & "],rap=[" & _AP & "],op=[" & _O & "],wt=" & _Wt & ";
-var C={ink:'#3D2F28',sub:'#6B5D52',mut:'#737378',pri:'#C96A3A',good:'#4A7A3B',warn:'#C9913A',bad:'#A8524B'};
+var C={ink:'" & _cInk & "',sub:'" & _cText & "',mut:'" & _cMuted & "',act:'" & _cActLine & "',plan:'" & _cPlanLine & "',abar:'" & _cActBar & "',pbar:'" & _cPlanBar & "',sep:'" & _cSep & "',good:'" & _cGood & "',warn:'" & _cWarn & "',bad:'" & _cBad & "'};
 var MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var el=document.getElementById('chart'),tip=document.getElementById('tip'),n=rd.length,i;
 if(n<2){el.innerHTML='<div class=empty>Not enough S-Curve data for the selected scope.</div>';return}
@@ -224,7 +240,7 @@ function draw(){
  function yB(v){return base-(Math.max(0,v)/bMax)*bH}
  var svg=E('svg',{viewBox:'0 0 '+W+' '+H,preserveAspectRatio:'none'});
  var defs=E('defs',{},svg);
- var gr=E('linearGradient',{id:'ag',x1:0,y1:0,x2:0,y2:1},defs);E('stop',{offset:'0%','stop-color':C.sub,'stop-opacity':0.13},gr);E('stop',{offset:'100%','stop-color':C.sub,'stop-opacity':0.01},gr);
+ var gr=E('linearGradient',{id:'ag',x1:0,y1:0,x2:0,y2:1},defs);E('stop',{offset:'0%','stop-color':C.act,'stop-opacity':0.14},gr);E('stop',{offset:'100%','stop-color':C.act,'stop-opacity':0.01},gr);
  var cp=E('clipPath',{id:'cp'},defs);var cr=E('rect',{x:0,y:0,width:first?0:W,height:H},cp);
  if(first){E('animate',{attributeName:'width',from:0,to:W,dur:'1.1s',fill:'freeze',calcMode:'spline',keySplines:'0.4 0 0.2 1',keyTimes:'0;1'},cr)}
 
@@ -243,7 +259,7 @@ function draw(){
  /* x-axis : period labels (thinned by space) + year bands */
  var lx=-1e9,lm=-1;
  for(i=0;i<n;i++){var mk=yr(t[i])*12+D(t[i]).getUTCMonth();if(xs[i]-lx>=28&&mk!==lm){T(mon(t[i]).toUpperCase(),{x:xs[i],y:base+15,'class':'yr'},svg);lx=xs[i];lm=mk}}
- for(var y=yr(t0)+1;y<=yr(tEnd);y++){var xj=X(Date.UTC(y,0,1));if(xj>pad.l&&xj<W-pad.r)E('line',{x1:xj,x2:xj,y1:pad.t,y2:base+36,stroke:'#E2DDD6','stroke-width':0.7},svg)}
+ for(var y=yr(t0)+1;y<=yr(tEnd);y++){var xj=X(Date.UTC(y,0,1));if(xj>pad.l&&xj<W-pad.r)E('line',{x1:xj,x2:xj,y1:pad.t,y2:base+36,stroke:C.sep,'stroke-width':0.7},svg)}
  var ys=0,lyx=-1e9;for(i=1;i<=n;i++){if(i===n||yr(t[i])!==yr(t[ys])){var xm=(xs[ys]+xs[i-1])/2;if(xm-lyx>=26){T(yy(t[ys]),{x:xm,y:base+34,'class':'yy'},svg);lyx=xm}ys=i}}
 
  /* periodic bars : width follows the period spacing */
@@ -251,8 +267,8 @@ function draw(){
  var sg=gp.slice().sort(function(a,b){return a-b}),mg=sg[Math.floor(n/2)];
  var bg=E('g',{'clip-path':'url(#cp)'},svg);
  for(i=0;i<n;i++){var gw=Math.max(4,Math.min(40,Math.min(gp[i],mg*1.2)*0.62)),bw=gw/2-0.5,rx=Math.min(2,bw/3);
-  if(pp[i]>0){var yp=yB(pp[i]);E('rect',{x:xs[i]-bw-0.5,y:yp,width:bw,height:base-yp,rx:rx,fill:C.pri,'fill-opacity':0.28},bg)}
-  if(ap[i]!==null&&ap[i]>0){var ya=yB(ap[i]);E('rect',{x:xs[i]+0.5,y:ya,width:bw,height:base-ya,rx:rx,fill:C.sub,'fill-opacity':0.55},bg)}}
+  if(pp[i]>0){var yp=yB(pp[i]);E('rect',{x:xs[i]-bw-0.5,y:yp,width:bw,height:base-yp,rx:rx,fill:C.pbar,'fill-opacity':0.85},bg)}
+  if(ap[i]!==null&&ap[i]>0){var ya=yB(ap[i]);E('rect',{x:xs[i]+0.5,y:ya,width:bw,height:base-ya,rx:rx,fill:C.abar,'fill-opacity':0.9},bg)}}
 
  /* peak period / max slip markers (reference style) */
  function mark(idx,col,txt){var mx=xs[idx];E('line',{x1:mx,x2:mx,y1:base,y2:yC(nz(ac[idx]))+10,stroke:col,'stroke-width':1,'stroke-opacity':0.3,'stroke-dasharray':'3,2'},svg);
@@ -265,22 +281,22 @@ function draw(){
  for(i=0;i<n;i++){pP.push({x:xs[i],y:yC(pc[i])})}for(i=0;i<=dd;i++){aP.push({x:xs[i],y:yC(ac[i])})}
  var lg=E('g',{'clip-path':'url(#cp)'},svg);
  if(aP.length>1){var ad=mono(aP);E('path',{d:ad+'L'+aP[aP.length-1].x+','+base+'L'+aP[0].x+','+base+'Z',fill:'url(#ag)'},lg)}
- E('path',{d:mono(pP),fill:'none',stroke:C.pri,'stroke-width':1.8,'stroke-dasharray':'5,4','stroke-linecap':'round'},lg);
- if(aP.length>1)E('path',{d:mono(aP),fill:'none',stroke:C.sub,'stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'},lg);
+ E('path',{d:mono(pP),fill:'none',stroke:C.plan,'stroke-width':1.8,'stroke-dasharray':'5,4','stroke-linecap':'round'},lg);
+ if(aP.length>1)E('path',{d:mono(aP),fill:'none',stroke:C.act,'stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'},lg);
 
  /* plan finish label */
  var lp=n-1;
- if(lp!==dd){var fg=E('g',{'class':'fade'},svg);E('circle',{cx:xs[lp],cy:yC(pc[lp]),r:3,fill:'#FFF',stroke:C.pri,'stroke-width':1.3},fg);
-  if(dd<0||xs[lp]-xs[dd]>120){T('PLAN FINISH',{'class':'halo',x:xs[lp],y:yC(pc[lp])-20,'text-anchor':'end','font-size':'7px','font-weight':500,'letter-spacing':1.2,fill:C.pri,'fill-opacity':0.7},fg);
-  T(pct(pc[lp])+' · '+mon(t[lp])+' '+yy(t[lp]),{'class':'halo',x:xs[lp],y:yC(pc[lp])-9,'text-anchor':'end','font-size':'9px','font-weight':600,fill:C.pri},fg)}}
+ if(lp!==dd){var fg=E('g',{'class':'fade'},svg);E('circle',{cx:xs[lp],cy:yC(pc[lp]),r:3,fill:'#FFF',stroke:C.plan,'stroke-width':1.3},fg);
+  if(dd<0||xs[lp]-xs[dd]>120){T('PLAN FINISH',{'class':'halo',x:xs[lp],y:yC(pc[lp])-20,'text-anchor':'end','font-size':'7px','font-weight':500,'letter-spacing':1.2,fill:C.plan,'fill-opacity':0.7},fg);
+  T(pct(pc[lp])+' · '+mon(t[lp])+' '+yy(t[lp]),{'class':'halo',x:xs[lp],y:yC(pc[lp])-9,'text-anchor':'end','font-size':'9px','font-weight':600,fill:C.plan},fg)}}
 
  /* data-date callout : actual pill + plan point + variance bracket */
  if(dd>=0){var cg=E('g',{'class':'fade'},svg),px=xs[dd],ay=yC(A),py=yC(P),behind=A<P;
   E('line',{x1:px,x2:px,y1:ay,y2:py,stroke:SC,'stroke-width':1.6,'stroke-opacity':0.55},cg);
-  E('circle',{cx:px,cy:py,r:3,fill:'#FFF',stroke:C.pri,'stroke-width':1.3},cg);
+  E('circle',{cx:px,cy:py,r:3,fill:'#FFF',stroke:C.plan,'stroke-width':1.3},cg);
   var right=px+70<W-pad.r,vx=right?px+9:px-9,va=right?'start':'end';
   if(Math.abs(ay-py)>12)T(pts(V),{'class':'halo',x:vx,y:(ay+py)/2+3,'text-anchor':va,'font-size':'8.5px','font-weight':600,fill:SC},cg);
-  T('PLAN '+pct(P),{'class':'halo',x:px,y:behind?py-9:py+15,'text-anchor':'middle','font-size':'7.5px','font-weight':500,fill:C.pri,'fill-opacity':0.85},cg);
+  T('PLAN '+pct(P),{'class':'halo',x:px,y:behind?py-9:py+15,'text-anchor':'middle','font-size':'7.5px','font-weight':500,fill:C.plan,'fill-opacity':0.85},cg);
   var pw=58,phh=20,pyy=(behind||ay-36<pad.t+6)?ay+14:ay-36;pyy=Math.max(pad.t-4,Math.min(base-phh-2,pyy));var pxx=Math.max(pad.l,Math.min(W-pad.r-pw,px-pw/2));
   T('ACTUAL',{x:pxx+pw/2,y:pyy>ay?pyy+phh+9:pyy-4,'text-anchor':'middle','font-size':'7px','font-weight':500,'letter-spacing':1.5,fill:SC,'fill-opacity':0.7},cg);
   E('rect',{x:pxx,y:pyy,width:pw,height:phh,rx:10,fill:'#FFF'},cg);
@@ -290,8 +306,8 @@ function draw(){
   E('circle',{cx:px,cy:ay,r:3.2,fill:SC},cg);E('circle',{cx:px,cy:ay,r:1.1,fill:'#FFF'},cg)}
 
  /* hover layer : one zone per reporting date */
- var gl=E('line',{y1:pad.t,y2:base,stroke:C.sub,'stroke-width':0.6,'stroke-opacity':0,'stroke-dasharray':'2,2'},svg);
- var hdA=E('circle',{r:3.5,fill:C.sub,opacity:0},svg),hdP=E('circle',{r:3,fill:'#FFF',stroke:C.pri,'stroke-width':1.3,opacity:0},svg);
+ var gl=E('line',{y1:pad.t,y2:base,stroke:C.ink,'stroke-width':0.6,'stroke-opacity':0,'stroke-dasharray':'2,2'},svg);
+ var hdA=E('circle',{r:3.5,fill:C.act,opacity:0},svg),hdP=E('circle',{r:3,fill:'#FFF',stroke:C.plan,'stroke-width':1.3,opacity:0},svg);
  for(i=0;i<n;i++){(function(k){var zl=k?(xs[k-1]+xs[k])/2:pad.l,zr=k<n-1?(xs[k]+xs[k+1])/2:W-pad.r;
   var hz=E('rect',{x:zl,y:pad.t,width:Math.max(1,zr-zl),height:ch,fill:'transparent',cursor:'pointer'},svg);
   hz.addEventListener('mouseenter',function(){var hx=xs[k];gl.setAttribute('x1',hx);gl.setAttribute('x2',hx);gl.setAttribute('stroke-opacity',0.35);
@@ -306,9 +322,9 @@ function draw(){
    h+='<div class=r><span class=\'sw ba\'></span>Actual period<b>'+pct(ap[k])+'</b></div>';
    h+='<div class=r><span class=\'sw bp\'></span>Plan period<b>'+pct(pp[k])+'</b></div>';
    if(k===dd)h+='<div class=\'fc g\' style=background:'+rgba(SC,0.12)+';color:'+SC+'>DATA DATE</div>';
-   else if(k>dd)h+='<div class=fc style=background:rgba(115,115,120,.1);color:#737378>FORECAST · PLAN ONLY</div>';
-   else if(k===pkI)h+='<div class=fc style=background:rgba(74,122,59,.12);color:#4A7A3B>PEAK PERIOD PROGRESS</div>';
-   else if(k===slI)h+='<div class=fc style=background:rgba(168,82,75,.12);color:#A8524B>LARGEST PERIOD SLIP</div>';
+   else if(k>dd)h+='<div class=fc style=background:'+rgba(C.mut,0.12)+';color:'+C.mut+'>FORECAST · PLAN ONLY</div>';
+   else if(k===pkI)h+='<div class=fc style=background:'+rgba(C.good,0.12)+';color:'+C.good+'>PEAK PERIOD PROGRESS</div>';
+   else if(k===slI)h+='<div class=fc style=background:'+rgba(C.bad,0.12)+';color:'+C.bad+'>LARGEST PERIOD SLIP</div>';
    tip.innerHTML=h;tip.style.opacity='1';
    var tw=tip.offsetWidth,th=tip.offsetHeight,ty=Math.min(ac[k]!==null?yC(ac[k]):base,yC(pc[k]));
    var tx=hx+14;if(tx+tw>W-4)tx=hx-tw-14;if(tx<4)tx=4;
@@ -326,6 +342,6 @@ var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeou
 RETURN
     IF (
         _Count < 2 || ( _Normalize && NOT ( _TotPP > 0 ) ),
-        "<div style='font-family:Segoe UI,sans-serif;padding:24px;font-size:12px;color:#737378'>Not enough S-Curve data for the selected scope.</div>",
+        "<div style='font-family:Segoe UI,sans-serif;padding:24px;font-size:12px;color:" & _cMuted & "'>Not enough S-Curve data for the selected scope.</div>",
         _Html
     )
