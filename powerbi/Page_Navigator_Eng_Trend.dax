@@ -1,4 +1,4 @@
-Page_Navigator_HTML Engineering =
+Page_Navigator_HTML Engineering Trend =
 /* =====================================================================
    PMIS PAGE NAVIGATOR  ·  HTML Content visual (left rail)
    ---------------------------------------------------------------------
@@ -13,7 +13,7 @@ Page_Navigator_HTML Engineering =
    ===================================================================== */
 
 -- 1. CONFIG ---------------------------------------------------------------
-VAR _ActivePage = "ENG_OVERVIEW"
+VAR _ActivePage = "ENG_TREND"
 VAR _AppName    = "PMIS Dashboard"
 VAR _AppSub     = "Project Controls"
 VAR _Version    = "PMIS · v1.0"
