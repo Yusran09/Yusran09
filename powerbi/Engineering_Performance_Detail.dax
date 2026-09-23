@@ -1,0 +1,500 @@
+Engineering Performance Detail HTML =
+/* =====================================================================
+   ENGINEERING PERFORMANCE DETAIL  ·  HTML Content visual (3 flip cards)
+   ---------------------------------------------------------------------
+   Frame      : root 500 px · panel 484 px · card 400 px   (unchanged)
+   Front      : KPI + RAG status + secondary KPIs + data-driven insight
+                visual (no hard-coded profile bars) + auto narrative
+   Back       : purpose · definitions · RAG rules · recommended action
+   Flip       : pure CSS (checkbox + label), no JavaScript required
+   ===================================================================== */
+
+-- 1. MEASURES -----------------------------------------------------------
+VAR _Late         = COALESCE ( [ENG Late Deliverables], 0 )
+VAR _MaxOverdue   = COALESCE ( [ENG Max Overdue Days], 0 )
+VAR _OpenActions  = COALESCE ( [ENG Open Actions], 0 )
+VAR _UnderReview  = COALESCE ( [ENG Documents Under Review], 0 )
+VAR _AvgReviewAge = COALESCE ( [ENG Avg Review Age Days], 0 )
+VAR _ReviewOver14 = COALESCE ( [ENG Review Age > 14 Days], 0 )
+VAR _OpenTQ       = COALESCE ( [ENG TQ Open], 0 )
+VAR _OpenComments = COALESCE ( [ENG Comments Open], 0 )
+VAR _TQClosure    = COALESCE ( [ENG TQ Closure %], 0 )          -- fraction 0–1
+
+-- 2. THRESHOLDS (RAG rules — adjust to project procedure) ----------------
+VAR _OverdueWatch = 14      -- days : amber zone starts
+VAR _OverdueCrit  = 30      -- days : red when oldest late item exceeds this
+VAR _OverdueScale = 60      -- days : end of severity scale
+VAR _ReviewTarget = 14      -- days : review turnaround target
+VAR _AgedWatch    = 0.10    -- share of documents > target : amber above
+VAR _AgedCrit     = 0.25    -- share of documents > target : red above
+VAR _TQTarget     = 0.90    -- TQ closure target
+VAR _TQWatch      = 0.75    -- TQ closure : red below
+
+-- 3. PALETTE (matches PMIS dashboard) -------------------------------------
+VAR _cInk    = "#1C3A5E"
+VAR _cText   = "#6B7785"
+VAR _cMuted  = "#8A9099"
+VAR _cLine   = "#E6EBF1"
+VAR _cSoft   = "#F6F8FB"
+VAR _cDel    = "#243761"    -- deliverable identity (navy)
+VAR _cRev    = "#22A9D8"    -- review identity (sky blue)
+VAR _cTQ     = "#6FB3AE"    -- technical identity (sage)
+VAR _cAged   = "#EB666B"    -- aged / exceeding target (coral)
+VAR _cGood   = "#0F9B80"
+VAR _cWarn   = "#E39016"
+VAR _cBad    = "#D65365"
+
+-- 4. DERIVED METRICS ------------------------------------------------------
+VAR _Within14   = MAX ( 0, _UnderReview - _ReviewOver14 )
+VAR _AgedShare  = DIVIDE ( _ReviewOver14, _UnderReview, 0 )
+VAR _ActPerLate = DIVIDE ( _OpenActions, _Late, 0 )
+VAR _TQGap      = ( _TQClosure - _TQTarget ) * 100
+VAR _AgeScale   = MAX ( _ReviewTarget * 3, _AvgReviewAge )
+
+-- 5. RAG STATUS (0 = green · 1 = amber · 2 = red) --------------------------
+VAR _DelRAG = IF ( _Late = 0, 0, IF ( _MaxOverdue > _OverdueCrit, 2, 1 ) )
+VAR _RevRAG = IF ( _AgedShare <= _AgedWatch, 0, IF ( _AgedShare <= _AgedCrit, 1, 2 ) )
+VAR _TQRAG  = IF ( _OpenTQ = 0 || _TQClosure >= _TQTarget, 0, IF ( _TQClosure >= _TQWatch, 1, 2 ) )
+
+VAR _cDelS = SWITCH ( _DelRAG, 0, _cGood, 1, _cWarn, _cBad )
+VAR _cRevS = SWITCH ( _RevRAG, 0, _cGood, 1, _cWarn, _cBad )
+VAR _cTQS  = SWITCH ( _TQRAG,  0, _cGood, 1, _cWarn, _cBad )
+
+VAR _DelStatus = SWITCH ( _DelRAG, 0, "ON TRACK", 1, "FOLLOW-UP REQUIRED", "CRITICAL OVERDUE" )
+VAR _RevStatus = SWITCH ( _RevRAG, 0, "REVIEW CONTROLLED", 1, "AGEING WATCH", "AGEING EXPOSURE" )
+VAR _TQStatus  = SWITCH ( _TQRAG,  0, "CLOSURE ON TARGET", 1, "CLOSURE WATCH", "BELOW TARGET" )
+
+-- 6. DISPLAY STRINGS ------------------------------------------------------
+VAR _sLate     = FORMAT ( _Late, "#,##0" )
+VAR _sMaxOv    = FORMAT ( _MaxOverdue, "#,##0" )
+VAR _sOpenAct  = FORMAT ( _OpenActions, "#,##0" )
+VAR _sActPer   = FORMAT ( _ActPerLate, "0.0" )
+VAR _sUnder    = FORMAT ( _UnderReview, "#,##0" )
+VAR _sAvgAge   = FORMAT ( _AvgReviewAge, "#,##0" )
+VAR _sOver14   = FORMAT ( _ReviewOver14, "#,##0" )
+VAR _sWithin   = FORMAT ( _Within14, "#,##0" )
+VAR _sAgedPct  = FORMAT ( _AgedShare, "0%" )
+VAR _sWithPct  = FORMAT ( 1 - _AgedShare, "0%" )
+VAR _sOpenTQ   = FORMAT ( _OpenTQ, "#,##0" )
+VAR _sComments = FORMAT ( _OpenComments, "#,##0" )
+VAR _sClosure  = FORMAT ( _TQClosure, "0.0%" )
+VAR _sTQTarget = FORMAT ( _TQTarget, "0%" )
+VAR _sTQGap    = IF ( _TQGap >= 0, "+", "" ) & FORMAT ( _TQGap, "0.0" ) & " pts"
+VAR _sRevTgt   = FORMAT ( _ReviewTarget, "0" )
+VAR _sOvWatch  = FORMAT ( _OverdueWatch, "0" )
+VAR _sOvCrit   = FORMAT ( _OverdueCrit, "0" )
+VAR _sOvScale  = FORMAT ( _OverdueScale, "0" )
+
+-- CSS widths / positions as integer % (locale-safe)
+VAR _pZ1      = FORMAT ( ROUND ( _OverdueWatch / _OverdueScale * 100, 0 ), "0" )
+VAR _pZ2      = FORMAT ( ROUND ( ( _OverdueCrit - _OverdueWatch ) / _OverdueScale * 100, 0 ), "0" )
+VAR _pZ3      = FORMAT ( 100 - ROUND ( _OverdueWatch / _OverdueScale * 100, 0 ) - ROUND ( ( _OverdueCrit - _OverdueWatch ) / _OverdueScale * 100, 0 ), "0" )
+VAR _pZ2L     = FORMAT ( ROUND ( _OverdueCrit / _OverdueScale * 100, 0 ), "0" )
+VAR _pOv      = FORMAT ( ROUND ( MIN ( 1, _MaxOverdue / _OverdueScale ) * 100, 0 ), "0" )
+VAR _pWithin  = FORMAT ( ROUND ( ( 1 - _AgedShare ) * 100, 0 ), "0" )
+VAR _pAged    = FORMAT ( 100 - ROUND ( ( 1 - _AgedShare ) * 100, 0 ), "0" )
+VAR _pAvgAge  = FORMAT ( ROUND ( MIN ( 1, _AvgReviewAge / _AgeScale ) * 100, 0 ), "0" )
+VAR _pRevTgt  = FORMAT ( ROUND ( _ReviewTarget / _AgeScale * 100, 0 ), "0" )
+VAR _pClosure = FORMAT ( ROUND ( MIN ( 1, MAX ( 0, _TQClosure ) ) * 100, 0 ), "0" )
+VAR _pTQTgt   = FORMAT ( ROUND ( _TQTarget * 100, 0 ), "0" )
+VAR _sOvMark  = IF ( _MaxOverdue > _OverdueScale, _sOvScale & "+ d", _sMaxOv & " d" )
+
+-- Narratives
+VAR _DelNarr =
+    IF ( _Late = 0,
+        "No deliverables beyond their planned issue date at this cut-off.",
+        _sLate & " deliverables past plan · oldest " & _sMaxOv & " days overdue · " & _sActPer & " open actions per late item." )
+VAR _RevNarr =
+    IF ( _UnderReview = 0,
+        "No documents currently under review.",
+        _sOver14 & " of " & _sUnder & " documents (" & _sAgedPct & ") exceed the " & _sRevTgt & "-day review target." )
+VAR _TQNarr =
+    "Closure " & _sClosure & " vs " & _sTQTarget & " target · " & _sOpenTQ & " TQs and " & _sComments & " comments still open."
+
+-- Recommended actions
+VAR _DelAct =
+    SWITCH ( _DelRAG,
+        0, "Maintain current issue cadence; confirm the next-period deliverable forecast with discipline leads.",
+        1, "Track follow-up actions to closure before the next cut-off and confirm revised issue dates.",
+        "Escalate items overdue beyond " & _sOvCrit & " days at the weekly engineering meeting and agree a recovery date per discipline." )
+VAR _RevAct =
+    SWITCH ( _RevRAG,
+        0, "Review turnaround is within target; keep the weekly transmittal follow-up.",
+        1, "Expedite reviewers on documents approaching the " & _sRevTgt & "-day target to avoid approval slippage.",
+        "Escalate aged documents to the client / reviewer focal point and prioritise items on the critical path." )
+VAR _TQAct =
+    SWITCH ( _TQRAG,
+        0, "Closure is on target; continue weekly TQ log review.",
+        1, "Chase TQ responses due this week and clear comment backlog before the next IFC issue.",
+        "Hold a TQ clearance session with the client and vendors; prioritise TQs blocking IFC or procurement." )
+
+-- 7. ICONS ----------------------------------------------------------------
+VAR _IcoDel = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cDel & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M9 4h6'/><rect x='5' y='4' width='14' height='17' rx='2'/><path d='M9 11l2 2 4-4'/><path d='M9 17h6'/></svg>"
+VAR _IcoRev = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cRev & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='5' width='16' height='15' rx='2'/><path d='M8 3v4'/><path d='M16 3v4'/><path d='M4 10h16'/><path d='M12 13v3l2 1'/></svg>"
+VAR _IcoTQ  = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cTQ & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z'/><path d='M10 9.5a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9V13'/><circle cx='12' cy='15.6' r='.6' fill='" & _cTQ & "'/></svg>"
+VAR _IcoInfo = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'><path d='M12 11v6'/><circle cx='12' cy='7.5' r='.9' fill='currentColor' stroke='none'/></svg>"
+VAR _IcoBack = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 14L4 9l5-5'/><path d='M4 9h10a6 6 0 0 1 0 12h-3'/></svg>"
+
+-- 8. HTML -----------------------------------------------------------------
+RETURN
+"<div class='eng-root'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+body{font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
+.eng-root{width:100%;height:500px;min-height:500px;padding:8px;background:#FFFFFF;overflow:hidden}
+.eng-panel{width:100%;height:484px;padding:16px 18px 14px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:16px;box-shadow:0 5px 18px rgba(28,58,94,.05);overflow:hidden}
+
+/* ---------- panel header ---------- */
+.ph{height:50px;padding:0 4px 10px;border-bottom:1px solid " & _cLine & ";display:flex;justify-content:space-between;align-items:flex-end}
+.ph-eb{font-size:8px;font-weight:700;letter-spacing:.18em;color:" & _cMuted & ";text-transform:uppercase}
+.ph-tt{margin-top:4px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.ph-sb{margin-top:3px;font-size:9px;color:" & _cText & "}
+.ph-lg{display:flex;gap:10px;font-size:7.5px;font-weight:700;letter-spacing:.08em;color:" & _cMuted & ";text-transform:uppercase}
+.ph-lg span{display:inline-flex;align-items:center;gap:4px}
+.ph-lg i{width:6px;height:6px;border-radius:50%;display:inline-block}
+
+/* ---------- grid + flip ---------- */
+.grid{height:400px;margin-top:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.flip{position:relative;height:400px;min-width:0;perspective:1400px}
+.tg{display:none}
+.inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.4,.2,.2,1)}
+.tg:checked+.inner{transform:rotateY(180deg)}
+.card{position:absolute;inset:0;padding:16px 18px 14px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.045);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.card:before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:var(--id)}
+.front{display:flex;flex-direction:column;padding-bottom:50px}
+.back{transform:rotateY(180deg);background:linear-gradient(180deg," & _cSoft & " 0%,#FFFFFF 40%)}
+.del{--id:" & _cDel & "}.rev{--id:" & _cRev & "}.tq{--id:" & _cTQ & "}
+
+/* ---------- info / back button ---------- */
+.btn{position:absolute;top:14px;right:14px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#FFFFFF;border:1px solid " & _cLine & ";color:" & _cText & ";cursor:pointer;transition:all .18s ease;z-index:2}
+.btn svg{width:13px;height:13px}
+.btn:hover{background:" & _cInk & ";border-color:" & _cInk & ";color:#FFFFFF;transform:scale(1.06)}
+
+/* ---------- card header ---------- */
+.hd{display:flex;gap:10px;align-items:flex-start;padding-right:32px;height:44px}
+.ic{width:36px;height:36px;min-width:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#F3F6FA;border:1px solid " & _cLine & "}
+.ic svg{width:19px;height:19px}
+.eb{font-size:7px;font-weight:700;letter-spacing:.15em;color:" & _cMuted & ";text-transform:uppercase}
+.tt{margin-top:4px;font-size:15px;font-weight:700;letter-spacing:-.015em;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ds{margin-top:3px;font-size:8.5px;color:" & _cText & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- main KPI ---------- */
+.kpi{margin-top:20px;display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+.kl{font-size:9px;font-weight:600;color:" & _cText & "}
+.kv{margin-top:3px;font-size:38px;line-height:.95;font-weight:700;letter-spacing:-.04em;color:" & _cInk & "}
+.kc{margin-top:5px;font-size:8px;color:" & _cMuted & "}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:7.5px;font-weight:700;letter-spacing:.07em;white-space:nowrap;margin-bottom:4px}
+.pill i{width:6px;height:6px;border-radius:50%;display:inline-block}
+
+/* ---------- secondary KPI ---------- */
+.sec{margin-top:16px;padding-top:14px;border-top:1px solid " & _cLine & ";display:grid;grid-template-columns:1fr 1fr}
+.si+.si{padding-left:16px;border-left:1px solid " & _cLine & "}
+.sv{font-size:18px;line-height:1;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap}
+.sv small{font-size:10px;font-weight:600;color:" & _cText & ";margin-left:2px}
+.sl{margin-top:5px;font-size:7px;font-weight:700;letter-spacing:.08em;color:" & _cMuted & ";text-transform:uppercase}
+
+/* ---------- insight visual ---------- */
+.viz{margin-top:auto;margin-bottom:10px;min-height:110px;padding:12px 13px 10px;display:flex;flex-direction:column;justify-content:space-between;background:" & _cSoft & ";border:1px solid " & _cLine & ";border-radius:10px}
+.vh{display:flex;justify-content:space-between;align-items:baseline}
+.vt{font-size:7px;font-weight:700;letter-spacing:.1em;color:" & _cMuted & ";text-transform:uppercase}
+.vv{font-size:10px;font-weight:700}
+.trk{position:relative;height:10px;margin-top:10px;border-radius:4px;background:#E9EEF4;display:flex;overflow:visible}
+.trk>b{height:100%;display:block}
+.trk>b:first-child{border-radius:4px 0 0 4px}.trk>b:last-of-type{border-radius:0 4px 4px 0}
+.mk{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#FFFFFF;border:3px solid;box-shadow:0 1px 3px rgba(28,58,94,.25)}
+.tick{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:" & _cInk & ";border-radius:1px}
+.fill{height:100%;border-radius:4px}
+.scl{position:relative;height:10px;margin-top:4px;font-size:6.5px;font-weight:600;color:" & _cMuted & "}
+.scl span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.scl span:first-child{transform:none}.scl span:last-child{transform:translateX(-100%)}
+.vr{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:9px;border-top:1px dashed #DCE3EB;font-size:8px;color:" & _cText & "}
+.vr b{font-size:9px;color:" & _cInk & "}
+.lgd{display:flex;gap:12px;margin-top:7px;font-size:7px;font-weight:600;color:" & _cText & "}
+.lgd span{display:inline-flex;align-items:center;gap:4px}
+.lgd i{width:7px;height:7px;border-radius:2px;display:inline-block}
+
+/* ---------- narrative footer ---------- */
+.nar{position:absolute;left:18px;right:18px;bottom:13px;padding:7px 0 0 9px;border-top:1px solid " & _cLine & ";font-size:8.5px;line-height:1.4;color:" & _cText & "}
+.nar:before{content:'';position:absolute;left:0;top:9px;bottom:1px;width:2px;border-radius:1px;background:var(--st)}
+
+/* ---------- back side ---------- */
+.bt{margin-top:4px;font-size:16px;font-weight:700;color:" & _cInk & ";padding-right:32px}
+.bs{margin-top:3px;font-size:8.5px;color:" & _cText & "}
+.blk{margin-top:10px;padding:9px 11px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:9px}
+.bl{font-size:7px;font-weight:700;letter-spacing:.12em;color:" & _cMuted & ";text-transform:uppercase}
+.bx{margin-top:5px;font-size:8.5px;line-height:1.5;color:#4F5F70}
+.df{margin-top:5px;display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:4px;font-size:8px;line-height:1.4;color:#4F5F70}
+.df b{color:" & _cInk & ";white-space:nowrap}
+.rules{margin-top:6px;display:flex;flex-direction:column;gap:4px;font-size:8px;color:#4F5F70}
+.rules span{display:flex;align-items:center;gap:6px}
+.rules i{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.act{position:absolute;left:18px;right:18px;bottom:14px;padding:9px 11px 9px 13px;border-radius:9px;border:1px solid " & _cLine & ";background:#FFFFFF}
+.act:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--st)}
+.act .bl{color:var(--st)}
+
+@media(max-width:1050px){
+ .eng-panel{padding-left:14px;padding-right:14px}.grid{gap:10px}
+ .card{padding-left:14px;padding-right:14px}.nar,.act{left:14px;right:14px}
+ .tt{font-size:13.5px}.kv{font-size:32px}.sv{font-size:16px}.ph-lg{display:none}
+}
+</style>
+
+<div class='eng-panel'>
+
+ <div class='ph'>
+  <div>
+   <div class='ph-eb'>Engineering Performance</div>
+   <div class='ph-tt'>Engineering Performance Detail</div>
+   <div class='ph-sb'>Deliverable, review and technical exposure across the current reporting period</div>
+  </div>
+  <div class='ph-lg'>
+   <span><i style='background:" & _cGood & "'></i>On target</span>
+   <span><i style='background:" & _cWarn & "'></i>Watch</span>
+   <span><i style='background:" & _cBad & "'></i>Action required</span>
+  </div>
+ </div>
+
+ <div class='grid'>
+
+ <!-- ================= CARD 1 · LATE DELIVERABLES ================= -->
+ <div class='flip'>
+  <input type='checkbox' id='flip-del' class='tg'>
+  <div class='inner'>
+
+   <div class='card front del' style='--st:" & _cDelS & "'>
+    <label for='flip-del' class='btn' title='How to read this indicator'>" & _IcoInfo & "</label>
+    <div class='hd'>
+     <div class='ic'>" & _IcoDel & "</div>
+     <div style='min-width:0'>
+      <div class='eb'>Performance Detail</div>
+      <div class='tt'>Late Deliverable Performance</div>
+      <div class='ds'>Current delivery position and follow-up exposure</div>
+     </div>
+    </div>
+    <div class='kpi'>
+     <div>
+      <div class='kl'>Late Deliverables</div>
+      <div class='kv'>" & _sLate & "</div>
+      <div class='kc'>Past planned issue date at cut-off</div>
+     </div>
+     <div class='pill' style='background:" & _cDelS & "1A;color:" & _cDelS & "'><i style='background:" & _cDelS & "'></i>" & _DelStatus & "</div>
+    </div>
+    <div class='sec'>
+     <div class='si'><div class='sv'>" & _sMaxOv & "<small>days</small></div><div class='sl'>Maximum Overdue</div></div>
+     <div class='si'><div class='sv'>" & _sOpenAct & "</div><div class='sl'>Open Actions</div></div>
+    </div>
+    <div class='viz'>
+     <div class='vh'><span class='vt'>Overdue Severity · Oldest Item</span><span class='vv' style='color:" & _cDelS & "'>" & _sOvMark & "</span></div>
+     <div class='trk'>
+      <b style='width:" & _pZ1 & "%;background:" & _cGood & "40'></b>
+      <b style='width:" & _pZ2 & "%;background:" & _cWarn & "4D'></b>
+      <b style='width:" & _pZ3 & "%;background:" & _cBad & "40'></b>
+      <div class='mk' style='left:" & _pOv & "%;border-color:" & _cDelS & "'></div>
+     </div>
+     <div class='scl'>
+      <span style='left:0'>0</span>
+      <span style='left:" & _pZ1 & "%'>" & _sOvWatch & " d</span>
+      <span style='left:" & _pZ2L & "%'>" & _sOvCrit & " d</span>
+      <span style='left:100%'>" & _sOvScale & "+ d</span>
+     </div>
+     <div class='vr'><span>Open actions per late deliverable</span><b>" & _sActPer & "</b></div>
+    </div>
+    <div class='nar'>" & _DelNarr & "</div>
+   </div>
+
+   <div class='card back del' style='--st:" & _cDelS & "'>
+    <label for='flip-del' class='btn' title='Back to performance'>" & _IcoBack & "</label>
+    <div class='eb'>How to read this indicator</div>
+    <div class='bt'>Late Deliverable Performance</div>
+    <div class='bs'>Delivery position of engineering documents against plan</div>
+    <div class='blk'>
+     <div class='bl'>Purpose</div>
+     <div class='bx'>Identifies deliverables whose issue has moved beyond the planned date and quantifies the follow-up effort needed to recover them.</div>
+    </div>
+    <div class='blk'>
+     <div class='bl'>Definitions</div>
+     <div class='df'>
+      <b>Late Deliverables</b><span>Planned issue date passed, not yet issued at cut-off</span>
+      <b>Maximum Overdue</b><span>Days late of the oldest open late deliverable</span>
+      <b>Open Actions</b><span>Follow-up actions raised and not yet closed</span>
+     </div>
+    </div>
+    <div class='blk'>
+     <div class='bl'>Status Rules</div>
+     <div class='rules'>
+      <span><i style='background:" & _cGood & "'></i>No late deliverables</span>
+      <span><i style='background:" & _cWarn & "'></i>Late items, oldest &le; " & _sOvCrit & " days overdue</span>
+      <span><i style='background:" & _cBad & "'></i>Oldest late item &gt; " & _sOvCrit & " days overdue</span>
+     </div>
+    </div>
+    <div class='act'>
+     <div class='bl'>Current Status · " & _DelStatus & "</div>
+     <div class='bx'>" & _DelAct & "</div>
+    </div>
+   </div>
+
+  </div>
+ </div>
+
+ <!-- ================= CARD 2 · REVIEW AGEING ================= -->
+ <div class='flip'>
+  <input type='checkbox' id='flip-rev' class='tg'>
+  <div class='inner'>
+
+   <div class='card front rev' style='--st:" & _cRevS & "'>
+    <label for='flip-rev' class='btn' title='How to read this indicator'>" & _IcoInfo & "</label>
+    <div class='hd'>
+     <div class='ic'>" & _IcoRev & "</div>
+     <div style='min-width:0'>
+      <div class='eb'>Performance Detail</div>
+      <div class='tt'>Review Ageing Performance</div>
+      <div class='ds'>Document review workload and ageing exposure</div>
+     </div>
+    </div>
+    <div class='kpi'>
+     <div>
+      <div class='kl'>Documents Under Review</div>
+      <div class='kv'>" & _sUnder & "</div>
+      <div class='kc'>Awaiting reviewer / client return</div>
+     </div>
+     <div class='pill' style='background:" & _cRevS & "1A;color:" & _cRevS & "'><i style='background:" & _cRevS & "'></i>" & _RevStatus & "</div>
+    </div>
+    <div class='sec'>
+     <div class='si'><div class='sv'>" & _sAvgAge & "<small>days</small></div><div class='sl'>Average Review Age</div></div>
+     <div class='si'><div class='sv'>" & _sOver14 & "</div><div class='sl'>Age &gt; " & _sRevTgt & " Days</div></div>
+    </div>
+    <div class='viz'>
+     <div class='vh'><span class='vt'>Review Age Composition</span><span class='vv' style='color:" & _cRevS & "'>" & _sAgedPct & " aged</span></div>
+     <div class='trk'>
+      <b style='width:" & _pWithin & "%;background:" & _cRev & "'></b>
+      <b style='width:" & _pAged & "%;background:" & _cAged & "'></b>
+     </div>
+     <div class='lgd'>
+      <span><i style='background:" & _cRev & "'></i>&le; " & _sRevTgt & " d · " & _sWithin & " (" & _sWithPct & ")</span>
+      <span><i style='background:" & _cAged & "'></i>&gt; " & _sRevTgt & " d · " & _sOver14 & " (" & _sAgedPct & ")</span>
+     </div>
+     <div class='vr' style='display:block'>
+      <div style='display:flex;justify-content:space-between'><span>Average age vs " & _sRevTgt & "-day target</span><b>" & _sAvgAge & " d</b></div>
+      <div class='trk' style='height:5px;margin-top:6px'>
+       <div class='fill' style='width:" & _pAvgAge & "%;background:" & _cRevS & "'></div>
+       <div class='tick' style='left:" & _pRevTgt & "%'></div>
+      </div>
+     </div>
+    </div>
+    <div class='nar'>" & _RevNarr & "</div>
+   </div>
+
+   <div class='card back rev' style='--st:" & _cRevS & "'>
+    <label for='flip-rev' class='btn' title='Back to performance'>" & _IcoBack & "</label>
+    <div class='eb'>How to read this indicator</div>
+    <div class='bt'>Review Ageing Performance</div>
+    <div class='bs'>Turnaround of documents in review against the target</div>
+    <div class='blk'>
+     <div class='bl'>Purpose</div>
+     <div class='bx'>Monitors the review workload and flags ageing early, before it becomes an approval or comment-resolution constraint on IFC issue.</div>
+    </div>
+    <div class='blk'>
+     <div class='bl'>Definitions</div>
+     <div class='df'>
+      <b>Under Review</b><span>Submitted documents awaiting return with comments or approval</span>
+      <b>Average Review Age</b><span>Mean days since submission of documents still in review</span>
+      <b>Age &gt; " & _sRevTgt & " Days</b><span>Documents exceeding the review turnaround target</span>
+     </div>
+    </div>
+    <div class='blk'>
+     <div class='bl'>Status Rules · share of documents &gt; " & _sRevTgt & " days</div>
+     <div class='rules'>
+      <span><i style='background:" & _cGood & "'></i>&le; " & FORMAT ( _AgedWatch, "0%" ) & " of documents aged</span>
+      <span><i style='background:" & _cWarn & "'></i>" & FORMAT ( _AgedWatch, "0%" ) & " – " & FORMAT ( _AgedCrit, "0%" ) & " of documents aged</span>
+      <span><i style='background:" & _cBad & "'></i>&gt; " & FORMAT ( _AgedCrit, "0%" ) & " of documents aged</span>
+     </div>
+    </div>
+    <div class='act'>
+     <div class='bl'>Current Status · " & _RevStatus & "</div>
+     <div class='bx'>" & _RevAct & "</div>
+    </div>
+   </div>
+
+  </div>
+ </div>
+
+ <!-- ================= CARD 3 · TECHNICAL QUERIES ================= -->
+ <div class='flip'>
+  <input type='checkbox' id='flip-tq' class='tg'>
+  <div class='inner'>
+
+   <div class='card front tq' style='--st:" & _cTQS & "'>
+    <label for='flip-tq' class='btn' title='How to read this indicator'>" & _IcoInfo & "</label>
+    <div class='hd'>
+     <div class='ic'>" & _IcoTQ & "</div>
+     <div style='min-width:0'>
+      <div class='eb'>Performance Detail</div>
+      <div class='tt'>Technical Query Performance</div>
+      <div class='ds'>Open engineering issues and closure position</div>
+     </div>
+    </div>
+    <div class='kpi'>
+     <div>
+      <div class='kl'>Open Technical Queries</div>
+      <div class='kv'>" & _sOpenTQ & "</div>
+      <div class='kc'>Awaiting response or close-out</div>
+     </div>
+     <div class='pill' style='background:" & _cTQS & "1A;color:" & _cTQS & "'><i style='background:" & _cTQS & "'></i>" & _TQStatus & "</div>
+    </div>
+    <div class='sec'>
+     <div class='si'><div class='sv'>" & _sComments & "</div><div class='sl'>Open Comments</div></div>
+     <div class='si'><div class='sv'>" & _sClosure & "</div><div class='sl'>TQ Closure</div></div>
+    </div>
+    <div class='viz'>
+     <div class='vh'><span class='vt'>TQ Closure vs Target</span><span class='vv' style='color:" & _cTQS & "'>" & _sClosure & "</span></div>
+     <div class='trk'>
+      <div class='fill' style='width:" & _pClosure & "%;background:" & _cTQ & "'></div>
+      <div class='tick' style='left:" & _pTQTgt & "%'></div>
+     </div>
+     <div class='scl'>
+      <span style='left:0'>0%</span>
+      <span style='left:" & _pTQTgt & "%;transform:translateX(-100%);padding-right:4px'>Target " & _sTQTarget & "</span>
+     </div>
+     <div class='vr'><span>Gap to closure target</span><b style='color:" & _cTQS & "'>" & _sTQGap & "</b></div>
+    </div>
+    <div class='nar'>" & _TQNarr & "</div>
+   </div>
+
+   <div class='card back tq' style='--st:" & _cTQS & "'>
+    <label for='flip-tq' class='btn' title='Back to performance'>" & _IcoBack & "</label>
+    <div class='eb'>How to read this indicator</div>
+    <div class='bt'>Technical Query Performance</div>
+    <div class='bs'>Resolution of technical queries and review comments</div>
+    <div class='blk'>
+     <div class='bl'>Purpose</div>
+     <div class='bx'>Brings together open technical queries, outstanding comments and closure rate to show unresolved engineering issues that can hold IFC or procurement.</div>
+    </div>
+    <div class='blk'>
+     <div class='bl'>Definitions</div>
+     <div class='df'>
+      <b>Open TQ</b><span>Technical queries raised and awaiting response or close-out</span>
+      <b>Open Comments</b><span>Reviewer comments not yet incorporated or closed</span>
+      <b>TQ Closure</b><span>Closed TQs ÷ total TQs raised to date</span>
+     </div>
+    </div>
+    <div class='blk'>
+     <div class='bl'>Status Rules · TQ closure</div>
+     <div class='rules'>
+      <span><i style='background:" & _cGood & "'></i>&ge; " & _sTQTarget & " closed, or no open TQ</span>
+      <span><i style='background:" & _cWarn & "'></i>" & FORMAT ( _TQWatch, "0%" ) & " – " & _sTQTarget & " closed</span>
+      <span><i style='background:" & _cBad & "'></i>&lt; " & FORMAT ( _TQWatch, "0%" ) & " closed</span>
+     </div>
+    </div>
+    <div class='act'>
+     <div class='bl'>Current Status · " & _TQStatus & "</div>
+     <div class='bx'>" & _TQAct & "</div>
+    </div>
+   </div>
+
+  </div>
+ </div>
+
+ </div>
+</div>
+</div>"
