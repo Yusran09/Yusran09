@@ -333,7 +333,7 @@ function draw(){
    var h='<div class=h>'+dLbl(t[k])+'</div><div class=pd>'+(k?'Period '+sLbl(t[k-1])+' → '+sLbl(t[k]):'First reporting period')+'</div>';
    h+='<div class=r><span class=\'sw sa\'></span>Actual cum.<b>'+pct(ac[k])+'</b></div>';
    h+='<div class=r><span class=\'sw sp\'></span>Plan cum.<b>'+pct(pc[k])+'</b></div>';
-   if(ac[k]!==null){var dv=ac[k]-pc[k],sp=pc[k]>0?ac[k]/pc[k]:null,cl=sp===null?'':sp>=1?'g':sp>=0.95?'a':'n';
+   if(ac[k]!==null){var dv=ac[k]-pc[k],sp=pc[k]>0?ac[k]/pc[k]:null,cl=dv>=0?'g':dv>=vw?'a':'n';
     h+='<div class=r>Variance<b class='+cl+'>'+pts(dv)+(sp!==null?' · SPI '+sp.toFixed(2):'')+'</b></div>'}
    h+='<div class=hr></div>';
    h+='<div class=r><span class=\'sw ba\'></span>Actual period<b>'+pct(ap[k])+'</b></div>';
