@@ -9,7 +9,11 @@ Engineering S-Curve Trend =
    Normalise  : TRUE  -> % of the FILTERED scope (EV / scope BAC): every Area,
                          Discipline or Work Package gets its own 0–100 % S-curve
                 FALSE -> weighted contribution to the overall project
-   Data date  : last reporting date where [ENG Periodic Actual] > 0
+   Cut-off    : [PMIS Cut-Off Date] — same measure as the page header.
+                Actual = cumulative to the last reporting date <= cut-off;
+                Plan   = plan curve interpolated AT the cut-off date (PV @ status date)
+   Status     : ON PLAN >= 0 pts · MONITOR to _VarWatch · AT RISK below
+                (same rule as the Discipline Performance matrix)
    Reuse      : change the CONFIG vars + 2 measures for PROC / CONST
    ===================================================================== */
 
@@ -17,6 +21,8 @@ Engineering S-Curve Trend =
 VAR _Badge     = "ENGINEERING"
 VAR _Title     = "Engineering S-Curve"
 VAR _Normalize = TRUE ()
+VAR _CutOff    = [PMIS Cut-Off Date]
+VAR _VarWatch  = -0.02          -- variance below this = AT RISK (fraction)
 VAR _Subtitle  =
     IF ( _Normalize,
         "Cumulative physical progress · % of selected scope",
@@ -80,6 +86,9 @@ VAR _O  =
     FORMAT ( COALESCE ( ROUND ( SUMX ( _Open, [@PP] ) * _Scale, 0 ), 0 ), "0" ) & ","
         & FORMAT ( COALESCE ( ROUND ( SUMX ( _Open, [@AP] ) * _Scale, 0 ), 0 ), "0" )
 
+VAR _CO = FORMAT ( YEAR ( _CutOff ) * 10000 + MONTH ( _CutOff ) * 100 + DAY ( _CutOff ), "0" )
+VAR _VW = FORMAT ( _VarWatch * 10000, "0" )     -- pts x 100, locale-safe
+
 -- 5. HTML ---------------------------------------------------------------
 VAR _Html =
 "<!DOCTYPE html><html><head><meta charset='utf-8'>
@@ -87,7 +96,7 @@ VAR _Html =
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overflow:hidden;height:100vh;width:100%;background:transparent!important;font-family:'Jost',system-ui,sans-serif;color:" & _cInk & "}
-.tc{width:100%;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.tc{width:100%;height:100vh;display:flex;flex-direction:column;overflow:hidden;background:#FFFFFF;border:1px solid " & _cGrid & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.045)}
 .hdr{padding:16px 20px 4px;flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .badge{display:inline-flex;align-items:center;gap:5px;background:" & _cNavy & "14;padding:3px 10px;border-radius:999px;margin-bottom:4px}
 .badge span{font-size:9px;font-weight:500;letter-spacing:2px;color:" & _cNavy & "}
@@ -149,7 +158,7 @@ html,body{overflow:hidden;height:100vh;width:100%;background:transparent!importa
    </div>
   </div>
   <div class='rgt'>
-   <div class='dd' id='hDD'>Data date —</div>
+   <div class='dd' id='hDD'>Cut-off —</div>
    <div class='chip' id='hChip'><b id='hSpi'>SPI —</b><i id='hSt'></i></div>
    <div class='mth' id='hMth'></div>
    <div class='lg'>
@@ -164,7 +173,7 @@ html,body{overflow:hidden;height:100vh;width:100%;background:transparent!importa
 </div>
 <script>
 (function(){
-var rd=[" & _D & "],rpp=[" & _PP & "],rap=[" & _AP & "],op=[" & _O & "],wt=" & _Wt & ";
+var rd=[" & _D & "],rpp=[" & _PP & "],rap=[" & _AP & "],op=[" & _O & "],wt=" & _Wt & ",co=" & _CO & ",vw=" & _VW & "/100;
 var C={ink:'" & _cInk & "',sub:'" & _cText & "',mut:'" & _cMuted & "',act:'" & _cActLine & "',plan:'" & _cPlanLine & "',abar:'" & _cActBar & "',pbar:'" & _cPlanBar & "',sep:'" & _cSep & "',good:'" & _cGood & "',warn:'" & _cWarn & "',bad:'" & _cBad & "'};
 var MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var el=document.getElementById('chart'),tip=document.getElementById('tip'),n=rd.length,i;
@@ -185,18 +194,20 @@ function nz(v){return v===null?0:v}
 /* ---------- PERIODS + CUMULATIVE = OPENING + RUNNING SUM OF PERIODIC ---------- */
 var t=[],pp=[],ap=[],pc=[],ac=[],dd=-1;
 for(i=0;i<n;i++){t.push(toT(rd[i]));pp.push(rpp[i]/10000);ap.push(rap[i]/10000)}
-for(i=0;i<n;i++){if(ap[i]>0)dd=i}
+co=toT(co);for(i=0;i<n;i++){if(t[i]<=co)dd=i}
 var P0=op[0]/10000,A0=op[1]/10000,cP=P0,cA=A0;
 for(i=0;i<n;i++){cP+=pp[i];pc.push(cP);if(i<=dd){cA+=ap[i];ac.push(cA)}else{ap[i]=null;ac.push(null)}}
 var gs=[];for(i=1;i<n;i++)gs.push(t[i]-t[i-1]);gs.sort(function(a,b){return a-b});
-var gap=gs[Math.floor(gs.length/2)]||2629800000,t0=t[0]-gap,tEnd=t[n-1]+gap*0.5;
+var gap=gs[Math.floor(gs.length/2)]||2629800000,t0=Math.min(t[0]-gap,co),tEnd=Math.max(t[n-1],co)+gap*0.5;
+/* plan curve interpolated at any date (PV @ status date) */
+function planAtT(ms){if(ms<=t0)return P0;if(ms>=t[n-1])return pc[n-1];var pt=t0,pv=P0;for(var j=0;j<n;j++){if(ms<=t[j])return pv+(pc[j]-pv)*(ms-pt)/(t[j]-pt);pt=t[j];pv=pc[j]}return pc[n-1]}
 
-/* ---------- KPI @ DATA DATE ---------- */
-var A=dd>=0?ac[dd]:null,P=dd>=0?pc[dd]:pc[n-1];
+/* ---------- KPI @ CUT-OFF ---------- */
+var A=dd>=0?ac[dd]:null,P=planAtT(co);
 var V=A!==null?A-P:null,SPI=(A!==null&&P>0)?A/P:null;
-var st=SPI===null?'n':SPI>=1?'g':SPI>=0.95?'a':'n';
-var SC=SPI===null?C.mut:st==='g'?C.good:st==='a'?C.warn:C.bad;
-var ST=SPI===null?'NO ACTUAL':st==='g'?'ON / AHEAD':st==='a'?'SLIGHTLY BEHIND':'BEHIND PLAN';
+var st=V===null?'n':V>=0?'g':V>=vw?'a':'n';
+var SC=V===null?C.mut:st==='g'?C.good:st==='a'?C.warn:C.bad;
+var ST=V===null?'NO ACTUAL':st==='g'?'ON PLAN':st==='a'?'MONITOR':'AT RISK';
 var up=V!==null&&V>=0;
 document.getElementById('hPill').style.background=rgba(SC,0.1);
 var arr=document.getElementById('hArr');arr.setAttribute('stroke',SC);arr.innerHTML='<polyline points='+(up?'18,15,12,9,6,15':'6,9,12,15,18,9')+' />';
@@ -204,11 +215,11 @@ var hv=document.getElementById('hVar');hv.textContent=V===null?'—':pts(V);hv.s
 document.getElementById('hA').textContent=pct(A);
 document.getElementById('hP').textContent=pct(P);
 document.getElementById('hRange').textContent='('+mLbl(t[0])+' — '+mLbl(t[n-1])+')'+(wt<995?' · scope '+(wt/10).toFixed(1)+'% of project':'');
-document.getElementById('hDD').textContent='Data date · '+(dd>=0?dLbl(t[dd]):'—');
+document.getElementById('hDD').textContent='Cut-off · '+dLbl(co)+(dd>=0&&t[dd]<co?' · measured '+sLbl(t[dd]):'');
 var chip=document.getElementById('hChip');chip.style.background=rgba(SC,0.1);
 var hs=document.getElementById('hSpi');hs.textContent='SPI '+(SPI===null?'—':SPI.toFixed(2));hs.style.color=SC;
 var ht=document.getElementById('hSt');ht.textContent=ST;ht.style.color=SC;
-if(dd>=0){document.getElementById('hMth').innerHTML='This period <b>'+pct(ap[dd])+'</b> vs plan <b>'+pct(pp[dd])+'</b>'}
+if(dd>=0){document.getElementById('hMth').innerHTML='Last period <b>'+pct(ap[dd])+'</b> vs plan <b>'+pct(pp[dd])+'</b>'}
 
 /* ---------- PEAK PERIOD / MAX SLIP (actual periods only) ---------- */
 var pkI=-1,slI=-1,pkV=-1e9,slV=1e9;
@@ -250,17 +261,22 @@ function draw(){
  T('CUM %',{x:6,y:pad.t-12,'text-anchor':'start','class':'ax','letter-spacing':1,'font-size':'7px'},svg);
  T('PERIODIC %',{x:W-6,y:yB(bMax)-12,'text-anchor':'end','class':'ax','letter-spacing':1,'font-size':'7px'},svg);
 
- /* forecast zone after data date */
- if(dd>=0&&dd<n-1){var fx=(xs[dd]+xs[dd+1])/2;E('rect',{x:fx,y:pad.t,width:W-pad.r-fx,height:ch,fill:C.ink,'fill-opacity':0.025},svg);
-  E('line',{x1:xs[dd],x2:xs[dd],y1:pad.t,y2:base,stroke:SC,'stroke-width':0.8,'stroke-dasharray':'3,3','stroke-opacity':0.45},svg);
-  T('DATA DATE',{'class':'halo',x:xs[dd]-5,y:base-6,'text-anchor':'end','font-size':'7px','font-weight':600,'letter-spacing':1.5,fill:SC,'fill-opacity':0.7},svg);
-  if(W-pad.r-fx>80)T('FORECAST',{x:(fx+W-pad.r)/2,y:pad.t+12,'text-anchor':'middle','font-size':'7px','font-weight':500,'letter-spacing':2,fill:C.mut,'fill-opacity':0.6},svg)}
+ /* cut-off line + forecast zone */
+ var xco=X(co);
+ if(xco>pad.l&&xco<W-pad.r){E('rect',{x:xco,y:pad.t,width:W-pad.r-xco,height:ch,fill:C.ink,'fill-opacity':0.025},svg);
+  E('line',{x1:xco,x2:xco,y1:pad.t,y2:base+4,stroke:C.ink,'stroke-width':0.9,'stroke-dasharray':'3,3','stroke-opacity':0.5},svg);
+  if(W-pad.r-xco>80)T('FORECAST',{'class':'halo',x:(xco+W-pad.r)/2,y:pad.t+ch*0.38,'text-anchor':'middle','font-size':'7px','font-weight':500,'letter-spacing':2,fill:C.mut,'fill-opacity':0.6},svg)}
 
  /* x-axis : period labels (thinned by space) + year bands */
  var lx=-1e9,lm=-1;
- for(i=0;i<n;i++){var mk=yr(t[i])*12+D(t[i]).getUTCMonth();if(xs[i]-lx>=28&&mk!==lm){T(mon(t[i]).toUpperCase(),{x:xs[i],y:base+15,'class':'yr'},svg);lx=xs[i];lm=mk}}
+ for(i=0;i<n;i++){var mk=yr(t[i])*12+D(t[i]).getUTCMonth();if(xs[i]-lx>=28&&mk!==lm&&Math.abs(xs[i]-xco)>44){T(mon(t[i]).toUpperCase(),{x:xs[i],y:base+15,'class':'yr'},svg);lx=xs[i];lm=mk}}
  for(var y=yr(t0)+1;y<=yr(tEnd);y++){var xj=X(Date.UTC(y,0,1));if(xj>pad.l&&xj<W-pad.r)E('line',{x1:xj,x2:xj,y1:pad.t,y2:base+36,stroke:C.sep,'stroke-width':0.7},svg)}
  var ys=0,lyx=-1e9;for(i=1;i<=n;i++){if(i===n||yr(t[i])!==yr(t[ys])){var xm=(xs[ys]+xs[i-1])/2;if(xm-lyx>=26){T(yy(t[ys]),{x:xm,y:base+34,'class':'yy'},svg);lyx=xm}ys=i}}
+
+ /* cut-off tag on the axis (never collides with bars) */
+ if(xco>pad.l&&xco<W-pad.r){var ctx=Math.max(pad.l+39,Math.min(W-pad.r-39,xco)),cg0=E('g',{},svg);
+  E('rect',{x:ctx-39,y:base+5,width:78,height:14,rx:7,fill:C.ink},cg0);
+  T('CUT-OFF '+D(co).getUTCDate()+' '+mon(co).toUpperCase(),{x:ctx,y:base+15,'text-anchor':'middle','font-size':'6.5px','font-weight':700,'letter-spacing':0.6,fill:'#FFFFFF'},cg0)}
 
  /* periodic bars : width follows the period spacing */
  var gp=[];for(i=0;i<n;i++){var gL=xs[i]-(i?xs[i-1]:x0),gR=i<n-1?xs[i+1]-xs[i]:gL;gp.push(Math.min(gL,gR))}
@@ -283,15 +299,16 @@ function draw(){
  if(aP.length>1){var ad=mono(aP);E('path',{d:ad+'L'+aP[aP.length-1].x+','+base+'L'+aP[0].x+','+base+'Z',fill:'url(#ag)'},lg)}
  E('path',{d:mono(pP),fill:'none',stroke:C.plan,'stroke-width':1.8,'stroke-dasharray':'5,4','stroke-linecap':'round'},lg);
  if(aP.length>1)E('path',{d:mono(aP),fill:'none',stroke:C.act,'stroke-width':2.4,'stroke-linecap':'round','stroke-linejoin':'round'},lg);
+ if(dd>=0&&xco>xs[dd]+2)E('line',{x1:xs[dd],x2:xco,y1:yC(A),y2:yC(A),stroke:C.act,'stroke-width':1.6,'stroke-dasharray':'2,3','stroke-opacity':0.8},lg);
 
  /* plan finish label */
  var lp=n-1;
  if(lp!==dd){var fg=E('g',{'class':'fade'},svg);E('circle',{cx:xs[lp],cy:yC(pc[lp]),r:3,fill:'#FFF',stroke:C.plan,'stroke-width':1.3},fg);
-  if(dd<0||xs[lp]-xs[dd]>120){T('PLAN FINISH',{'class':'halo',x:xs[lp],y:yC(pc[lp])-20,'text-anchor':'end','font-size':'7px','font-weight':500,'letter-spacing':1.2,fill:C.plan,'fill-opacity':0.7},fg);
+  if(dd<0||xs[lp]-xco>120){T('PLAN FINISH',{'class':'halo',x:xs[lp],y:yC(pc[lp])-20,'text-anchor':'end','font-size':'7px','font-weight':500,'letter-spacing':1.2,fill:C.plan,'fill-opacity':0.7},fg);
   T(pct(pc[lp])+' · '+mon(t[lp])+' '+yy(t[lp]),{'class':'halo',x:xs[lp],y:yC(pc[lp])-9,'text-anchor':'end','font-size':'9px','font-weight':600,fill:C.plan},fg)}}
 
  /* data-date callout : actual pill + plan point + variance bracket */
- if(dd>=0){var cg=E('g',{'class':'fade'},svg),px=xs[dd],ay=yC(A),py=yC(P),behind=A<P;
+ if(dd>=0){var cg=E('g',{'class':'fade'},svg),px=xco,ay=yC(A),py=yC(P),behind=A<P;
   E('line',{x1:px,x2:px,y1:ay,y2:py,stroke:SC,'stroke-width':1.6,'stroke-opacity':0.55},cg);
   E('circle',{cx:px,cy:py,r:3,fill:'#FFF',stroke:C.plan,'stroke-width':1.3},cg);
   var right=px+70<W-pad.r,vx=right?px+9:px-9,va=right?'start':'end';
@@ -321,7 +338,7 @@ function draw(){
    h+='<div class=hr></div>';
    h+='<div class=r><span class=\'sw ba\'></span>Actual period<b>'+pct(ap[k])+'</b></div>';
    h+='<div class=r><span class=\'sw bp\'></span>Plan period<b>'+pct(pp[k])+'</b></div>';
-   if(k===dd)h+='<div class=\'fc g\' style=background:'+rgba(SC,0.12)+';color:'+SC+'>DATA DATE</div>';
+   if(k===dd)h+='<div class=\'fc g\' style=background:'+rgba(SC,0.12)+';color:'+SC+'>LAST MEASUREMENT</div>';
    else if(k>dd)h+='<div class=fc style=background:'+rgba(C.mut,0.12)+';color:'+C.mut+'>FORECAST · PLAN ONLY</div>';
    else if(k===pkI)h+='<div class=fc style=background:'+rgba(C.good,0.12)+';color:'+C.good+'>PEAK PERIOD PROGRESS</div>';
    else if(k===slI)h+='<div class=fc style=background:'+rgba(C.bad,0.12)+';color:'+C.bad+'>LARGEST PERIOD SLIP</div>';

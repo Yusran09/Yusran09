@@ -1,0 +1,13 @@
+PMIS Cut-Off Date = 
+/* =====================================================================
+   PMIS CUT-OFF DATE  ·  single source of truth for the reporting period
+   ---------------------------------------------------------------------
+   Used by : Page_Header_HTML (cut-off, ISO week, data freshness)
+             Engineering S-Curve Trend (status date, plan @ cut-off)
+   Update  : change the date once per reporting cycle — every visual follows.
+   Option  : replace with a table-driven value, e.g.
+             MAX ( 'Report Period'[Cut-Off Date] )
+             or  CALCULATE ( MAX ( 'S-Curve Engineering'[Date] ),
+                             'S-Curve Engineering'[Actual Periodic] > 0 )
+   ===================================================================== */
+DATE ( 2025, 4, 20 )

@@ -9,7 +9,7 @@ Page_Header_HTML Engineering Progress =
    ===================================================================== */
 
 -- 1. CONFIG ---------------------------------------------------------------
-VAR _CutOff     = DATE ( 2025, 4, 20 )          -- or a measure, e.g. [Cut-Off Date]
+VAR _CutOff     = [PMIS Cut-Off Date]            -- single source, shared with S-curve
 VAR _Module     = "EPC Progress"
 VAR _Section    = "Engineering"
 VAR _PageTitle  = "Engineering Progress & Performance"
