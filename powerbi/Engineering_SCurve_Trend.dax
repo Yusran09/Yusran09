@@ -4,11 +4,11 @@ Engineering S-Curve Trend =
    ---------------------------------------------------------------------
    Grain      : one row per reporting period (month) in 'S-Curve Engineering'[Date]
    Measures   : [ENG Periodic Plan] [ENG Periodic Actual]
-                [ENG SCurve Plan]   [ENG SCurve Actual]
-                -> fraction (0–1) or percent (0–100), auto-detected
-   Data date  : last period where [ENG SCurve Actual] is not blank
-                (Actual measure must return BLANK after the cut-off)
-   Reuse      : change the 3 CONFIG vars + 4 measures for PROC / CONST
+                -> fraction (0–1) or percent (0–100), auto-detected from plan total
+   Cumulative : built in JS as running sum of periodic (Σ periodic = S-curve),
+                grouped to calendar months, missing months filled with 0
+   Data date  : last month where [ENG Periodic Actual] > 0
+   Reuse      : change the 3 CONFIG vars + 2 measures for PROC / CONST
    ===================================================================== */
 
 -- 1. CONFIG ------------------------------------------------------------
@@ -21,24 +21,21 @@ VAR _Base =
     ADDCOLUMNS (
         FILTER ( VALUES ( 'S-Curve Engineering'[Date] ), NOT ISBLANK ( 'S-Curve Engineering'[Date] ) ),
         "@PP", [ENG Periodic Plan],
-        "@AP", [ENG Periodic Actual],
-        "@PC", [ENG SCurve Plan],
-        "@AC", [ENG SCurve Actual]
+        "@AP", [ENG Periodic Actual]
     )
 VAR _Data =
-    FILTER ( _Base, NOT ( ISBLANK ( [@PP] ) && ISBLANK ( [@AP] ) && ISBLANK ( [@PC] ) && ISBLANK ( [@AC] ) ) )
+    FILTER ( _Base, NOT ( ISBLANK ( [@PP] ) && ISBLANK ( [@AP] ) ) )
 VAR _Count  = COUNTROWS ( _Data )
 
--- Scale to integer "% x 100" (45.23% -> 4523) : locale-safe, no decimal separator in JS
-VAR _MaxCum = MAXX ( _Data, MAX ( [@PC], [@AC] ) )
-VAR _K      = IF ( _MaxCum > 1.5, 100, 10000 )
+-- Unit detection : plan total ~1 = fraction, ~100 = percent
+-- Scale to integer "% x 100" (4.23% -> 423) : locale-safe, no decimal separator in JS
+VAR _SumPP  = SUMX ( _Data, [@PP] )
+VAR _K      = IF ( _SumPP > 1.5, 100, 10000 )
 
 -- 3. SERIALISE TO JS ARRAYS ---------------------------------------------
 VAR _YM = CONCATENATEX ( _Data, FORMAT ( YEAR ( 'S-Curve Engineering'[Date] ) * 100 + MONTH ( 'S-Curve Engineering'[Date] ), "0" ), ",", 'S-Curve Engineering'[Date], ASC )
 VAR _PP = CONCATENATEX ( _Data, IF ( ISBLANK ( [@PP] ), "null", FORMAT ( ROUND ( [@PP] * _K, 0 ), "0" ) ), ",", 'S-Curve Engineering'[Date], ASC )
 VAR _AP = CONCATENATEX ( _Data, IF ( ISBLANK ( [@AP] ), "null", FORMAT ( ROUND ( [@AP] * _K, 0 ), "0" ) ), ",", 'S-Curve Engineering'[Date], ASC )
-VAR _PC = CONCATENATEX ( _Data, IF ( ISBLANK ( [@PC] ), "null", FORMAT ( ROUND ( [@PC] * _K, 0 ), "0" ) ), ",", 'S-Curve Engineering'[Date], ASC )
-VAR _AC = CONCATENATEX ( _Data, IF ( ISBLANK ( [@AC] ), "null", FORMAT ( ROUND ( [@AC] * _K, 0 ), "0" ) ), ",", 'S-Curve Engineering'[Date], ASC )
 
 -- 4. HTML ---------------------------------------------------------------
 VAR _Html =
@@ -123,12 +120,19 @@ html,body{overflow:hidden;height:100vh;width:100%;background:transparent!importa
 </div>
 <script>
 (function(){
-var ym=[" & _YM & "],pp=[" & _PP & "],ap=[" & _AP & "],pc=[" & _PC & "],ac=[" & _AC & "];
+var rym=[" & _YM & "],rpp=[" & _PP & "],rap=[" & _AP & "];
 var C={ink:'#3D2F28',sub:'#6B5D52',mut:'#737378',pri:'#C96A3A',good:'#4A7A3B',warn:'#C9913A',bad:'#A8524B'};
 var MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-function sc(a){return a.map(function(v){return v===null?null:v/100})}
-pp=sc(pp);ap=sc(ap);pc=sc(pc);ac=sc(ac);
-var n=ym.length,el=document.getElementById('chart'),tip=document.getElementById('tip');
+/* ---------- MONTHLY TIMELINE + CUMULATIVE = RUNNING SUM OF PERIODIC ---------- */
+var ym=[],pp=[],ap=[],pc=[],ac=[],n=0,dd=-1,i;
+if(rym.length){var y0=Math.floor(rym[0]/100),m0=rym[0]%100;
+ function mi(c){return (Math.floor(c/100)-y0)*12+(c%100-m0)}
+ n=mi(rym[rym.length-1])+1;
+ for(i=0;i<n;i++){var mm=m0-1+i;ym.push((y0+Math.floor(mm/12))*100+mm%12+1);pp.push(0);ap.push(0)}
+ for(i=0;i<rym.length;i++){var k=mi(rym[i]);if(rpp[i]!==null)pp[k]+=rpp[i]/100;if(rap[i]!==null)ap[k]+=rap[i]/100}
+ for(i=0;i<n;i++){if(ap[i]>0)dd=i}
+ var cP=0,cA=0;for(i=0;i<n;i++){cP+=pp[i];pc.push(cP);if(i<=dd){cA+=ap[i];ac.push(cA)}else{ap[i]=null;ac.push(null)}}}
+var el=document.getElementById('chart'),tip=document.getElementById('tip');
 if(n<2){el.innerHTML='<div class=empty>Not enough S-Curve data for the selected period.</div>';return}
 function Y(i){return Math.floor(ym[i]/100)}function M(i){return ym[i]%100}
 function lbl(i){return MN[M(i)-1]+' '+Y(i)}
@@ -139,7 +143,6 @@ function nz(v){return v===null?0:v}
 function planAt(i){for(var k=i;k>=0;k--){if(pc[k]!==null)return pc[k]}return 0}
 
 /* ---------- KPI @ DATA DATE ---------- */
-var dd=-1;for(var i=0;i<n;i++){if(ac[i]!==null)dd=i}
 var A=dd>=0?ac[dd]:null,P=planAt(dd>=0?dd:n-1);
 var V=A!==null?A-P:null,SPI=(A!==null&&P>0)?A/P:null;
 var st=SPI===null?'n':SPI>=1?'g':SPI>=0.95?'a':'n';
@@ -198,9 +201,9 @@ function draw(){
 
  /* forecast zone after data date */
  if(dd>=0&&dd<n-1){var fx=x(dd)+step/2;E('rect',{x:fx,y:pad.t,width:W-pad.r-fx,height:ch,fill:C.ink,'fill-opacity':0.025},svg);
-  E('line',{x1:x(dd),x2:x(dd),y1:pad.t-6,y2:base,stroke:SC,'stroke-width':0.8,'stroke-dasharray':'3,3','stroke-opacity':0.45},svg);
-  T('DATA DATE',{x:x(dd),y:pad.t-10,'text-anchor':'middle','font-size':'7px','font-weight':600,'letter-spacing':1.5,fill:SC,'fill-opacity':0.7},svg);
-  T('FORECAST',{x:(fx+W-pad.r)/2,y:pad.t+12,'text-anchor':'middle','font-size':'7px','font-weight':500,'letter-spacing':2,fill:C.mut,'fill-opacity':0.6},svg)}
+  E('line',{x1:x(dd),x2:x(dd),y1:pad.t,y2:base,stroke:SC,'stroke-width':0.8,'stroke-dasharray':'3,3','stroke-opacity':0.45},svg);
+  T('DATA DATE',{'class':'halo',x:x(dd)-5,y:base-6,'text-anchor':'end','font-size':'7px','font-weight':600,'letter-spacing':1.5,fill:SC,'fill-opacity':0.7},svg);
+  if(W-pad.r-fx>80)T('FORECAST',{x:(fx+W-pad.r)/2,y:pad.t+12,'text-anchor':'middle','font-size':'7px','font-weight':500,'letter-spacing':2,fill:C.mut,'fill-opacity':0.6},svg)}
 
  /* x-axis : months + years */
  var every=step>=24?1:step>=10?3:step>=5?6:12;
@@ -229,8 +232,8 @@ function draw(){
  /* plan finish label */
  var lp=-1;for(i=n-1;i>=0;i--){if(pc[i]!==null){lp=i;break}}
  if(lp>=0&&lp!==dd){var fg=E('g',{'class':'fade'},svg);E('circle',{cx:x(lp),cy:yC(pc[lp]),r:3,fill:'#FFF',stroke:C.pri,'stroke-width':1.3},fg);
-  T('PLAN FINISH',{'class':'halo',x:x(lp),y:yC(pc[lp])-20,'text-anchor':'end','font-size':'7px','font-weight':500,'letter-spacing':1.2,fill:C.pri,'fill-opacity':0.7},fg);
-  T(pct(pc[lp])+' · '+MN[M(lp)-1]+' '+String.fromCharCode(39)+String(Y(lp)).slice(2),{'class':'halo',x:x(lp),y:yC(pc[lp])-9,'text-anchor':'end','font-size':'9px','font-weight':600,fill:C.pri},fg)}
+  if(dd<0||x(lp)-x(dd)>120){T('PLAN FINISH',{'class':'halo',x:x(lp),y:yC(pc[lp])-20,'text-anchor':'end','font-size':'7px','font-weight':500,'letter-spacing':1.2,fill:C.pri,'fill-opacity':0.7},fg);
+  T(pct(pc[lp])+' · '+MN[M(lp)-1]+' '+String.fromCharCode(39)+String(Y(lp)).slice(2),{'class':'halo',x:x(lp),y:yC(pc[lp])-9,'text-anchor':'end','font-size':'9px','font-weight':600,fill:C.pri},fg)}}
 
  /* data-date callout : actual pill + plan point + variance bracket */
  if(dd>=0){var cg=E('g',{'class':'fade'},svg),px=x(dd),ay=yC(A),py=yC(P),behind=A<P;
@@ -239,8 +242,8 @@ function draw(){
   var right=px+70<W-pad.r,vx=right?px+9:px-9,va=right?'start':'end';
   if(Math.abs(ay-py)>12)T(pts(V),{'class':'halo',x:vx,y:(ay+py)/2+3,'text-anchor':va,'font-size':'8.5px','font-weight':600,fill:SC},cg);
   T('PLAN '+pct(P),{'class':'halo',x:px,y:behind?py-9:py+15,'text-anchor':'middle','font-size':'7.5px','font-weight':500,fill:C.pri,'fill-opacity':0.85},cg);
-  var pw=58,phh=20,pyy=behind?ay+14:ay-36;pyy=Math.max(pad.t-4,Math.min(base-phh-2,pyy));var pxx=Math.max(pad.l,Math.min(W-pad.r-pw,px-pw/2));
-  T('ACTUAL',{x:pxx+pw/2,y:behind?pyy+phh+9:pyy-4,'text-anchor':'middle','font-size':'7px','font-weight':500,'letter-spacing':1.5,fill:SC,'fill-opacity':0.7},cg);
+  var pw=58,phh=20,pyy=(behind||ay-36<pad.t+6)?ay+14:ay-36;pyy=Math.max(pad.t-4,Math.min(base-phh-2,pyy));var pxx=Math.max(pad.l,Math.min(W-pad.r-pw,px-pw/2));
+  T('ACTUAL',{x:pxx+pw/2,y:pyy>ay?pyy+phh+9:pyy-4,'text-anchor':'middle','font-size':'7px','font-weight':500,'letter-spacing':1.5,fill:SC,'fill-opacity':0.7},cg);
   E('rect',{x:pxx,y:pyy,width:pw,height:phh,rx:10,fill:'#FFF'},cg);
   E('rect',{x:pxx,y:pyy,width:pw,height:phh,rx:10,fill:SC,'fill-opacity':0.12,stroke:SC,'stroke-width':0.8,'stroke-opacity':0.3},cg);
   T(pct(A),{x:pxx+pw/2,y:pyy+13.5,'text-anchor':'middle','font-size':'10.5px','font-weight':600,fill:SC},cg);
