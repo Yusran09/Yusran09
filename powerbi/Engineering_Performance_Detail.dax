@@ -3,6 +3,7 @@ Engineering Performance Detail HTML =
    ENGINEERING PERFORMANCE DETAIL  ·  HTML Content visual (3 flip cards)
    ---------------------------------------------------------------------
    Frame      : root 500 px · panel 484 px · card 400 px   (unchanged)
+   Style      : monochrome report style · RAG colour only as status accent
    Front      : KPI + RAG status + secondary KPIs + data-driven insight
                 visual (no hard-coded profile bars) + auto narrative
    Back       : purpose · definitions · RAG rules · recommended action
@@ -36,10 +37,12 @@ VAR _cText   = "#6B7785"
 VAR _cMuted  = "#8A9099"
 VAR _cLine   = "#E6EBF1"
 VAR _cSoft   = "#F6F8FB"
-VAR _cDel    = "#243761"    -- deliverable identity (navy)
-VAR _cRev    = "#22A9D8"    -- review identity (sky blue)
-VAR _cTQ     = "#6FB3AE"    -- technical identity (sage)
-VAR _cAged   = "#EB666B"    -- aged / exceeding target (coral)
+VAR _cIcon   = "#56698F"    -- icon stroke (slate)
+VAR _cData   = "#56698F"    -- primary data series (slate)
+VAR _cData2  = "#C9D2DE"    -- secondary data series (light slate)
+VAR _cZone1  = "#E6EBF1"    -- severity scale, low
+VAR _cZone2  = "#D3DBE5"    -- severity scale, medium
+VAR _cZone3  = "#BCC7D5"    -- severity scale, high
 VAR _cGood   = "#0F9B80"
 VAR _cWarn   = "#E39016"
 VAR _cBad    = "#D65365"
@@ -129,9 +132,9 @@ VAR _TQAct =
         "Hold a TQ clearance session with the client and vendors; prioritise TQs blocking IFC or procurement." )
 
 -- 7. ICONS ----------------------------------------------------------------
-VAR _IcoDel = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cDel & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M9 4h6'/><rect x='5' y='4' width='14' height='17' rx='2'/><path d='M9 11l2 2 4-4'/><path d='M9 17h6'/></svg>"
-VAR _IcoRev = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cRev & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='5' width='16' height='15' rx='2'/><path d='M8 3v4'/><path d='M16 3v4'/><path d='M4 10h16'/><path d='M12 13v3l2 1'/></svg>"
-VAR _IcoTQ  = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cTQ & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z'/><path d='M10 9.5a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9V13'/><circle cx='12' cy='15.6' r='.6' fill='" & _cTQ & "'/></svg>"
+VAR _IcoDel = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cIcon & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M9 4h6'/><rect x='5' y='4' width='14' height='17' rx='2'/><path d='M9 11l2 2 4-4'/><path d='M9 17h6'/></svg>"
+VAR _IcoRev = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cIcon & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='5' width='16' height='15' rx='2'/><path d='M8 3v4'/><path d='M16 3v4'/><path d='M4 10h16'/><path d='M12 13v3l2 1'/></svg>"
+VAR _IcoTQ  = "<svg viewBox='0 0 24 24' fill='none' stroke='" & _cIcon & "' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z'/><path d='M10 9.5a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9V13'/><circle cx='12' cy='15.6' r='.6' fill='" & _cIcon & "'/></svg>"
 VAR _IcoInfo = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'><path d='M12 11v6'/><circle cx='12' cy='7.5' r='.9' fill='currentColor' stroke='none'/></svg>"
 VAR _IcoBack = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 14L4 9l5-5'/><path d='M4 9h10a6 6 0 0 1 0 12h-3'/></svg>"
 
@@ -141,7 +144,7 @@ RETURN
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:transparent}
-body{font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
+body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
 .eng-root{width:100%;height:500px;min-height:500px;padding:8px;background:#FFFFFF;overflow:hidden}
 .eng-panel{width:100%;height:484px;padding:16px 18px 14px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:16px;box-shadow:0 5px 18px rgba(28,58,94,.05);overflow:hidden}
 
@@ -161,10 +164,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
 .inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.4,.2,.2,1)}
 .tg:checked+.inner{transform:rotateY(180deg)}
 .card{position:absolute;inset:0;padding:16px 18px 14px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.045);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.card:before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:var(--id)}
 .front{display:flex;flex-direction:column;padding-bottom:50px}
 .back{transform:rotateY(180deg);background:linear-gradient(180deg," & _cSoft & " 0%,#FFFFFF 40%)}
-.del{--id:" & _cDel & "}.rev{--id:" & _cRev & "}.tq{--id:" & _cTQ & "}
 
 /* ---------- info / back button ---------- */
 .btn{position:absolute;top:14px;right:14px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#FFFFFF;border:1px solid " & _cLine & ";color:" & _cText & ";cursor:pointer;transition:all .18s ease;z-index:2}
@@ -184,7 +185,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
 .kl{font-size:9px;font-weight:600;color:" & _cText & "}
 .kv{margin-top:3px;font-size:38px;line-height:.95;font-weight:700;letter-spacing:-.04em;color:" & _cInk & "}
 .kc{margin-top:5px;font-size:8px;color:" & _cMuted & "}
-.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:7.5px;font-weight:700;letter-spacing:.07em;white-space:nowrap;margin-bottom:4px}
+.pill{background:#F4F6F9;border:1px solid " & _cLine & ";color:" & _cInk & ";display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font-size:7.5px;font-weight:700;letter-spacing:.07em;white-space:nowrap;margin-bottom:4px}
 .pill i{width:6px;height:6px;border-radius:50%;display:inline-block}
 
 /* ---------- secondary KPI ---------- */
@@ -198,7 +199,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
 .viz{margin-top:auto;margin-bottom:10px;min-height:110px;padding:12px 13px 10px;display:flex;flex-direction:column;justify-content:space-between;background:" & _cSoft & ";border:1px solid " & _cLine & ";border-radius:10px}
 .vh{display:flex;justify-content:space-between;align-items:baseline}
 .vt{font-size:7px;font-weight:700;letter-spacing:.1em;color:" & _cMuted & ";text-transform:uppercase}
-.vv{font-size:10px;font-weight:700}
+.vv{font-size:10px;font-weight:700;color:" & _cInk & "}
 .trk{position:relative;height:10px;margin-top:10px;border-radius:4px;background:#E9EEF4;display:flex;overflow:visible}
 .trk>b{height:100%;display:block}
 .trk>b:first-child{border-radius:4px 0 0 4px}.trk>b:last-of-type{border-radius:0 4px 4px 0}
@@ -278,18 +279,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
       <div class='kv'>" & _sLate & "</div>
       <div class='kc'>Past planned issue date at cut-off</div>
      </div>
-     <div class='pill' style='background:" & _cDelS & "1A;color:" & _cDelS & "'><i style='background:" & _cDelS & "'></i>" & _DelStatus & "</div>
+     <div class='pill'><i style='background:" & _cDelS & "'></i>" & _DelStatus & "</div>
     </div>
     <div class='sec'>
      <div class='si'><div class='sv'>" & _sMaxOv & "<small>days</small></div><div class='sl'>Maximum Overdue</div></div>
      <div class='si'><div class='sv'>" & _sOpenAct & "</div><div class='sl'>Open Actions</div></div>
     </div>
     <div class='viz'>
-     <div class='vh'><span class='vt'>Overdue Severity · Oldest Item</span><span class='vv' style='color:" & _cDelS & "'>" & _sOvMark & "</span></div>
+     <div class='vh'><span class='vt'>Overdue Severity · Oldest Item</span><span class='vv'>" & _sOvMark & "</span></div>
      <div class='trk'>
-      <b style='width:" & _pZ1 & "%;background:" & _cGood & "40'></b>
-      <b style='width:" & _pZ2 & "%;background:" & _cWarn & "4D'></b>
-      <b style='width:" & _pZ3 & "%;background:" & _cBad & "40'></b>
+      <b style='width:" & _pZ1 & "%;background:" & _cZone1 & "'></b>
+      <b style='width:" & _pZ2 & "%;background:" & _cZone2 & "'></b>
+      <b style='width:" & _pZ3 & "%;background:" & _cZone3 & "'></b>
       <div class='mk' style='left:" & _pOv & "%;border-color:" & _cDelS & "'></div>
      </div>
      <div class='scl'>
@@ -358,26 +359,26 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
       <div class='kv'>" & _sUnder & "</div>
       <div class='kc'>Awaiting reviewer / client return</div>
      </div>
-     <div class='pill' style='background:" & _cRevS & "1A;color:" & _cRevS & "'><i style='background:" & _cRevS & "'></i>" & _RevStatus & "</div>
+     <div class='pill'><i style='background:" & _cRevS & "'></i>" & _RevStatus & "</div>
     </div>
     <div class='sec'>
      <div class='si'><div class='sv'>" & _sAvgAge & "<small>days</small></div><div class='sl'>Average Review Age</div></div>
      <div class='si'><div class='sv'>" & _sOver14 & "</div><div class='sl'>Age &gt; " & _sRevTgt & " Days</div></div>
     </div>
     <div class='viz'>
-     <div class='vh'><span class='vt'>Review Age Composition</span><span class='vv' style='color:" & _cRevS & "'>" & _sAgedPct & " aged</span></div>
+     <div class='vh'><span class='vt'>Review Age Composition</span><span class='vv'>" & _sAgedPct & " aged</span></div>
      <div class='trk'>
-      <b style='width:" & _pWithin & "%;background:" & _cRev & "'></b>
-      <b style='width:" & _pAged & "%;background:" & _cAged & "'></b>
+      <b style='width:" & _pWithin & "%;background:" & _cData2 & "'></b>
+      <b style='width:" & _pAged & "%;background:" & _cData & "'></b>
      </div>
      <div class='lgd'>
-      <span><i style='background:" & _cRev & "'></i>&le; " & _sRevTgt & " d · " & _sWithin & " (" & _sWithPct & ")</span>
-      <span><i style='background:" & _cAged & "'></i>&gt; " & _sRevTgt & " d · " & _sOver14 & " (" & _sAgedPct & ")</span>
+      <span><i style='background:" & _cData2 & "'></i>&le; " & _sRevTgt & " d · " & _sWithin & " (" & _sWithPct & ")</span>
+      <span><i style='background:" & _cData & "'></i>&gt; " & _sRevTgt & " d · " & _sOver14 & " (" & _sAgedPct & ")</span>
      </div>
      <div class='vr' style='display:block'>
       <div style='display:flex;justify-content:space-between'><span>Average age vs " & _sRevTgt & "-day target</span><b>" & _sAvgAge & " d</b></div>
       <div class='trk' style='height:5px;margin-top:6px'>
-       <div class='fill' style='width:" & _pAvgAge & "%;background:" & _cRevS & "'></div>
+       <div class='fill' style='width:" & _pAvgAge & "%;background:" & _cData & "'></div>
        <div class='tick' style='left:" & _pRevTgt & "%'></div>
       </div>
      </div>
@@ -440,23 +441,23 @@ body{font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
       <div class='kv'>" & _sOpenTQ & "</div>
       <div class='kc'>Awaiting response or close-out</div>
      </div>
-     <div class='pill' style='background:" & _cTQS & "1A;color:" & _cTQS & "'><i style='background:" & _cTQS & "'></i>" & _TQStatus & "</div>
+     <div class='pill'><i style='background:" & _cTQS & "'></i>" & _TQStatus & "</div>
     </div>
     <div class='sec'>
      <div class='si'><div class='sv'>" & _sComments & "</div><div class='sl'>Open Comments</div></div>
      <div class='si'><div class='sv'>" & _sClosure & "</div><div class='sl'>TQ Closure</div></div>
     </div>
     <div class='viz'>
-     <div class='vh'><span class='vt'>TQ Closure vs Target</span><span class='vv' style='color:" & _cTQS & "'>" & _sClosure & "</span></div>
+     <div class='vh'><span class='vt'>TQ Closure vs Target</span><span class='vv'>" & _sClosure & "</span></div>
      <div class='trk'>
-      <div class='fill' style='width:" & _pClosure & "%;background:" & _cTQ & "'></div>
+      <div class='fill' style='width:" & _pClosure & "%;background:" & _cData & "'></div>
       <div class='tick' style='left:" & _pTQTgt & "%'></div>
      </div>
      <div class='scl'>
       <span style='left:0'>0%</span>
       <span style='left:" & _pTQTgt & "%;transform:translateX(-100%);padding-right:4px'>Target " & _sTQTarget & "</span>
      </div>
-     <div class='vr'><span>Gap to closure target</span><b style='color:" & _cTQS & "'>" & _sTQGap & "</b></div>
+     <div class='vr'><span>Gap to closure target</span><b>" & _sTQGap & "</b></div>
     </div>
     <div class='nar'>" & _TQNarr & "</div>
    </div>
