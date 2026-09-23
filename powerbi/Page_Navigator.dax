@@ -22,7 +22,7 @@ VAR _Version    = "PMIS · v1.0"
 VAR _cInk    = "#1C3A5E"
 VAR _cNavy   = "#243761"
 VAR _cText   = "#5F6C7B"
-VAR _cMuted  = "#9AA3AD"
+VAR _cMuted  = "#8A9099"
 VAR _cLine   = "#E6EBF1"
 VAR _cHover  = "#F5F7FA"
 VAR _cActive = "#EEF2F8"
@@ -66,13 +66,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent!importan
 .brand{display:flex;align-items:center;gap:10px;padding:2px 6px 14px;border-bottom:1px solid " & _cLine & ";flex-shrink:0}
 .logo{width:32px;height:32px;flex-shrink:0;border-radius:9px;background:" & _cNavy & ";display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(36,55,97,.25)}
 .logo svg{width:17px;height:17px}
-.bn{font-size:12.5px;font-weight:700;letter-spacing:-.01em;color:" & _cInk & ";white-space:nowrap}
-.bs{margin-top:2px;font-size:8.5px;color:" & _cMuted & ";white-space:nowrap}
+.bn{font-size:13px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap}
+.bs{margin-top:2px;font-size:9px;color:" & _cMuted & ";white-space:nowrap}
 
 /* menu */
 .menu{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:4px 2px 8px 0}
 .menu::-webkit-scrollbar{width:3px}.menu::-webkit-scrollbar-thumb{background:" & _cLine & ";border-radius:3px}
-.sec{margin:14px 0 5px 10px;font-size:7.5px;font-weight:700;letter-spacing:.14em;color:" & _cMuted & ";text-transform:uppercase}
+.sec{margin:14px 0 5px 10px;font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase}
 .it{position:relative;display:flex;align-items:center;gap:10px;height:32px;padding:0 8px 0 10px;margin-bottom:1px;border-radius:8px;color:" & _cText & ";cursor:pointer;transition:background .16s ease,color .16s ease}
 .it:hover{background:" & _cHover & ";color:" & _cInk & "}
 .it svg{width:17px;height:17px;flex-shrink:0}
@@ -97,7 +97,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent!importan
 
 /* context card */
 .ctx{flex-shrink:0;margin-top:8px;padding:12px 12px 11px;border:1px solid " & _cLine & ";border-radius:11px;background:linear-gradient(160deg,#FAFBFD 0%,#F4F7FA 100%)}
-.ck{display:flex;align-items:center;gap:6px;font-size:7px;font-weight:700;letter-spacing:.14em;color:" & _cMuted & ";text-transform:uppercase}
+.ck{display:flex;align-items:center;gap:6px;font-size:7px;font-weight:700;letter-spacing:.14em;white-space:nowrap;color:" & _cMuted & ";text-transform:uppercase}
 .ck i{width:6px;height:6px;border-radius:50%;background:" & _cGood & ";box-shadow:0 0 0 3px rgba(15,155,128,.12)}
 .ct{margin-top:8px;font-size:12px;line-height:1.25;font-weight:700;color:" & _cInk & "}
 .cs{margin-top:3px;font-size:8.5px;line-height:1.35;color:" & _cText & "}

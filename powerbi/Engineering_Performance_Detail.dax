@@ -146,13 +146,13 @@ RETURN
 html,body{width:100%;height:100%;overflow:hidden;background:transparent}
 body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;color:" & _cInk & "}
 .eng-root{width:100%;height:500px;min-height:500px;padding:8px;background:#FFFFFF;overflow:hidden}
-.eng-panel{width:100%;height:484px;padding:16px 18px 14px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:16px;box-shadow:0 5px 18px rgba(28,58,94,.05);overflow:hidden}
+.eng-panel{width:100%;height:484px;padding:16px 20px 14px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:16px;box-shadow:0 5px 18px rgba(28,58,94,.05);overflow:hidden}
 
 /* ---------- panel header ---------- */
 .ph{height:50px;padding:0 4px 10px;border-bottom:1px solid " & _cLine & ";display:flex;justify-content:space-between;align-items:flex-end}
-.ph-eb{font-size:8px;font-weight:700;letter-spacing:.18em;color:" & _cMuted & ";text-transform:uppercase}
-.ph-tt{margin-top:4px;font-size:20px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
-.ph-sb{margin-top:3px;font-size:9px;color:" & _cText & "}
+.ph-eb{font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase}
+.ph-tt{margin-top:4px;font-size:17px;line-height:1.15;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.ph-sb{margin-top:3px;font-size:9.5px;font-weight:400;color:" & _cText & "}
 .ph-lg{display:flex;gap:10px;font-size:7.5px;font-weight:700;letter-spacing:.08em;color:" & _cMuted & ";text-transform:uppercase}
 .ph-lg span{display:inline-flex;align-items:center;gap:4px}
 .ph-lg i{width:6px;height:6px;border-radius:50%;display:inline-block}
@@ -176,7 +176,7 @@ body{font-variant-numeric:tabular-nums;font-family:'Segoe UI',Arial,sans-serif;c
 .hd{display:flex;gap:10px;align-items:flex-start;padding-right:32px;height:44px}
 .ic{width:36px;height:36px;min-width:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#F3F6FA;border:1px solid " & _cLine & "}
 .ic svg{width:19px;height:19px}
-.eb{font-size:7px;font-weight:700;letter-spacing:.15em;color:" & _cMuted & ";text-transform:uppercase}
+.eb{font-size:7.5px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase}
 .tt{margin-top:4px;font-size:15px;font-weight:700;letter-spacing:-.015em;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ds{margin-top:3px;font-size:8.5px;color:" & _cText & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 

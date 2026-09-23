@@ -21,7 +21,7 @@ VAR _StaleDays  = 14                             -- > 14 days = stale
 VAR _cInk   = "#1C3A5E"
 VAR _cNavy  = "#243761"
 VAR _cText  = "#6B7785"
-VAR _cMuted = "#9AA3AD"
+VAR _cMuted = "#8A9099"
 VAR _cLine  = "#E6EBF1"
 VAR _cSoft  = "#F6F8FB"
 VAR _cGood  = "#0F9B80"
@@ -52,11 +52,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent!importan
 
 /* left : context */
 .lf{min-width:0;flex:0 1 auto}
-.crumb{display:flex;align-items:center;gap:5px;font-size:7.5px;font-weight:700;letter-spacing:.14em;color:" & _cMuted & ";text-transform:uppercase;white-space:nowrap}
+.crumb{display:flex;align-items:center;gap:5px;font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase;white-space:nowrap}
 .crumb svg{width:8px;height:8px;color:#C3CBD5}
 .crumb b{color:" & _cNavy & "}
 .ttl{display:flex;align-items:center;gap:9px;margin-top:5px}
-.ttl h1{font-size:18px;line-height:1;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl h1{font-size:20px;line-height:1;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tag{flex-shrink:0;height:18px;padding:0 8px;display:inline-flex;align-items:center;border-radius:999px;background:" & _cSoft & ";border:1px solid " & _cLine & ";font-size:7.5px;font-weight:700;letter-spacing:.06em;color:" & _cText & ";white-space:nowrap}
 
 /* right : cycle + freshness */

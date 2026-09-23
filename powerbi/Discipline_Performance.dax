@@ -138,9 +138,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent!importan
 
 /* header */
 .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:0 2px 12px;border-bottom:1px solid " & _cLine & ";flex-shrink:0}
-.kk{font-size:8px;font-weight:700;letter-spacing:.18em;color:" & _cMuted & ";text-transform:uppercase}
-.tt{margin-top:4px;font-size:19px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap}
-.sb{margin-top:3px;font-size:9px;color:" & _cText & ";white-space:nowrap}
+.kk{font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase}
+.tt{margin-top:4px;font-size:17px;line-height:1.15;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap}
+.sb{margin-top:3px;font-size:9.5px;font-weight:400;color:" & _cText & ";white-space:nowrap}
 .hr{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .btn{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid " & _cLine & ";border-radius:7px;background:#FFFFFF;color:" & _cInk & ";font-size:7.5px;font-weight:700;letter-spacing:.08em;cursor:pointer;white-space:nowrap;transition:all .18s ease}
 .btn svg{width:12px;height:12px;color:" & _cData & "}

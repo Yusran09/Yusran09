@@ -18,7 +18,7 @@ Engineering S-Curve Trend =
    ===================================================================== */
 
 -- 1. CONFIG ------------------------------------------------------------
-VAR _Badge     = "ENGINEERING"
+VAR _Badge     = "Engineering Progress"
 VAR _Title     = "Engineering S-Curve"
 VAR _Normalize = TRUE ()
 VAR _CutOff    = [PMIS Cut-Off Date]
@@ -92,28 +92,26 @@ VAR _VW = FORMAT ( _VarWatch * 10000, "0" )     -- pts x 100, locale-safe
 -- 5. HTML ---------------------------------------------------------------
 VAR _Html =
 "<!DOCTYPE html><html><head><meta charset='utf-8'>
-<link href='https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap' rel='stylesheet'>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{overflow:hidden;height:100vh;width:100%;background:transparent!important;font-family:'Jost',system-ui,sans-serif;color:" & _cInk & "}
+html,body{overflow:hidden;height:100vh;width:100%;background:transparent!important;font-family:'Segoe UI',Arial,sans-serif;font-variant-numeric:tabular-nums;color:" & _cInk & "}
 .tc{width:100%;height:100vh;display:flex;flex-direction:column;overflow:hidden;background:#FFFFFF;border:1px solid " & _cGrid & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.045)}
 .hdr{padding:16px 20px 4px;flex-shrink:0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-.badge{display:inline-flex;align-items:center;gap:5px;background:" & _cNavy & "14;padding:3px 10px;border-radius:999px;margin-bottom:4px}
-.badge span{font-size:9px;font-weight:500;letter-spacing:2px;color:" & _cNavy & "}
-.ttl{font-size:16px;font-weight:600;color:" & _cInk & "}
-.sub{font-size:11px;font-weight:300;color:" & _cText & ";margin-top:1px}
+.eb{font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase}
+.ttl{margin-top:4px;font-size:17px;line-height:1.15;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.sub{margin-top:3px;font-size:9.5px;font-weight:400;color:" & _cText & "}
 .kpi{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
 .pill{display:flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px}
 .pill span{font-size:12px;font-weight:600}
-.k-l{font-size:11px;font-weight:300;color:" & _cMuted & "}
+.k-l{font-size:11px;font-weight:400;color:" & _cMuted & "}
 .k-v{font-size:11px;font-weight:600;color:" & _cInk & "}
-.k-r{font-size:10px;font-weight:300;color:" & _cMuted & "}
+.k-r{font-size:10px;font-weight:400;color:" & _cMuted & "}
 .rgt{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
 .dd{font-size:8px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:" & _cMuted & "}
 .chip{display:flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px}
 .chip b{font-size:11px;font-weight:600}
 .chip i{font-style:normal;font-size:8px;font-weight:600;letter-spacing:1.2px}
-.mth{font-size:9px;font-weight:300;color:" & _cMuted & "}
+.mth{font-size:9px;font-weight:400;color:" & _cMuted & "}
 .mth b{font-weight:600;color:" & _cInk & "}
 .lg{display:flex;align-items:center;gap:9px;margin-top:4px}
 .lg span{display:inline-flex;align-items:center;gap:4px;font-size:7.5px;font-weight:500;color:" & _cInk & ";letter-spacing:0.4px}
@@ -131,7 +129,7 @@ html,body{overflow:hidden;height:100vh;width:100%;background:transparent!importa
 @keyframes pulse{0%,100%{opacity:.3;r:7}50%{opacity:.65;r:10}}
 #tip{position:absolute;pointer-events:none;opacity:0;transition:opacity .15s ease;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-radius:10px;padding:8px 11px;box-shadow:0 2px 12px rgba(28,58,94,.12);border:1px solid rgba(28,58,94,.10);min-width:160px;z-index:5}
 #tip .h{font-size:11px;font-weight:600;color:" & _cInk & "}
-#tip .pd{font-size:8px;font-weight:300;color:" & _cAxis & ";margin:1px 0 5px}
+#tip .pd{font-size:8px;font-weight:400;color:" & _cAxis & ";margin:1px 0 5px}
 #tip .r{display:flex;align-items:center;gap:6px;font-size:9.5px;color:" & _cMuted & ";margin-top:2px}
 #tip .r b{margin-left:auto;font-weight:600;color:" & _cInk & "}
 #tip .sw{display:inline-block;width:10px;height:2px;border-radius:1px}
@@ -147,7 +145,7 @@ html,body{overflow:hidden;height:100vh;width:100%;background:transparent!importa
 <div class='tc'>
  <div class='hdr'>
   <div>
-   <div class='badge'><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='" & _cNavy & "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 20 C9 20 9 4 21 4'/></svg><span>" & _Badge & "</span></div>
+   <div class='eb'>" & _Badge & "</div>
    <div class='ttl'>" & _Title & "</div>
    <div class='sub'>" & _Subtitle & "</div>
    <div class='kpi'>
