@@ -1,0 +1,355 @@
+Discipline Overview =
+/* =====================================================================
+   DISCIPLINE OVERVIEW CARD  ·  HTML Content visual (compact flip card)
+   ---------------------------------------------------------------------
+   Source   : MASTER_ACTIVITY per Discipline, current filter
+              Progress : average Actual % per building, then averaged
+                         across buildings (single building = direct avg)
+              Schedule : Start = MIN · Finish / Data Date / Delay = MAX
+   Frame    : 300 × 420 px nominal (width fluid, height fixed 420 px)
+   Front    : status + building scope · status mix across disciplines
+              · compact discipline list (worst first, scrollable):
+                progress bar + time-elapsed tick · forecast · delay
+   Back     : status rules · definitions · focus action
+   Style    : PMIS palette · monochrome · RAG colour only as accent
+   Flip     : pure CSS (checkbox + label), no JavaScript
+   ===================================================================== */
+
+-- 1. CONFIG ---------------------------------------------------------------
+VAR _DelayCrit = 30         -- days : delay above this = At risk
+
+-- 2. CONTEXT ----------------------------------------------------------------
+VAR _Scope    = SELECTEDVALUE ( 'Dim_Building Code'[Building ID], "All Buildings" )
+VAR _DataDate = MAX ( MASTER_ACTIVITY[Data Date] )
+
+-- 3. DISCIPLINE TABLE -------------------------------------------------------
+VAR _Base =
+    FILTER ( VALUES ( MASTER_ACTIVITY[Discipline] ), NOT ISBLANK ( MASTER_ACTIVITY[Discipline] ) )
+VAR _T1 =
+    ADDCOLUMNS (
+        _Base,
+        -- average per building, then across buildings (identical to direct average for one building)
+        "__Prog", AVERAGEX ( VALUES ( 'Dim_Building Code'[Building ID] ), CALCULATE ( AVERAGE ( MASTER_ACTIVITY[Actual %] ) ) ),
+        "__BLS",  CALCULATE ( MIN ( MASTER_ACTIVITY[BL Start] ) ),
+        "__BLF",  CALCULATE ( MAX ( MASTER_ACTIVITY[BL Finish] ) ),
+        "__ACS",  CALCULATE ( MIN ( MASTER_ACTIVITY[Actual Start] ) ),
+        "__FCF",  CALCULATE ( MAX ( MASTER_ACTIVITY[Forecast Finish] ) ),
+        "__Dly",  CALCULATE ( MAX ( MASTER_ACTIVITY[Delay (days)] ) )
+    )
+VAR _T2 =
+    ADDCOLUMNS (
+        _T1,
+        "__Pct",
+            VAR r = COALESCE ( [__Prog], 0 )
+            RETURN MIN ( 100, MAX ( 0, IF ( ABS ( r ) <= 1, r * 100, r ) ) ),
+        "__TE",
+            IF ( NOT ISBLANK ( [__BLS] ) && NOT ISBLANK ( [__BLF] ) && NOT ISBLANK ( _DataDate ) && [__BLF] > [__BLS],
+                MIN ( 1, MAX ( 0, DIVIDE ( INT ( _DataDate - [__BLS] ), INT ( [__BLF] - [__BLS] ) ) ) ) )
+    )
+VAR _T3 =
+    ADDCOLUMNS (
+        _T2,
+        "__Status",
+            SWITCH ( TRUE (),
+                ISBLANK ( [__BLS] ) || ISBLANK ( [__BLF] ),               "No Schedule",
+                [__Pct] >= 100,                                           "Complete",
+                ISBLANK ( [__ACS] ) && NOT ISBLANK ( _DataDate )
+                    && _DataDate > [__BLS],                               "Late Start",
+                ISBLANK ( [__ACS] ),                                      "Not Started",
+                [__Dly] > _DelayCrit,                                     "Critical",
+                [__Dly] > 0,                                              "Delayed",
+                [__Dly] < 0,                                              "Ahead",
+                "On Track" )
+    )
+VAR _T4 =
+    ADDCOLUMNS (
+        _T3,
+        -- 1 At risk · 2 Delayed · 3 On track · 4 Not due
+        "__Bucket",
+            SWITCH ( [__Status],
+                "Late Start", 1, "Critical", 1,
+                "Delayed", 2,
+                "Complete", 3, "Ahead", 3, "On Track", 3,
+                4 ),
+        "__DlySort", COALESCE ( [__Dly], -99999 )
+    )
+
+-- 4. PALETTE (PMIS) ---------------------------------------------------------
+VAR _cInk   = "#1C3A5E"
+VAR _cNavy  = "#243761"
+VAR _cText  = "#6B7785"
+VAR _cMuted = "#8A9099"
+VAR _cLine  = "#E6EBF1"
+VAR _cSoft  = "#F6F8FB"
+VAR _cData  = "#56698F"     -- slate : actual progress
+VAR _cNone  = "#C3CBD5"     -- not due
+VAR _cGood  = "#0F9B80"
+VAR _cWarn  = "#E39016"
+VAR _cBad   = "#D65365"
+
+-- 5. PORTFOLIO SUMMARY ------------------------------------------------------
+VAR _nTot  = COALESCE ( COUNTROWS ( _T4 ), 0 )
+VAR _nRisk = COALESCE ( COUNTROWS ( FILTER ( _T4, [__Bucket] = 1 ) ), 0 )
+VAR _nDly  = COALESCE ( COUNTROWS ( FILTER ( _T4, [__Bucket] = 2 ) ), 0 )
+VAR _nOn   = COALESCE ( COUNTROWS ( FILTER ( _T4, [__Bucket] = 3 ) ), 0 )
+VAR _nDue  = _nTot - _nRisk - _nDly - _nOn
+
+VAR _Status =
+    SWITCH ( TRUE (),
+        _nTot = 0,  "No Data",
+        _nRisk > 0, "Action Required",
+        _nDly > 0,  "Delay Watch",
+        "On Track" )
+VAR _cStatus = SWITCH ( _Status, "Action Required", _cBad, "Delay Watch", _cWarn, "On Track", _cGood, _cMuted )
+
+-- Worst discipline = first row of the list ordering
+VAR _Top      = TOPN ( 1, _T4, [__Bucket], ASC, [__DlySort], DESC, MASTER_ACTIVITY[Discipline], ASC )
+VAR _TopName  = MAXX ( _Top, MASTER_ACTIVITY[Discipline] )
+VAR _TopDly   = MAXX ( _Top, [__Dly] )
+VAR _TopFc    = MAXX ( _Top, [__FCF] )
+VAR _TopStat  = MAXX ( _Top, [__Status] )
+VAR _HasIssue = _nRisk + _nDly > 0
+
+-- Status mix widths (integer %, last segment absorbs rounding)
+VAR _w1 = IF ( _nTot = 0, 0, ROUND ( DIVIDE ( _nRisk, _nTot ) * 100, 0 ) )
+VAR _w2 = IF ( _nTot = 0, 0, ROUND ( DIVIDE ( _nDly, _nTot ) * 100, 0 ) )
+VAR _w3 = IF ( _nTot = 0, 0, ROUND ( DIVIDE ( _nOn, _nTot ) * 100, 0 ) )
+VAR _w4 = IF ( _nTot = 0, 0, MAX ( 0, 100 - _w1 - _w2 - _w3 ) )
+
+-- 6. DISPLAY STRINGS ------------------------------------------------------
+VAR _fV       = "+#,##0;-#,##0;0"
+VAR _sScope   = SUBSTITUTE ( _Scope, "&", "&amp;" )
+VAR _sDD      = IF ( ISBLANK ( _DataDate ), "—", FORMAT ( _DataDate, "dd mmm yyyy" ) )
+VAR _sTot     = FORMAT ( _nTot, "0" ) & IF ( _nTot = 1, " discipline", " disciplines" )
+VAR _sCnt     = FORMAT ( _nTot, "0" )
+VAR _sRisk    = FORMAT ( _nRisk, "0" )
+VAR _sDly     = FORMAT ( _nDly, "0" )
+VAR _sOn      = FORMAT ( _nOn, "0" )
+VAR _sDue     = FORMAT ( _nDue, "0" )
+-- only non-empty segments are drawn, so separators never show for a zero count
+VAR _Seg =
+    IF ( _w1 > 0, "<b style='width:" & FORMAT ( _w1, "0" ) & "%;background:" & _cBad & "'></b>" )
+        & IF ( _w2 > 0, "<b style='width:" & FORMAT ( _w2, "0" ) & "%;background:" & _cWarn & "'></b>" )
+        & IF ( _w3 > 0, "<b style='width:" & FORMAT ( _w3, "0" ) & "%;background:" & _cGood & "'></b>" )
+        & IF ( _w4 > 0, "<b style='width:" & FORMAT ( _w4, "0" ) & "%;background:" & _cNone & "'></b>" )
+VAR _sCrit    = FORMAT ( _DelayCrit, "0" )
+VAR _sTopName = SUBSTITUTE ( COALESCE ( _TopName, "—" ), "&", "&amp;" )
+VAR _sTopDly  = IF ( ISBLANK ( _TopDly ), IF ( _TopStat = "Late Start", "late start", "—" ), FORMAT ( _TopDly, _fV ) & " d" )
+VAR _sWorst   = IF ( _HasIssue, "Worst <b>" & _sTopName & " · " & _sTopDly & "</b>", "<b>No discipline delayed</b>" )
+VAR _sFocus   = IF ( _HasIssue, UPPER ( _sTopName ), "NO ACTION" )
+VAR _Action =
+    IF ( _HasIssue,
+        _sTopName & " carries the largest exposure (" & _sTopDly
+            & IF ( ISBLANK ( _TopFc ), "", ", forecast " & FORMAT ( _TopFc, "dd mmm yyyy" ) ) & "). "
+            & _sRisk & " at risk and " & _sDly & " delayed: agree recovery actions with the discipline leads before the next update.",
+        "All disciplines are on track or not yet due. Keep monitoring progress against time elapsed at each update." )
+
+-- 7. DISCIPLINE ROWS (worst first) ----------------------------------------
+VAR _Rows =
+    CONCATENATEX (
+        _T4,
+        VAR _rName  = SUBSTITUTE ( MASTER_ACTIVITY[Discipline], "&", "&amp;" )
+        VAR _rB     = [__Bucket]
+        VAR _rDot   = SWITCH ( _rB, 1, _cBad, 2, _cWarn, 3, _cGood, _cNone )
+        VAR _rPct   = FORMAT ( [__Pct], "0.0" ) & "%"
+        VAR _rW     = FORMAT ( ROUND ( [__Pct], 0 ), "0" )
+        VAR _rTick  = IF ( ISBLANK ( [__TE] ), "", "<u style='left:" & FORMAT ( ROUND ( [__TE] * 100, 0 ), "0" ) & "%'></u>" )
+        VAR _rFc    = IF ( ISBLANK ( [__FCF] ), "—", FORMAT ( [__FCF], "dd mmm yy" ) )
+        VAR _rDly   =
+            IF ( ISBLANK ( [__Dly] ),
+                IF ( [__Status] = "Late Start", "Late", "—" ),
+                FORMAT ( [__Dly], _fV ) & " d" )
+        VAR _rDc    =
+            SWITCH ( TRUE (),
+                [__Status] = "Late Start", _cBad,
+                ISBLANK ( [__Dly] ), _cMuted,
+                [__Dly] > _DelayCrit, _cBad,
+                [__Dly] > 0, _cWarn,
+                _cGood )
+        VAR _rStat  = [__Status]
+        RETURN
+            "<div class='rw' title='" & _rName & " · " & _rStat & "'><div class='rn'><i style='background:" & _rDot & "'></i><span>" & _rName & "</span></div><div class='rp'>" & _rPct & "</div><div class='rf'>" & _rFc & "</div><div class='rd'><span style='color:" & _rDc & ";border-color:" & _rDc & "'>" & _rDly & "</span></div><div class='rb'><b style='width:" & _rW & "%'></b>" & _rTick & "</div></div>"
+        ,
+        "",
+        [__Bucket], ASC,
+        [__DlySort], DESC,
+        MASTER_ACTIVITY[Discipline], ASC
+    )
+
+-- 8. ICONS ----------------------------------------------------------------
+VAR _iDisc  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3l9 4.5-9 4.5-9-4.5z'/><path d='M3 12l9 4.5 9-4.5'/><path d='M3 16.5l9 4.5 9-4.5'/></svg>"
+VAR _iBldg  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 21h18'/><path d='M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16'/><path d='M15 9h3a1 1 0 0 1 1 1v11'/></svg>"
+VAR _iInfo  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'><path d='M12 11v6'/><circle cx='12' cy='7.5' r='.9' fill='currentColor' stroke='none'/></svg>"
+VAR _iBack  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 14L4 9l5-5'/><path d='M4 9h10a6 6 0 0 1 0 12h-3'/></svg>"
+
+-- 9. HTML -----------------------------------------------------------------
+RETURN
+"<div class='do-root'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+body{font-family:'Segoe UI',Arial,sans-serif;font-variant-numeric:tabular-nums;color:" & _cInk & "}
+.do-root{width:100%;height:420px;overflow:hidden}
+.flip{position:relative;width:100%;height:100%;perspective:1400px}
+.tg{display:none}
+.inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.4,.2,.2,1)}
+.tg:checked+.inner{transform:rotateY(180deg)}
+.card{position:absolute;inset:0;padding:13px 14px 12px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.05);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.front{display:flex;flex-direction:column}
+.back{transform:rotateY(180deg);background:linear-gradient(180deg," & _cSoft & " 0%,#FFFFFF 42%)}
+
+/* info / back button */
+.btn{position:absolute;top:12px;right:12px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#FFFFFF;border:1px solid " & _cLine & ";color:" & _cText & ";cursor:pointer;transition:all .18s ease;z-index:2}
+.btn svg{width:12px;height:12px}
+.btn:hover{background:" & _cInk & ";border-color:" & _cInk & ";color:#FFFFFF}
+
+/* header */
+.hd{display:flex;gap:10px;align-items:center;padding:0 0 10px 0;border-bottom:1px solid " & _cLine & "}
+.tile{width:38px;height:38px;min-width:38px;border-radius:10px;background:" & _cNavy & ";color:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(36,55,97,.22)}
+.tile svg{width:19px;height:19px}
+.eb{font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase;white-space:nowrap}
+.nm{margin-top:3px;padding-right:30px;font-size:17px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:5px;margin-top:5px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:4px;height:16px;padding:0 7px;border-radius:999px;background:#F4F6F9;border:1px solid " & _cLine & ";font-size:7.5px;font-weight:700;letter-spacing:.05em;color:" & _cInk & ";white-space:nowrap;text-transform:uppercase}
+.chip i{width:5px;height:5px;border-radius:50%;display:inline-block}
+.chip svg{width:8px;height:8px;color:" & _cData & "}
+
+/* status mix */
+.mix{margin-top:9px;padding:9px 11px 8px;background:" & _cSoft & ";border:1px solid " & _cLine & ";border-radius:11px}
+.mt{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mw{min-width:0;font-size:8px;color:" & _cText & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mw b{color:" & _cInk & "}
+.sb{display:flex;height:7px;margin-top:7px;border-radius:4px;overflow:hidden;background:#E9EEF4}
+.sb b{display:block;height:100%}
+.sb b+b{border-left:1.5px solid " & _cSoft & "}
+.ml{display:flex;justify-content:space-between;margin-top:6px;font-size:7.5px;color:" & _cText & ";white-space:nowrap}
+.ml span{display:inline-flex;align-items:center;gap:4px}
+.ml i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.ml b{font-size:9px;color:" & _cInk & "}
+
+/* discipline list */
+.lh,.rw{display:grid;grid-template-columns:minmax(0,1fr) 36px 44px 40px;column-gap:6px;align-items:center}
+.lh{margin-top:10px;padding:0 8px 4px 0;border-bottom:1px solid " & _cLine & ";font-size:6.5px;font-weight:700;letter-spacing:.1em;color:" & _cMuted & ";text-transform:uppercase}
+.lh span{text-align:right}.lh span:first-child{text-align:left}
+.ls{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:4px;margin-right:-4px}
+.ls::-webkit-scrollbar{width:4px}
+.ls::-webkit-scrollbar-track{background:#F0F3F7;border-radius:4px}
+.ls::-webkit-scrollbar-thumb{background:#BCC7D5;border-radius:4px}
+.rw{row-gap:4px;padding:6px 4px 6px 0;border-bottom:1px solid #EEF2F6;transition:background .15s ease}
+.rw:hover{background:" & _cSoft & "}
+.rn{display:flex;align-items:center;gap:6px;min-width:0}
+.rn i{width:6px;height:6px;min-width:6px;border-radius:50%;display:inline-block}
+.rn span{font-size:9px;font-weight:600;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp{grid-row:span 2;text-align:right;font-size:10.5px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.rf{grid-row:span 2;text-align:right;font-size:8px;font-weight:600;color:" & _cText & ";white-space:nowrap}
+.rd{grid-row:span 2;text-align:right}
+.rd span{display:inline-flex;align-items:center;height:15px;padding:0 5px;border-radius:4px;border:1px solid;background:#FFFFFF;font-size:8px;font-weight:700;white-space:nowrap}
+.rb{position:relative;grid-column:1;height:4px;margin-left:12px;border-radius:2px;background:#E9EEF4}
+.rb b{display:block;height:100%;border-radius:2px;background:" & _cData & "}
+.rb u{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;border-radius:1px;background:" & _cInk & ";opacity:.6}
+
+/* footer */
+.ft{display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid " & _cLine & ";font-size:7px;color:" & _cMuted & ";white-space:nowrap}
+.ft span{display:inline-flex;align-items:center;gap:4px}
+.ft .k1{width:10px;height:4px;border-radius:2px;background:" & _cData & ";display:inline-block}
+.ft .k2{width:2px;height:8px;border-radius:1px;background:" & _cInk & ";opacity:.6;display:inline-block}
+.ft b{color:" & _cInk & ";font-weight:700}
+
+/* back */
+.bt{margin-top:4px;padding-right:32px;font-size:17px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.bs{margin-top:3px;font-size:9.5px;color:" & _cText & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk{margin-top:9px;padding:8px 11px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:9px}
+.bl{font-size:7px;font-weight:700;letter-spacing:.12em;color:" & _cMuted & ";text-transform:uppercase}
+.rules{margin-top:5px;display:flex;flex-direction:column;gap:3px;font-size:8px;color:#4F5F70}
+.rules span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.rules i{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.rules b{min-width:52px;color:" & _cInk & "}
+.df{margin-top:5px;display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:3px;font-size:8px;line-height:1.35;color:#4F5F70}
+.df b{color:" & _cInk & ";white-space:nowrap}
+.act{position:absolute;left:14px;right:14px;bottom:12px;padding:8px 11px 8px 13px;border-radius:9px;border:1px solid " & _cLine & ";background:#FFFFFF}
+.act:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--st)}
+.act .bl{color:var(--st)}
+.bx{margin-top:4px;font-size:8.5px;line-height:1.42;color:#4F5F70}
+</style>
+
+<div class='flip'>
+ <input type='checkbox' id='flip-do' class='tg'>
+ <div class='inner'>
+
+  <!-- ======================= FRONT ======================= -->
+  <div class='card front' style='--st:" & _cStatus & "'>
+   <label for='flip-do' class='btn' title='How to read this card'>" & _iInfo & "</label>
+
+   <div class='hd'>
+    <div class='tile'>" & _iDisc & "</div>
+    <div style='min-width:0'>
+     <div class='eb'>Progress by Discipline</div>
+     <div class='nm'>Discipline Overview</div>
+     <div class='chips'>
+      <span class='chip'><i style='background:" & _cStatus & "'></i>" & _Status & "</span>
+      <span class='chip'>" & _iBldg & _sScope & "</span>
+     </div>
+    </div>
+   </div>
+
+   <div class='mix'>
+    <div class='mt'>
+     <span class='eb'>Status Mix</span>
+     <span class='mw'>" & _sWorst & "</span>
+    </div>
+    <div class='sb'>
+     " & _Seg & "
+    </div>
+    <div class='ml'>
+     <span><i style='background:" & _cBad & "'></i>At risk <b>" & _sRisk & "</b></span>
+     <span><i style='background:" & _cWarn & "'></i>Delayed <b>" & _sDly & "</b></span>
+     <span><i style='background:" & _cGood & "'></i>On track <b>" & _sOn & "</b></span>
+     <span><i style='background:" & _cNone & "'></i>Not due <b>" & _sDue & "</b></span>
+    </div>
+   </div>
+
+   <div class='lh'><span>Discipline · " & _sCnt & "</span><span>Prog.</span><span>Forecast</span><span>Delay</span></div>
+   <div class='ls'>" & _Rows & "</div>
+
+   <div class='ft'>
+    <span><i class='k1'></i>Actual %<i class='k2' style='margin-left:6px'></i>Time elapsed</span>
+    <span>DD <b>" & _sDD & "</b></span>
+   </div>
+  </div>
+
+  <!-- ======================= BACK ======================= -->
+  <div class='card back' style='--st:" & _cStatus & "'>
+   <label for='flip-do' class='btn' title='Back to overview'>" & _iBack & "</label>
+   <div class='eb'>How to read this card</div>
+   <div class='bt'>Discipline Assessment</div>
+   <div class='bs'>" & _sScope & " · " & _sTot & " · worst listed first</div>
+
+   <div class='blk'>
+    <div class='bl'>Status Rules · per discipline</div>
+    <div class='rules'>
+     <span><i style='background:" & _cBad & "'></i><b>At risk</b>Late start, or delay &gt; " & _sCrit & " days</span>
+     <span><i style='background:" & _cWarn & "'></i><b>Delayed</b>Delay 1–" & _sCrit & " days</span>
+     <span><i style='background:" & _cGood & "'></i><b>On track</b>Delay &le; 0, or 100% complete</span>
+     <span><i style='background:" & _cNone & "'></i><b>Not due</b>Before BL start, or no schedule</span>
+    </div>
+   </div>
+
+   <div class='blk'>
+    <div class='bl'>Definitions</div>
+    <div class='df'>
+     <b>Progress</b><span>Average Actual % per building, then averaged across buildings</span>
+     <b>Time tick</b><span>Baseline time elapsed at data date; bar behind the tick = progress lag</span>
+     <b>Forecast</b><span>Latest forecast finish of the discipline</span>
+     <b>Delay</b><span>Highest activity delay within the discipline</span>
+    </div>
+   </div>
+
+   <div class='act'>
+    <div class='bl'>Focus · " & _sFocus & "</div>
+    <div class='bx'>" & _Action & "</div>
+   </div>
+  </div>
+
+ </div>
+</div>
+</div>"
