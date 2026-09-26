@@ -1,0 +1,379 @@
+Workstep Overview =
+/* =====================================================================
+   WORKSTEP OVERVIEW CARD  ·  HTML Content visual (compact flip card)
+   ---------------------------------------------------------------------
+   Source   : WORK_STEP[Building ID] · [Discipline] · [Work Step] · [Progress %]
+              progress per work step = average over the current filter
+   Status   : 0 % = Not started · 1–99 % = In progress · 100 % = Complete
+   Filter   : internal discipline chips (pure CSS radio), affects this
+              card only: status chip, summary, step count and rows
+   Frame    : 300 × 420 px nominal (width fluid, height fixed 420 px)
+   Back     : status rules · definitions · focus
+   Style    : PMIS palette · monochrome · status colour only as accent
+   ===================================================================== */
+
+-- 1. CONTEXT ----------------------------------------------------------------
+VAR _Scope = SELECTEDVALUE ( WORK_STEP[Building ID], "All Buildings" )
+
+-- 2. PALETTE (PMIS) ---------------------------------------------------------
+VAR _cInk   = "#1C3A5E"
+VAR _cNavy  = "#243761"
+VAR _cText  = "#6B7785"
+VAR _cMuted = "#8A9099"
+VAR _cLine  = "#E6EBF1"
+VAR _cSoft  = "#F6F8FB"
+VAR _cData  = "#56698F"     -- slate : progress bar
+VAR _cDone  = "#0F9B80"     -- complete
+VAR _cProg  = "#22A9D8"     -- in progress
+VAR _cIdle  = "#C3CBD5"     -- not started (not a delay: no dates in WORK_STEP)
+
+-- 3. WORK STEP TABLE --------------------------------------------------------
+VAR _Disc =
+    FILTER ( VALUES ( WORK_STEP[Discipline] ), NOT ISBLANK ( WORK_STEP[Discipline] ) )
+VAR _WS0 =
+    FILTER (
+        SUMMARIZE ( WORK_STEP, WORK_STEP[Discipline], WORK_STEP[Work Step] ),
+        NOT ISBLANK ( WORK_STEP[Discipline] ) && NOT ISBLANK ( WORK_STEP[Work Step] )
+    )
+VAR _WS =
+    ADDCOLUMNS (
+        _WS0,
+        "__Pct",
+            VAR r = COALESCE ( CALCULATE ( AVERAGE ( WORK_STEP[Progress %] ) ), 0 )
+            RETURN MIN ( 100, MAX ( 0, IF ( ABS ( r ) <= 1, r * 100, r ) ) ),
+        "__K", RANKX ( _Disc, WORK_STEP[Discipline], WORK_STEP[Discipline], ASC, DENSE )
+    )
+
+-- 4. OVERALL SUMMARY --------------------------------------------------------
+VAR _nTot  = COALESCE ( COUNTROWS ( _WS ), 0 )
+VAR _nDone = COALESCE ( COUNTROWS ( FILTER ( _WS, [__Pct] >= 100 ) ), 0 )
+VAR _nZero = COALESCE ( COUNTROWS ( FILTER ( _WS, [__Pct] <= 0 ) ), 0 )
+VAR _nProg = _nTot - _nDone - _nZero
+VAR _Avg   = COALESCE ( AVERAGEX ( _WS, [__Pct] ), 0 )
+VAR _Status =
+    SWITCH ( TRUE (),
+        _nTot = 0,      "No Data",
+        _nDone = _nTot, "Complete",
+        _nZero = _nTot, "Not Started",
+        "In Progress" )
+VAR _cStatus = SWITCH ( _Status, "Complete", _cDone, "In Progress", _cProg, _cIdle )
+
+VAR _a1 = IF ( _nTot = 0, 0, ROUND ( DIVIDE ( _nDone, _nTot ) * 100, 0 ) )
+VAR _a2 = IF ( _nTot = 0, 0, ROUND ( DIVIDE ( _nProg, _nTot ) * 100, 0 ) )
+VAR _a3 = IF ( _nTot = 0, 0, MAX ( 0, 100 - _a1 - _a2 ) )
+VAR _SegAll =
+    IF ( _a1 > 0, "<b style='width:" & FORMAT ( _a1, "0" ) & "%;background:" & _cDone & "'></b>" )
+        & IF ( _a2 > 0, "<b style='width:" & FORMAT ( _a2, "0" ) & "%;background:" & _cProg & "'></b>" )
+        & IF ( _a3 > 0, "<b style='width:" & FORMAT ( _a3, "0" ) & "%;background:" & _cIdle & "'></b>" )
+
+-- Nearest to completion (focus on the back)
+VAR _Next     = TOPN ( 1, FILTER ( _WS, [__Pct] > 0 && [__Pct] < 100 ), [__Pct], DESC, WORK_STEP[Work Step], ASC )
+VAR _NextName = MAXX ( _Next, WORK_STEP[Work Step] )
+VAR _NextDisc = MAXX ( _Next, WORK_STEP[Discipline] )
+VAR _NextPct  = MAXX ( _Next, [__Pct] )
+
+-- 5. DISCIPLINE TABLE (per-discipline summary for the internal filter) ----
+VAR _DT =
+    ADDCOLUMNS (
+        _Disc,
+        "__K", RANKX ( _Disc, WORK_STEP[Discipline], WORK_STEP[Discipline], ASC, DENSE ),
+        "__N",
+            VAR d = WORK_STEP[Discipline]
+            RETURN COUNTROWS ( FILTER ( _WS, WORK_STEP[Discipline] = d ) ),
+        "__C",
+            VAR d = WORK_STEP[Discipline]
+            RETURN COALESCE ( COUNTROWS ( FILTER ( _WS, WORK_STEP[Discipline] = d && [__Pct] >= 100 ) ), 0 ),
+        "__Z",
+            VAR d = WORK_STEP[Discipline]
+            RETURN COALESCE ( COUNTROWS ( FILTER ( _WS, WORK_STEP[Discipline] = d && [__Pct] <= 0 ) ), 0 ),
+        "__A",
+            VAR d = WORK_STEP[Discipline]
+            RETURN COALESCE ( AVERAGEX ( FILTER ( _WS, WORK_STEP[Discipline] = d ), [__Pct] ), 0 )
+    )
+
+-- 6. DISPLAY STRINGS ------------------------------------------------------
+VAR _sScope = SUBSTITUTE ( _Scope, "&", "&amp;" )
+VAR _sTot   = FORMAT ( _nTot, "0" )
+VAR _sDone  = FORMAT ( _nDone, "0" )
+VAR _sProg  = FORMAT ( _nProg, "0" )
+VAR _sZero  = FORMAT ( _nZero, "0" )
+VAR _sAvg   = FORMAT ( _Avg, "0" )
+VAR _sDisc  = FORMAT ( COUNTROWS ( _Disc ), "0" )
+VAR _sStatusU = UPPER ( _Status )
+VAR _Focus =
+    IF ( ISBLANK ( _NextName ),
+        IF ( _Status = "Complete", "All work steps are complete for the selected scope.", "No work step is in progress yet; confirm start of the first work steps with the discipline leads." ),
+        _sProg & " work steps in progress and " & _sZero & " not started. Nearest to completion: <b>" & SUBSTITUTE ( _NextName, "&", "&amp;" ) & "</b> ("
+            & SUBSTITUTE ( _NextDisc, "&", "&amp;" ) & ", " & FORMAT ( _NextPct, "0" ) & "%); close it out to release the next step." )
+
+-- 7. PER-DISCIPLINE FRAGMENTS ---------------------------------------------
+VAR _Radios =
+    CONCATENATEX (
+        _DT,
+        VAR _dK = FORMAT ( [__K], "0" )
+        RETURN
+            "<input type='radio' name='ws-f' id='ws-" & _dK & "' class='dr'>"
+        ,
+        "", [__K], ASC
+    )
+VAR _Chips =
+    CONCATENATEX (
+        _DT,
+        VAR _dK    = FORMAT ( [__K], "0" )
+        VAR _dName = SUBSTITUTE ( WORK_STEP[Discipline], "&", "&amp;" )
+        VAR _dN    = FORMAT ( [__N], "0" )
+        RETURN
+            "<label for='ws-" & _dK & "' class='ch c-" & _dK & "'>" & _dName & "<small>" & _dN & "</small></label>"
+        ,
+        "", [__K], ASC
+    )
+VAR _HdStat =
+    CONCATENATEX (
+        _DT,
+        VAR _dK    = FORMAT ( [__K], "0" )
+        VAR _dStat = IF ( [__C] = [__N], "Complete", IF ( [__Z] = [__N], "Not Started", "In Progress" ) )
+        VAR _dSc   = SWITCH ( _dStat, "Complete", _cDone, "In Progress", _cProg, _cIdle )
+        RETURN
+            "<span class='chip hs hs-" & _dK & "'><i style='background:" & _dSc & "'></i>" & _dStat & "</span>"
+        ,
+        "", [__K], ASC
+    )
+VAR _Panels =
+    CONCATENATEX (
+        _DT,
+        VAR _dK    = FORMAT ( [__K], "0" )
+        VAR _dName = SUBSTITUTE ( WORK_STEP[Discipline], "&", "&amp;" )
+        VAR _dAvg  = FORMAT ( [__A], "0" )
+        VAR _dC    = FORMAT ( [__C], "0" )
+        VAR _dZ    = FORMAT ( [__Z], "0" )
+        VAR _dP    = FORMAT ( [__N] - [__C] - [__Z], "0" )
+        VAR _w1    = ROUND ( DIVIDE ( [__C], [__N] ) * 100, 0 )
+        VAR _w2    = ROUND ( DIVIDE ( [__N] - [__C] - [__Z], [__N] ) * 100, 0 )
+        VAR _w3    = MAX ( 0, 100 - _w1 - _w2 )
+        VAR _dSeg  =
+            IF ( _w1 > 0, "<b style='width:" & FORMAT ( _w1, "0" ) & "%;background:" & _cDone & "'></b>" )
+                & IF ( _w2 > 0, "<b style='width:" & FORMAT ( _w2, "0" ) & "%;background:" & _cProg & "'></b>" )
+                & IF ( _w3 > 0, "<b style='width:" & FORMAT ( _w3, "0" ) & "%;background:" & _cIdle & "'></b>" )
+        RETURN
+            "<div class='sp sp-" & _dK & "'><div class='sq'><div><div class='eb'>Average Progress</div><div class='av'>" & _dAvg & "<small>%</small></div><div class='sn'>" & _dName & "</div></div><div class='ct'><span><i style='background:" & _cDone & "'></i>Complete<b>" & _dC & "</b></span><span><i style='background:" & _cProg & "'></i>In progress<b>" & _dP & "</b></span><span><i style='background:" & _cIdle & "'></i>Not started<b>" & _dZ & "</b></span></div></div><div class='sb'>" & _dSeg & "</div></div>"
+        ,
+        "", [__K], ASC
+    )
+VAR _Counts =
+    CONCATENATEX (
+        _DT,
+        VAR _dK = FORMAT ( [__K], "0" )
+        VAR _dN = FORMAT ( [__N], "0" )
+        RETURN
+            "<span class='lc lc-" & _dK & "'>" & _dN & "</span>"
+        ,
+        "", [__K], ASC
+    )
+VAR _Css =
+    CONCATENATEX (
+        _DT,
+        VAR _dK = FORMAT ( [__K], "0" )
+        RETURN
+            "#ws-" & _dK & ":checked~.hd .hs-" & _dK & "{display:inline-flex}#ws-" & _dK & ":checked~.sum .sp-" & _dK & "{display:block}#ws-" & _dK & ":checked~.lh .lc-" & _dK & "{display:inline}#ws-" & _dK & ":checked~.ls .r-" & _dK & "{display:grid}#ws-" & _dK & ":checked~.fl .c-" & _dK & "{background:" & _cNavy & ";border-color:" & _cNavy & ";color:#FFFFFF}#ws-" & _dK & ":checked~.fl .c-" & _dK & " small{color:rgba(255,255,255,.7)}"
+        ,
+        "", [__K], ASC
+    )
+
+-- 8. WORK STEP ROWS (per discipline: most advanced first) -----------------
+VAR _Rows =
+    CONCATENATEX (
+        _WS,
+        VAR _wK    = FORMAT ( [__K], "0" )
+        VAR _wName = SUBSTITUTE ( WORK_STEP[Work Step], "&", "&amp;" )
+        VAR _wDisc = SUBSTITUTE ( WORK_STEP[Discipline], "&", "&amp;" )
+        VAR _wPct  = FORMAT ( [__Pct], "0" ) & "%"
+        VAR _wW    = FORMAT ( ROUND ( [__Pct], 0 ), "0" )
+        VAR _wStat = IF ( [__Pct] >= 100, "Complete", IF ( [__Pct] > 0, "In progress", "Not started" ) )
+        VAR _wSc   = IF ( [__Pct] >= 100, _cDone, IF ( [__Pct] > 0, _cProg, _cIdle ) )
+        RETURN
+            "<div class='rw r-" & _wK & "' title='" & _wName & " · " & _wDisc & "'><div class='rn'><span>" & _wName & "</span><small>" & _wDisc & "</small></div><div class='rp'><div class='rb'><b style='width:" & _wW & "%'></b></div><span>" & _wPct & "</span></div><div class='rs'><i style='background:" & _wSc & "'></i>" & _wStat & "</div></div>"
+        ,
+        "",
+        [__K], ASC,
+        [__Pct], DESC,
+        WORK_STEP[Work Step], ASC
+    )
+
+-- 9. ICONS ----------------------------------------------------------------
+VAR _iSteps = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M10 6h10'/><path d='M10 12h10'/><path d='M10 18h10'/><path d='M3.5 6l1.5 1.5L7.5 5'/><path d='M3.5 12l1.5 1.5L7.5 11'/><circle cx='5.2' cy='18' r='1.6'/></svg>"
+VAR _iBldg  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 21h18'/><path d='M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16'/><path d='M15 9h3a1 1 0 0 1 1 1v11'/></svg>"
+VAR _iInfo  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'><path d='M12 11v6'/><circle cx='12' cy='7.5' r='.9' fill='currentColor' stroke='none'/></svg>"
+VAR _iBack  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 14L4 9l5-5'/><path d='M4 9h10a6 6 0 0 1 0 12h-3'/></svg>"
+
+-- 10. HTML ----------------------------------------------------------------
+RETURN
+"<div class='wo-root'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+body{font-family:'Segoe UI',Arial,sans-serif;font-variant-numeric:tabular-nums;color:" & _cInk & "}
+.wo-root{width:100%;height:420px;overflow:hidden}
+.flip{position:relative;width:100%;height:100%;perspective:1400px}
+.tg,.dr,.ar{display:none}
+.inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.4,.2,.2,1)}
+.tg:checked+.inner{transform:rotateY(180deg)}
+.card{position:absolute;inset:0;padding:13px 14px 12px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.05);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.front{display:flex;flex-direction:column}
+.back{transform:rotateY(180deg);background:linear-gradient(180deg," & _cSoft & " 0%,#FFFFFF 42%)}
+
+/* info / back button */
+.btn{position:absolute;top:12px;right:12px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#FFFFFF;border:1px solid " & _cLine & ";color:" & _cText & ";cursor:pointer;transition:all .18s ease;z-index:2}
+.btn svg{width:12px;height:12px}
+.btn:hover{background:" & _cInk & ";border-color:" & _cInk & ";color:#FFFFFF}
+
+/* header */
+.hd{display:flex;gap:10px;align-items:center;padding:0 0 10px 0;border-bottom:1px solid " & _cLine & "}
+.tile{width:38px;height:38px;min-width:38px;border-radius:10px;background:" & _cNavy & ";color:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(36,55,97,.22)}
+.tile svg{width:19px;height:19px}
+.eb{font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase;white-space:nowrap}
+.nm{margin-top:3px;padding-right:30px;font-size:17px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:5px;margin-top:5px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:4px;height:16px;padding:0 7px;border-radius:999px;background:#F4F6F9;border:1px solid " & _cLine & ";font-size:7.5px;font-weight:700;letter-spacing:.05em;color:" & _cInk & ";white-space:nowrap;text-transform:uppercase}
+.chip i{width:5px;height:5px;border-radius:50%;display:inline-block}
+.chip svg{width:8px;height:8px;color:" & _cData & "}
+
+/* discipline filter chips */
+.fl{display:flex;gap:5px;margin-top:9px;padding-bottom:4px;overflow-x:auto;overflow-y:hidden;-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
+.fl::-webkit-scrollbar{height:3px}
+.fl::-webkit-scrollbar-thumb{background:#D3DBE5;border-radius:3px}
+.ch{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 9px;border-radius:999px;background:#FFFFFF;border:1px solid #D9E0E8;font-size:8px;font-weight:600;color:" & _cText & ";white-space:nowrap;cursor:pointer;transition:all .15s ease}
+.ch small{font-size:7px;font-weight:700;color:" & _cMuted & "}
+.ch:hover{border-color:" & _cData & ";color:" & _cInk & "}
+.fl .ch:last-child{margin-right:24px}
+
+/* summary panels (one per filter state) */
+.sum{margin-top:6px}
+.sp{display:none;padding:9px 11px 9px;background:" & _cSoft & ";border:1px solid " & _cLine & ";border-radius:11px}
+.sq{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.av{margin-top:3px;font-size:24px;line-height:1;font-weight:700;letter-spacing:-.04em;color:" & _cInk & "}
+.av small{font-size:12px;color:" & _cText & ";margin-left:1px}
+.sn{margin-top:3px;max-width:92px;font-size:8px;color:" & _cText & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct{display:flex;flex-direction:column;gap:3px;min-width:104px;font-size:8px;color:" & _cText & "}
+.ct span{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.ct i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.ct b{margin-left:auto;font-size:9.5px;color:" & _cInk & "}
+.sb{display:flex;height:6px;margin-top:8px;border-radius:3px;overflow:hidden;background:#E9EEF4}
+.sb b{display:block;height:100%}
+.sb b+b{border-left:1.5px solid " & _cSoft & "}
+
+/* work step list */
+.lh,.rw{display:grid;grid-template-columns:minmax(0,1fr) 70px 64px;column-gap:8px;align-items:center}
+.lh{margin-top:10px;padding:0 8px 4px 0;border-bottom:1px solid " & _cLine & ";font-size:6.5px;font-weight:700;letter-spacing:.1em;color:" & _cMuted & ";text-transform:uppercase}
+.lh span:not(:first-child){text-align:left}
+.lc{display:none}
+.ls{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:4px;margin-right:-4px}
+.ls::-webkit-scrollbar{width:4px}
+.ls::-webkit-scrollbar-track{background:#F0F3F7;border-radius:4px}
+.ls::-webkit-scrollbar-thumb{background:#BCC7D5;border-radius:4px}
+.rw{padding:6px 4px 6px 0;border-bottom:1px solid #EEF2F6;transition:background .15s ease}
+.rw:hover{background:" & _cSoft & "}
+.rn{min-width:0}
+.rn span{display:block;font-size:9px;font-weight:600;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rn small{display:block;margin-top:1px;font-size:7px;color:" & _cMuted & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp{display:flex;align-items:center;gap:6px}
+.rb{flex:1;height:4px;border-radius:2px;background:#E9EEF4;overflow:hidden}
+.rb b{display:block;height:100%;border-radius:2px;background:" & _cData & "}
+.rp span{width:26px;text-align:right;font-size:9px;font-weight:700;color:" & _cInk & "}
+.rs{display:flex;align-items:center;gap:5px;font-size:8px;font-weight:600;color:" & _cText & ";white-space:nowrap}
+.rs i{width:6px;height:6px;min-width:6px;border-radius:50%;display:inline-block}
+
+/* filter states : default = All */
+.hs{display:none}.hs-a{display:inline-flex}
+.sp-a{display:block}
+.lc-a{display:inline}
+#ws-a:checked~.fl .c-a{background:" & _cNavy & ";border-color:" & _cNavy & ";color:#FFFFFF}
+#ws-a:checked~.fl .c-a small{color:rgba(255,255,255,.7)}
+.dr:checked~.hd .hs,.dr:checked~.sum .sp,.dr:checked~.lh .lc,.dr:checked~.ls .rw{display:none}
+" & _Css & "
+
+/* back */
+.bt{margin-top:4px;padding-right:32px;font-size:17px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.bs{margin-top:3px;font-size:9.5px;color:" & _cText & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk{margin-top:9px;padding:8px 11px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:9px}
+.bl{font-size:7px;font-weight:700;letter-spacing:.12em;color:" & _cMuted & ";text-transform:uppercase}
+.rules{margin-top:5px;display:flex;flex-direction:column;gap:3px;font-size:8px;color:#4F5F70}
+.rules span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.rules i{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.rules b{min-width:62px;color:" & _cInk & "}
+.df{margin-top:5px;display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:3px;font-size:8px;line-height:1.35;color:#4F5F70}
+.df b{color:" & _cInk & ";white-space:nowrap}
+.act{position:absolute;left:14px;right:14px;bottom:12px;padding:8px 11px 8px 13px;border-radius:9px;border:1px solid " & _cLine & ";background:#FFFFFF}
+.act:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--st)}
+.act .bl{color:var(--st)}
+.bx{margin-top:4px;font-size:8.5px;line-height:1.42;color:#4F5F70}
+.bx b{color:" & _cInk & "}
+</style>
+
+<div class='flip'>
+ <input type='checkbox' id='flip-wo' class='tg'>
+ <div class='inner'>
+
+  <!-- ======================= FRONT ======================= -->
+  <div class='card front'>
+   <input type='radio' name='ws-f' id='ws-a' class='ar' checked>" & _Radios & "
+   <label for='flip-wo' class='btn' title='How to read this card'>" & _iInfo & "</label>
+
+   <div class='hd'>
+    <div class='tile'>" & _iSteps & "</div>
+    <div style='min-width:0'>
+     <div class='eb'>Work Step Progress</div>
+     <div class='nm'>Workstep Overview</div>
+     <div class='chips'>
+      <span class='chip hs hs-a'><i style='background:" & _cStatus & "'></i>" & _Status & "</span>" & _HdStat & "
+      <span class='chip'>" & _iBldg & _sScope & "</span>
+     </div>
+    </div>
+   </div>
+
+   <div class='fl'>
+    <label for='ws-a' class='ch c-a'>All<small>" & _sTot & "</small></label>" & _Chips & "
+   </div>
+
+   <div class='sum'>
+    <div class='sp sp-a'><div class='sq'><div><div class='eb'>Average Progress</div><div class='av'>" & _sAvg & "<small>%</small></div><div class='sn'>All disciplines</div></div><div class='ct'><span><i style='background:" & _cDone & "'></i>Complete<b>" & _sDone & "</b></span><span><i style='background:" & _cProg & "'></i>In progress<b>" & _sProg & "</b></span><span><i style='background:" & _cIdle & "'></i>Not started<b>" & _sZero & "</b></span></div></div><div class='sb'>" & _SegAll & "</div></div>" & _Panels & "
+   </div>
+
+   <div class='lh'><span>Work Step · <span class='lc lc-a'>" & _sTot & "</span>" & _Counts & "</span><span>Progress</span><span>Status</span></div>
+   <div class='ls'>" & _Rows & "</div>
+  </div>
+
+  <!-- ======================= BACK ======================= -->
+  <div class='card back' style='--st:" & _cStatus & "'>
+   <label for='flip-wo' class='btn' title='Back to overview'>" & _iBack & "</label>
+   <div class='eb'>How to read this card</div>
+   <div class='bt'>Workstep Assessment</div>
+   <div class='bs'>" & _sScope & " · " & _sDisc & " disciplines · " & _sTot & " work steps</div>
+
+   <div class='blk'>
+    <div class='bl'>Status Rules · per work step</div>
+    <div class='rules'>
+     <span><i style='background:" & _cDone & "'></i><b>Complete</b>Progress = 100%</span>
+     <span><i style='background:" & _cProg & "'></i><b>In progress</b>Progress 1–99%</span>
+     <span><i style='background:" & _cIdle & "'></i><b>Not started</b>Progress = 0% · not a delay (no due date)</span>
+    </div>
+   </div>
+
+   <div class='blk'>
+    <div class='bl'>Definitions</div>
+    <div class='df'>
+     <b>Progress</b><span>Average Progress % of the work step over the selected buildings</span>
+     <b>Average</b><span>Simple mean of work-step progress in the selected discipline</span>
+     <b>Filter</b><span>Discipline chips filter this card only, not other visuals</span>
+     <b>Order</b><span>Grouped by discipline, most advanced work step first</span>
+    </div>
+   </div>
+
+   <div class='act'>
+    <div class='bl'>Focus · " & _sStatusU & "</div>
+    <div class='bx'>" & _Focus & "</div>
+   </div>
+  </div>
+
+ </div>
+</div>
+</div>"
