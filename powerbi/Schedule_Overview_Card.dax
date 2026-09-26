@@ -1,0 +1,398 @@
+Schedule Overview =
+/* =====================================================================
+   SCHEDULE OVERVIEW CARD  ·  HTML Content visual (compact flip card)
+   ---------------------------------------------------------------------
+   Source  : MASTER_ACTIVITY, aggregated over the current filter
+             Start = MIN · Finish / Data Date / Delay = MAX
+   Frame   : 300 × 420 px nominal (width fluid, height fixed 420 px)
+   Front   : status + data date · baseline time elapsed with mini Gantt
+             (baseline vs actual / forecast, data-date line)
+             · baseline vs current table with variance
+             · finish variance · max activity delay · activities finished
+             · auto narrative
+   Back    : status rules · definitions · recommended action
+   Style   : PMIS palette · monochrome · RAG colour only as accent
+   Flip    : pure CSS (checkbox + label), no JavaScript
+   ===================================================================== */
+
+-- 1. CONFIG ---------------------------------------------------------------
+VAR _DelayCrit = 30         -- days : finish variance / activity delay red above this
+
+-- 2. SCHEDULE DATES ---------------------------------------------------------
+VAR _BLStart   = MIN ( MASTER_ACTIVITY[BL Start] )
+VAR _BLFinish  = MAX ( MASTER_ACTIVITY[BL Finish] )
+VAR _ActStart  = MIN ( MASTER_ACTIVITY[Actual Start] )
+VAR _ActFinish = MAX ( MASTER_ACTIVITY[Actual Finish] )
+VAR _FcFinish  = MAX ( MASTER_ACTIVITY[Forecast Finish] )
+VAR _DataDate  = MAX ( MASTER_ACTIVITY[Data Date] )
+VAR _DelayRaw  = MAX ( MASTER_ACTIVITY[Delay (days)] )
+VAR _MaxDelay  = COALESCE ( _DelayRaw, 0 )
+
+-- Activity completion (completed only when every activity has an actual finish)
+VAR _TotActs  = COUNTROWS ( MASTER_ACTIVITY )
+VAR _OpenActs = COUNTBLANK ( MASTER_ACTIVITY[Actual Finish] )
+VAR _DoneActs = _TotActs - _OpenActs
+VAR _DonePct  = DIVIDE ( _DoneActs, _TotActs, 0 )
+VAR _IsDone   = _TotActs > 0 && _OpenActs = 0
+VAR _HasBL    = NOT ISBLANK ( _BLStart ) && NOT ISBLANK ( _BLFinish )
+VAR _HasStart = NOT ISBLANK ( _ActStart )
+
+-- Current view: actual start (or BL start) → actual finish when done, else forecast finish
+VAR _CurStart  = COALESCE ( _ActStart, _BLStart )
+VAR _CurFinish = IF ( _IsDone, _ActFinish, COALESCE ( _FcFinish, _BLFinish ) )
+
+-- 3. DURATIONS & VARIANCES (calendar days) --------------------------------
+VAR _BLDur     = IF ( _HasBL, MAX ( 0, INT ( _BLFinish - _BLStart ) ) )
+VAR _CurDur    = IF ( NOT ISBLANK ( _CurStart ) && NOT ISBLANK ( _CurFinish ), MAX ( 0, INT ( _CurFinish - _CurStart ) ) )
+VAR _StartVar  = IF ( _HasStart && NOT ISBLANK ( _BLStart ), INT ( _ActStart - _BLStart ) )
+VAR _FinishVar = IF ( NOT ISBLANK ( _CurFinish ) && NOT ISBLANK ( _BLFinish ), INT ( _CurFinish - _BLFinish ) )
+VAR _DurVar    = IF ( NOT ISBLANK ( _BLDur ) && NOT ISBLANK ( _CurDur ), _CurDur - _BLDur )
+VAR _FinVar0   = COALESCE ( _FinishVar, 0 )
+
+VAR _ElapsedEnd  = IF ( _HasBL && NOT ISBLANK ( _DataDate ), MIN ( MAX ( _DataDate, _BLStart ), _BLFinish ) )
+VAR _ElapsedDays = IF ( NOT ISBLANK ( _ElapsedEnd ), INT ( _ElapsedEnd - _BLStart ), 0 )
+VAR _ElapsedPct  = MIN ( 1, MAX ( 0, DIVIDE ( _ElapsedDays, _BLDur, 0 ) ) )
+VAR _Remaining   = IF ( NOT ISBLANK ( _DataDate ) && NOT ISBLANK ( _CurFinish ), MAX ( 0, INT ( _CurFinish - _DataDate ) ) )
+
+-- 4. PALETTE (PMIS) ---------------------------------------------------------
+VAR _cInk   = "#1C3A5E"
+VAR _cNavy  = "#243761"
+VAR _cText  = "#6B7785"
+VAR _cMuted = "#8A9099"
+VAR _cLine  = "#E6EBF1"
+VAR _cSoft  = "#F6F8FB"
+VAR _cData  = "#56698F"     -- slate : actual
+VAR _cData2 = "#9FB0C4"     -- light slate : remaining forecast
+VAR _cBase  = "#D3DBE5"     -- baseline bar
+VAR _cSky   = "#22A9D8"
+VAR _cGood  = "#0F9B80"
+VAR _cWarn  = "#E39016"
+VAR _cBad   = "#D65365"
+
+-- 5. SCHEDULE STATUS --------------------------------------------------------
+VAR _Status =
+    SWITCH ( TRUE (),
+        NOT _HasBL,                                           "No Baseline",
+        _IsDone,                                              "Completed",
+        NOT _HasStart && NOT ISBLANK ( _DataDate )
+            && _DataDate > _BLStart,                          "Late Start",
+        NOT _HasStart,                                        "Not Started",
+        _FinVar0 > _DelayCrit,                                "Critical Delay",
+        _FinVar0 > 0,                                         "Forecast Delay",
+        _MaxDelay > _DelayCrit,                               "Float at Risk",
+        _FinVar0 < 0,                                         "Ahead of Baseline",
+        "On Track" )
+VAR _cStatus =
+    SWITCH ( _Status,
+        "Completed",         _cGood,
+        "On Track",          _cGood,
+        "Ahead of Baseline", _cGood,
+        "Float at Risk",     _cWarn,
+        "Forecast Delay",    _cWarn,
+        "Critical Delay",    _cBad,
+        "Late Start",        _cBad,
+        "Not Started",       _cSky,
+        _cMuted )
+
+-- variance colour : late > crit = red · late = amber · on / early = green
+VAR _cStartV  = IF ( ISBLANK ( _StartVar ), _cMuted, IF ( _StartVar > _DelayCrit, _cBad, IF ( _StartVar > 0, _cWarn, _cGood ) ) )
+VAR _cFinishV = IF ( ISBLANK ( _FinishVar ), _cMuted, IF ( _FinishVar > _DelayCrit, _cBad, IF ( _FinishVar > 0, _cWarn, _cGood ) ) )
+VAR _cDurV    = IF ( ISBLANK ( _DurVar ), _cMuted, IF ( _DurVar > _DelayCrit, _cBad, IF ( _DurVar > 0, _cWarn, _cGood ) ) )
+VAR _cDelay   = IF ( ISBLANK ( _DelayRaw ), _cMuted, IF ( _MaxDelay > _DelayCrit, _cBad, IF ( _MaxDelay > 0, _cWarn, _cGood ) ) )
+
+-- 6. MINI GANTT GEOMETRY (integer % → locale-safe) -------------------------
+VAR _AxStart = MIN ( COALESCE ( _BLStart, _CurStart ), COALESCE ( _CurStart, _BLStart ) )
+VAR _AxEnd   = MAX ( MAX ( COALESCE ( _BLFinish, _CurFinish ), COALESCE ( _CurFinish, _BLFinish ) ), COALESCE ( _DataDate, _AxStart ) )
+VAR _AxSpan  = MAX ( 1, INT ( _AxEnd - _AxStart ) )
+VAR _xBLS    = ROUND ( DIVIDE ( INT ( _BLStart - _AxStart ), _AxSpan ) * 100, 0 )
+VAR _xBLF    = ROUND ( DIVIDE ( INT ( _BLFinish - _AxStart ), _AxSpan ) * 100, 0 )
+VAR _xCS     = ROUND ( DIVIDE ( INT ( _CurStart - _AxStart ), _AxSpan ) * 100, 0 )
+VAR _xCF     = ROUND ( DIVIDE ( INT ( _CurFinish - _AxStart ), _AxSpan ) * 100, 0 )
+VAR _ActEnd  = IF ( _IsDone, _CurFinish, IF ( _HasStart && NOT ISBLANK ( _DataDate ), MIN ( MAX ( _DataDate, _CurStart ), _CurFinish ), _CurStart ) )
+VAR _xAE     = ROUND ( DIVIDE ( INT ( _ActEnd - _AxStart ), _AxSpan ) * 100, 0 )
+VAR _xDD     = ROUND ( DIVIDE ( INT ( _DataDate - _AxStart ), _AxSpan ) * 100, 0 )
+VAR _pBLL    = FORMAT ( _xBLS, "0" )
+VAR _pBLW    = FORMAT ( MAX ( 1, _xBLF - _xBLS ), "0" )
+VAR _pCL     = FORMAT ( _xCS, "0" )
+VAR _pCW     = FORMAT ( MAX ( 1, _xCF - _xCS ), "0" )
+VAR _pAW     = FORMAT ( IF ( _xCF - _xCS > 0, ROUND ( DIVIDE ( _xAE - _xCS, _xCF - _xCS ) * 100, 0 ), 0 ), "0" )
+VAR _pDD     = FORMAT ( _xDD, "0" )
+VAR _ddShift = IF ( _xDD > 80, "-100%", IF ( _xDD < 20, "0%", "-50%" ) )
+VAR _ddShow  = IF ( ISBLANK ( _DataDate ) || NOT _HasBL, "none", "block" )
+
+-- 7. DISPLAY STRINGS ------------------------------------------------------
+VAR _fD      = "dd mmm yyyy"
+VAR _sBLS    = IF ( ISBLANK ( _BLStart ), "—", FORMAT ( _BLStart, _fD ) )
+VAR _sBLF    = IF ( ISBLANK ( _BLFinish ), "—", FORMAT ( _BLFinish, _fD ) )
+VAR _sCS     = IF ( _HasStart, FORMAT ( _ActStart, _fD ), "Not started" )
+VAR _sCF     = IF ( ISBLANK ( _CurFinish ), "—", FORMAT ( _CurFinish, _fD ) )
+VAR _sRowLbl = IF ( _IsDone, "AC", "FC" )
+VAR _sStatusU = UPPER ( _Status )
+VAR _sDD     = IF ( ISBLANK ( _DataDate ), "Not defined", FORMAT ( _DataDate, _fD ) )
+VAR _sDDs    = IF ( ISBLANK ( _DataDate ), "—", FORMAT ( _DataDate, "dd mmm" ) )
+VAR _sAxS    = IF ( _HasBL, FORMAT ( _AxStart, "dd mmm yy" ), "" )
+VAR _sAxE    = IF ( _HasBL, FORMAT ( _AxEnd, "dd mmm yy" ), "" )
+VAR _sBLDur  = IF ( ISBLANK ( _BLDur ), "—", FORMAT ( _BLDur, "#,##0" ) & " d" )
+VAR _sCurDur = IF ( ISBLANK ( _CurDur ), "—", FORMAT ( _CurDur, "#,##0" ) & " d" )
+VAR _fV      = "+#,##0;-#,##0;0"
+VAR _sStartV = IF ( ISBLANK ( _StartVar ), "—", FORMAT ( _StartVar, _fV ) & " d" )
+VAR _sFinV   = IF ( ISBLANK ( _FinishVar ), "—", FORMAT ( _FinishVar, _fV ) & " d" )
+VAR _sDurV   = IF ( ISBLANK ( _DurVar ), "—", FORMAT ( _DurVar, _fV ) & " d" )
+VAR _sDelay  = IF ( ISBLANK ( _DelayRaw ), "N/A", FORMAT ( _MaxDelay, _fV ) & " d" )
+VAR _sElap   = FORMAT ( _ElapsedPct * 100, "0" )
+VAR _sElapD  = FORMAT ( _ElapsedDays, "#,##0" ) & " of " & IF ( ISBLANK ( _BLDur ), "—", FORMAT ( _BLDur, "#,##0" ) ) & " days"
+VAR _sRemain = IF ( _IsDone, "completed", IF ( ISBLANK ( _Remaining ), "—", FORMAT ( _Remaining, "#,##0" ) & " d to finish" ) )
+VAR _sDone   = FORMAT ( _DoneActs, "#,##0" ) & "<small>/" & FORMAT ( _TotActs, "#,##0" ) & "</small>"
+VAR _sDonePc = FORMAT ( _DonePct, "0%" ) & " finished"
+VAR _sCrit   = FORMAT ( _DelayCrit, "0" )
+VAR _FinCap  = IF ( ISBLANK ( _FinishVar ), "No forecast", IF ( _FinishVar > 0, "Later than BL", IF ( _FinishVar < 0, "Earlier than BL", "Holding BL" ) ) )
+VAR _DelCap  = IF ( ISBLANK ( _DelayRaw ), "No delay data", IF ( _MaxDelay > _DelayCrit, "Critical activity", IF ( _MaxDelay > 0, "Worst activity", "No activity late" ) ) )
+
+-- Narrative + recommended action
+VAR _Narr =
+    SWITCH ( TRUE (),
+        NOT _HasBL, "Baseline dates are not available for the selected scope.",
+        _IsDone, "All " & FORMAT ( _TotActs, "#,##0" ) & " activities finished; actual finish " & _sCF & " (" & _sFinV & " vs baseline).",
+        NOT _HasStart, "No actual start recorded; baseline start " & _sBLS & IF ( _Status = "Late Start", " has passed.", "." ),
+        _FinVar0 > 0, "Forecast finish <b>" & FORMAT ( _FinVar0, "#,##0" ) & " days</b> beyond baseline; worst activity delay " & _sDelay & ".",
+        _MaxDelay > 0, "Finish holds at baseline, but the worst activity is <b>" & FORMAT ( _MaxDelay, "#,##0" ) & " days</b> late; float is absorbing the delay.",
+        "Forecast finish and all activities are aligned with the baseline." )
+VAR _Action =
+    SWITCH ( _Status,
+        "Critical Delay",    "Prepare a recovery schedule: re-sequence critical activities, add resources or shifts, and raise a TIA where the delay is excusable.",
+        "Forecast Delay",    "Review critical and near-critical activities and agree recovery actions with the package owner before the next update.",
+        "Float at Risk",     "Finish still holds, but float is being consumed. Review the activity carrying the maximum delay and protect the remaining float on the critical path.",
+        "Late Start",        "Confirm start constraints (access, permits, materials, manpower) and update the forecast start in the schedule.",
+        "Not Started",       "Verify start prerequisites ahead of the baseline start date.",
+        "Completed",         "Confirm as-built dates, close out open records and archive the schedule for lessons learned.",
+        "No Baseline",       "Load baseline dates for the selected scope before assessing performance.",
+        "Maintain the current pace and keep monitoring near-critical activities at each update." )
+
+-- 8. ICONS ----------------------------------------------------------------
+VAR _iGantt = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M4 4v16h16'/><path d='M8 8h6'/><path d='M10 12h7'/><path d='M8 16h4'/></svg>"
+VAR _iCal   = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 10h18'/><path d='M8 3v4'/><path d='M16 3v4'/></svg>"
+VAR _iFlag  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4'/><path d='M5 4h12l-2.5 4L17 12H5'/></svg>"
+VAR _iClock = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/></svg>"
+VAR _iCheck = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='4' width='16' height='16' rx='3'/><path d='M8.5 12l2.5 2.5 4.5-5'/></svg>"
+VAR _iInfo  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'><path d='M12 11v6'/><circle cx='12' cy='7.5' r='.9' fill='currentColor' stroke='none'/></svg>"
+VAR _iBack  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 14L4 9l5-5'/><path d='M4 9h10a6 6 0 0 1 0 12h-3'/></svg>"
+
+-- 9. HTML -----------------------------------------------------------------
+RETURN
+"<div class='so-root'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+body{font-family:'Segoe UI',Arial,sans-serif;font-variant-numeric:tabular-nums;color:" & _cInk & "}
+.so-root{width:100%;height:420px;overflow:hidden}
+.flip{position:relative;width:100%;height:100%;perspective:1400px}
+.tg{display:none}
+.inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.4,.2,.2,1)}
+.tg:checked+.inner{transform:rotateY(180deg)}
+.card{position:absolute;inset:0;padding:13px 14px 12px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.05);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.front{display:flex;flex-direction:column}
+.back{transform:rotateY(180deg);background:linear-gradient(180deg," & _cSoft & " 0%,#FFFFFF 42%)}
+
+/* info / back button */
+.btn{position:absolute;top:12px;right:12px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#FFFFFF;border:1px solid " & _cLine & ";color:" & _cText & ";cursor:pointer;transition:all .18s ease;z-index:2}
+.btn svg{width:12px;height:12px}
+.btn:hover{background:" & _cInk & ";border-color:" & _cInk & ";color:#FFFFFF}
+
+/* header */
+.hd{display:flex;gap:10px;align-items:center;padding:0 0 10px 0;border-bottom:1px solid " & _cLine & "}
+.tile{width:38px;height:38px;min-width:38px;border-radius:10px;background:" & _cNavy & ";color:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(36,55,97,.22)}
+.tile svg{width:19px;height:19px}
+.eb{font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase;white-space:nowrap}
+.nm{margin-top:3px;padding-right:30px;font-size:17px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:5px;margin-top:5px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:4px;height:16px;padding:0 7px;border-radius:999px;background:#F4F6F9;border:1px solid " & _cLine & ";font-size:7.5px;font-weight:700;letter-spacing:.05em;color:" & _cInk & ";white-space:nowrap;text-transform:uppercase}
+.chip i{width:5px;height:5px;border-radius:50%;display:inline-block}
+.chip svg{width:8px;height:8px;color:" & _cData & "}
+.chip span{color:" & _cMuted & ";font-weight:600}
+
+/* hero : time elapsed + mini gantt */
+.hero{margin-top:9px;padding:9px 11px 8px;background:" & _cSoft & ";border:1px solid " & _cLine & ";border-radius:11px}
+.ht{display:flex;justify-content:space-between;align-items:flex-end}
+.hv{margin-top:3px;font-size:24px;line-height:1;font-weight:700;letter-spacing:-.04em;color:" & _cInk & "}
+.hv small{font-size:12px;font-weight:700;color:" & _cText & ";margin-left:1px}
+.hc{margin-top:2px;font-size:8px;color:" & _cText & ";white-space:nowrap}
+.hc b{color:" & _cInk & "}
+.hr{text-align:right}
+.lgd{display:flex;gap:10px;margin:6px 0 0 22px;padding-top:5px;border-top:1px dashed #DCE3EB;font-size:6.5px;font-weight:600;color:" & _cText & "}
+.lgd span{display:inline-flex;align-items:center;gap:3px}
+.lgd i{width:8px;height:5px;border-radius:1px;display:inline-block}
+.gantt{position:relative;margin-top:14px;padding-left:22px}
+.gr{position:relative;height:10px;margin-bottom:7px}
+.gl{position:absolute;left:-22px;top:50%;transform:translateY(-50%);font-size:6.5px;font-weight:700;letter-spacing:.08em;color:" & _cMuted & "}
+.gt{position:absolute;inset:0;border-radius:3px;background:#EBEFF4}
+.gb{position:absolute;top:0;bottom:0;border-radius:3px;overflow:hidden}
+.gb b{display:block;height:100%}
+.dd{position:absolute;top:-12px;bottom:-2px;width:0;border-left:1.5px solid " & _cInk & "}
+.dd span{position:absolute;top:0;left:0;transform:translateX(" & _ddShift & ");padding:0 3px;font-size:6.5px;font-weight:700;letter-spacing:.04em;color:" & _cInk & ";white-space:nowrap;background:" & _cSoft & "}
+.gs{display:flex;justify-content:space-between;margin-left:22px;font-size:6.5px;font-weight:600;color:" & _cMuted & "}
+
+/* baseline vs current table */
+.sh{display:flex;justify-content:space-between;align-items:center;margin-top:11px}
+.tb{margin-top:4px;width:100%;border-collapse:collapse;font-size:9.5px}
+.tb th{padding:0 0 4px;font-size:6.5px;font-weight:700;letter-spacing:.1em;color:" & _cMuted & ";text-transform:uppercase;text-align:right;border-bottom:1px solid " & _cLine & "}
+.tb th:first-child,.tb td:first-child{text-align:left}
+.tb td{padding:5px 0;text-align:right;font-weight:700;color:" & _cInk & ";white-space:nowrap;border-bottom:1px solid #EEF2F6}
+.tb tr:last-child td{border-bottom:none}
+.tb td:first-child{font-size:8.5px;font-weight:600;color:" & _cText & "}
+.tb td.b0{font-weight:600;color:" & _cText & "}
+.tb td.v{padding-left:6px}
+.vv{display:inline-flex;align-items:center;gap:4px;font-size:9px}
+.vv i{width:5px;height:5px;border-radius:50%;display:inline-block}
+
+/* kpi strip */
+.st{margin-top:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:" & _cSoft & ";border:1px solid " & _cLine & ";border-radius:10px}
+.sx{min-width:0;padding:7px 9px 6px}
+.sx+.sx{border-left:1px solid " & _cLine & "}
+.sk{display:flex;align-items:center;gap:4px;font-size:6.5px;font-weight:700;letter-spacing:.1em;color:" & _cMuted & ";text-transform:uppercase;white-space:nowrap}
+.sk svg{width:9px;height:9px;color:" & _cData & ";flex-shrink:0}
+.sv{margin-top:5px;font-size:12px;line-height:16px;font-weight:700;letter-spacing:-.01em;color:" & _cInk & ";white-space:nowrap}
+.sv small{font-size:8.5px;font-weight:600;color:" & _cText & "}
+.dl{display:inline-flex;align-items:center;height:16px;padding:0 6px;border-radius:5px;font-size:10px;font-weight:700;color:#FFFFFF}
+.sc2{margin-top:3px;font-size:7px;color:" & _cMuted & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* narrative */
+.nar{position:relative;margin-top:8px;padding-left:9px;font-size:8.5px;line-height:1.4;color:" & _cText & "}
+.nar:before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:2px;border-radius:1px;background:var(--st)}
+.nar b{color:" & _cInk & "}
+
+/* back */
+.bt{margin-top:4px;padding-right:32px;font-size:17px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.bs{margin-top:3px;font-size:9.5px;color:" & _cText & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk{margin-top:9px;padding:8px 11px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:9px}
+.bl{font-size:7px;font-weight:700;letter-spacing:.12em;color:" & _cMuted & ";text-transform:uppercase}
+.rules{margin-top:5px;display:flex;flex-direction:column;gap:3px;font-size:8px;color:#4F5F70}
+.rules span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.rules i{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.rules b{min-width:74px;color:" & _cInk & "}
+.df{margin-top:5px;display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:3px;font-size:8px;line-height:1.35;color:#4F5F70}
+.df b{color:" & _cInk & ";white-space:nowrap}
+.act{position:absolute;left:14px;right:14px;bottom:12px;padding:8px 11px 8px 13px;border-radius:9px;border:1px solid " & _cLine & ";background:#FFFFFF}
+.act:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--st)}
+.act .bl{color:var(--st)}
+.bx{margin-top:4px;font-size:8.5px;line-height:1.42;color:#4F5F70}
+</style>
+
+<div class='flip'>
+ <input type='checkbox' id='flip-so' class='tg'>
+ <div class='inner'>
+
+  <!-- ======================= FRONT ======================= -->
+  <div class='card front' style='--st:" & _cStatus & "'>
+   <label for='flip-so' class='btn' title='How to read this card'>" & _iInfo & "</label>
+
+   <div class='hd'>
+    <div class='tile'>" & _iGantt & "</div>
+    <div style='min-width:0'>
+     <div class='eb'>Project Schedule</div>
+     <div class='nm'>Schedule Overview</div>
+     <div class='chips'>
+      <span class='chip'><i style='background:" & _cStatus & "'></i>" & _Status & "</span>
+      <span class='chip' title='Data date'>" & _iCal & "<span>DD</span>" & _sDD & "</span>
+     </div>
+    </div>
+   </div>
+
+   <div class='hero'>
+    <div class='ht'>
+     <div>
+      <div class='eb'>Baseline Time Elapsed</div>
+      <div class='hv'>" & _sElap & "<small>%</small></div>
+     </div>
+     <div class='hr'>
+      <div class='hc'>" & _sElapD & "</div>
+      <div class='hc'><b>" & _sRemain & "</b></div>
+     </div>
+    </div>
+    <div class='gantt'>
+     <div class='gr'>
+      <span class='gl'>BL</span><div class='gt'></div>
+      <div class='gb' style='left:" & _pBLL & "%;width:" & _pBLW & "%;background:" & _cBase & "'></div>
+     </div>
+     <div class='gr' style='margin-bottom:0'>
+      <span class='gl'>" & _sRowLbl & "</span><div class='gt'></div>
+      <div class='gb' style='left:" & _pCL & "%;width:" & _pCW & "%;background:" & _cData2 & "'><b style='width:" & _pAW & "%;background:" & _cData & "'></b></div>
+     </div>
+     <div class='dd' style='left:calc(22px + (100% - 22px) * " & _pDD & " / 100);display:" & _ddShow & "'><span>DD " & _sDDs & "</span></div>
+    </div>
+    <div class='gs' style='margin-top:4px'><span>" & _sAxS & "</span><span>" & _sAxE & "</span></div>
+    <div class='lgd'>
+     <span><i style='background:" & _cBase & "'></i>Baseline</span>
+     <span><i style='background:" & _cData & "'></i>Actual</span>
+     <span><i style='background:" & _cData2 & "'></i>Forecast</span>
+    </div>
+   </div>
+
+   <div class='sh'>
+    <span class='eb'>Baseline vs Current</span>
+   </div>
+   <table class='tb'>
+    <tr><th></th><th>Baseline</th><th>Current</th><th>Var</th></tr>
+    <tr><td>Start</td><td class='b0'>" & _sBLS & "</td><td>" & _sCS & "</td><td class='v'><span class='vv'><i style='background:" & _cStartV & "'></i>" & _sStartV & "</span></td></tr>
+    <tr><td>Finish</td><td class='b0'>" & _sBLF & "</td><td>" & _sCF & "</td><td class='v'><span class='vv'><i style='background:" & _cFinishV & "'></i>" & _sFinV & "</span></td></tr>
+    <tr><td>Duration</td><td class='b0'>" & _sBLDur & "</td><td>" & _sCurDur & "</td><td class='v'><span class='vv'><i style='background:" & _cDurV & "'></i>" & _sDurV & "</span></td></tr>
+   </table>
+
+   <div class='st'>
+    <div class='sx'>
+     <div class='sk'>" & _iFlag & "Finish Var</div>
+     <div class='sv'><span class='dl' style='background:" & _cFinishV & "'>" & _sFinV & "</span></div>
+     <div class='sc2'>" & _FinCap & "</div>
+    </div>
+    <div class='sx'>
+     <div class='sk'>" & _iClock & "Max Delay</div>
+     <div class='sv'><span class='dl' style='background:" & _cDelay & "'>" & _sDelay & "</span></div>
+     <div class='sc2'>" & _DelCap & "</div>
+    </div>
+    <div class='sx'>
+     <div class='sk'>" & _iCheck & "Activities</div>
+     <div class='sv'>" & _sDone & "</div>
+     <div class='sc2'>" & _sDonePc & "</div>
+    </div>
+   </div>
+
+   <div class='nar'>" & _Narr & "</div>
+  </div>
+
+  <!-- ======================= BACK ======================= -->
+  <div class='card back' style='--st:" & _cStatus & "'>
+   <label for='flip-so' class='btn' title='Back to overview'>" & _iBack & "</label>
+   <div class='eb'>How to read this card</div>
+   <div class='bt'>Schedule Assessment</div>
+   <div class='bs'>Aggregated over all activities in the current filter</div>
+
+   <div class='blk'>
+    <div class='bl'>Status Rules · checked in this order</div>
+    <div class='rules'>
+     <span><i style='background:" & _cBad & "'></i><b>Late Start</b>BL start passed, no actual start</span>
+     <span><i style='background:" & _cBad & "'></i><b>Critical Delay</b>Finish variance &gt; " & _sCrit & " d</span>
+     <span><i style='background:" & _cWarn & "'></i><b>Forecast Delay</b>Finish variance 1–" & _sCrit & " d</span>
+     <span><i style='background:" & _cWarn & "'></i><b>Float at Risk</b>Finish holds, activity delay &gt; " & _sCrit & " d</span>
+     <span><i style='background:" & _cGood & "'></i><b>On Track</b>Finish on or ahead of baseline</span>
+    </div>
+   </div>
+
+   <div class='blk'>
+    <div class='bl'>Definitions</div>
+    <div class='df'>
+     <b>Start / Finish</b><span>Earliest start (MIN) and latest finish (MAX) of all activities</span>
+     <b>Time Elapsed</b><span>Calendar share of the baseline window at data date; not physical progress</span>
+     <b>Finish Var</b><span>Forecast (or actual) finish minus baseline finish</span>
+     <b>Max Delay</b><span>Highest activity delay; can exceed finish variance where float absorbs it</span>
+     <b>Completed</b><span>Every activity has an actual finish</span>
+    </div>
+   </div>
+
+   <div class='act'>
+    <div class='bl'>Recommended Action · " & _sStatusU & "</div>
+    <div class='bx'>" & _Action & "</div>
+   </div>
+  </div>
+
+ </div>
+</div>
+</div>"
