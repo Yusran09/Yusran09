@@ -1,0 +1,411 @@
+Construction Readiness Card Compact =
+/* =====================================================================
+   BUILDING READINESS CARD  ·  HTML Content visual (compact flip card)
+   ---------------------------------------------------------------------
+   Frame   : 300 × 420 px nominal (width fluid, height fixed 420 px)
+   Front   : building identity + status / priority
+             · overall readiness ring + readiness band scale
+             · Site / Construction / Engineering breakdown, with the
+               binding constraint highlighted
+             · schedule strip: planned finish · forecast finish · delay
+             · auto narrative
+   Back    : readiness bands · definitions · recommended action
+   Style   : PMIS palette · monochrome · RAG colour only as accent
+   Flip    : pure CSS (checkbox + label), no JavaScript
+   ===================================================================== */
+
+-- 1. CONFIG (readiness bands — adjust to project procedure) -------------
+VAR _ReadyTgt  = 90         -- ≥ 90 %  Ready
+VAR _NearTgt   = 75         -- ≥ 75 %  Nearly Ready   (green from here)
+VAR _PartTgt   = 50         -- ≥ 50 %  Partially Ready (amber)
+VAR _DelayCrit = 30         -- delay days : red above this
+
+-- 2. MEASURES (accepts 0–1 or 0–100) --------------------------------------
+VAR _OverallPct =
+    VAR r = COALESCE ( [Overall Readiness], 0 )
+    RETURN MIN ( 100, MAX ( 0, IF ( ABS ( r ) <= 1, r * 100, r ) ) )
+VAR _SitePct =
+    VAR r = COALESCE ( [Readiness - Site], 0 )
+    RETURN MIN ( 100, MAX ( 0, IF ( ABS ( r ) <= 1, r * 100, r ) ) )
+VAR _ConPct =
+    VAR r = COALESCE ( [Readiness - Construction], 0 )
+    RETURN MIN ( 100, MAX ( 0, IF ( ABS ( r ) <= 1, r * 100, r ) ) )
+VAR _EngPct =
+    VAR r = COALESCE ( [Readiness - Engineering], 0 )
+    RETURN MIN ( 100, MAX ( 0, IF ( ABS ( r ) <= 1, r * 100, r ) ) )
+
+-- 3. BUILDING ATTRIBUTES ----------------------------------------------------
+VAR _Building  = SELECTEDVALUE ( CONSTRUCTION_READINESS[Building Name], "Select Building" )
+VAR _Status    = SELECTEDVALUE ( CONSTRUCTION_READINESS[Current Status], "No Status" )
+VAR _Priority  = SELECTEDVALUE ( CONSTRUCTION_READINESS[Priority], "Normal" )
+VAR _Planned   = SELECTEDVALUE ( CONSTRUCTION_READINESS[Planned Finish] )
+VAR _DelayDays = COALESCE ( SELECTEDVALUE ( CONSTRUCTION_READINESS[Delay Days] ), 0 )
+VAR _Forecast  = IF ( ISBLANK ( _Planned ), BLANK (), _Planned + _DelayDays )
+
+-- 4. PALETTE (PMIS) ---------------------------------------------------------
+VAR _cInk   = "#1C3A5E"
+VAR _cNavy  = "#243761"
+VAR _cText  = "#6B7785"
+VAR _cMuted = "#8A9099"
+VAR _cLine  = "#E6EBF1"
+VAR _cSoft  = "#F6F8FB"
+VAR _cData  = "#56698F"     -- slate : neutral data series
+VAR _cSky   = "#22A9D8"     -- in progress
+VAR _cGood  = "#0F9B80"
+VAR _cWarn  = "#E39016"
+VAR _cBad   = "#D65365"
+
+-- 5. READINESS STATUS -------------------------------------------------------
+VAR _Band =
+    SWITCH ( TRUE (),
+        _OverallPct >= _ReadyTgt, "Ready",
+        _OverallPct >= _NearTgt,  "Nearly Ready",
+        _OverallPct >= _PartTgt,  "Partially Ready",
+        _OverallPct > 0,          "Low Readiness",
+        "Not Ready" )
+VAR _cOverall = IF ( _OverallPct >= _NearTgt, _cGood, IF ( _OverallPct >= _PartTgt, _cWarn, _cBad ) )
+VAR _cSite    = IF ( _SitePct >= _NearTgt, _cGood, IF ( _SitePct >= _PartTgt, _cWarn, _cBad ) )
+VAR _cCon     = IF ( _ConPct  >= _NearTgt, _cGood, IF ( _ConPct  >= _PartTgt, _cWarn, _cBad ) )
+VAR _cEng     = IF ( _EngPct  >= _NearTgt, _cGood, IF ( _EngPct  >= _PartTgt, _cWarn, _cBad ) )
+
+-- Binding constraint = lowest stream still below the Ready threshold
+VAR _MinPct     = MIN ( _SitePct, MIN ( _ConPct, _EngPct ) )
+VAR _HasCst     = _MinPct < _ReadyTgt
+VAR _Constraint =
+    IF ( NOT _HasCst, "None",
+        SWITCH ( TRUE (),
+            _MinPct = _SitePct, "Site",
+            _MinPct = _ConPct,  "Construction",
+            "Engineering" ) )
+VAR _GapReady = MAX ( 0, _ReadyTgt - _OverallPct )
+
+-- Constraint row gets its RAG colour on the bar + a tag; others stay slate
+VAR _Tag       = "<span class='tag'>Constraint</span>"
+VAR _tSite     = IF ( _Constraint = "Site", _Tag, "" )
+VAR _tCon      = IF ( _Constraint = "Construction", _Tag, "" )
+VAR _tEng      = IF ( _Constraint = "Engineering", _Tag, "" )
+VAR _rSite     = IF ( _Constraint = "Site", " cst", "" )
+VAR _rCon      = IF ( _Constraint = "Construction", " cst", "" )
+VAR _rEng      = IF ( _Constraint = "Engineering", " cst", "" )
+VAR _fSite     = IF ( _Constraint = "Site", _cSite, _cData )
+VAR _fCon      = IF ( _Constraint = "Construction", _cCon, _cData )
+VAR _fEng      = IF ( _Constraint = "Engineering", _cEng, _cData )
+
+-- 6. STATUS / PRIORITY / DELAY STYLE ---------------------------------------
+VAR _StatusU = UPPER ( TRIM ( _Status ) )
+VAR _cStatus =
+    SWITCH ( TRUE (),
+        CONTAINSSTRING ( _StatusU, "DELAY" ) || CONTAINSSTRING ( _StatusU, "CRITICAL" )
+            || CONTAINSSTRING ( _StatusU, "BEHIND" ) || CONTAINSSTRING ( _StatusU, "NOT READY" ), _cBad,
+        CONTAINSSTRING ( _StatusU, "HOLD" ) || CONTAINSSTRING ( _StatusU, "RISK" )
+            || CONTAINSSTRING ( _StatusU, "WATCH" ), _cWarn,
+        CONTAINSSTRING ( _StatusU, "COMPLETE" ) || CONTAINSSTRING ( _StatusU, "FINISH" )
+            || CONTAINSSTRING ( _StatusU, "READY" ), _cGood,
+        CONTAINSSTRING ( _StatusU, "PROGRESS" ) || CONTAINSSTRING ( _StatusU, "ONGOING" ), _cSky,
+        _cMuted )
+VAR _PriorityU = UPPER ( TRIM ( _Priority ) )
+VAR _cPriority =
+    SWITCH ( TRUE (),
+        CONTAINSSTRING ( _PriorityU, "CRITICAL" ) || CONTAINSSTRING ( _PriorityU, "HIGH" ), _cBad,
+        CONTAINSSTRING ( _PriorityU, "MEDIUM" ), _cWarn,
+        CONTAINSSTRING ( _PriorityU, "LOW" ), _cGood,
+        _cMuted )
+VAR _cDelay   = IF ( _DelayDays > _DelayCrit, _cBad, IF ( _DelayDays > 0, _cWarn, _cGood ) )
+VAR _DelayCap = IF ( _DelayDays > _DelayCrit, "Critical delay", IF ( _DelayDays > 0, "Behind plan", IF ( _DelayDays < 0, "Ahead of plan", "On schedule" ) ) )
+
+-- 7. DISPLAY STRINGS (integers only → locale-safe CSS) --------------------
+VAR _sBuilding = SUBSTITUTE ( SUBSTITUTE ( _Building, "&", "&amp;" ), "'", "&#39;" )
+VAR _sStatus   = SUBSTITUTE ( _Status, "&", "&amp;" )
+VAR _sPriority = SUBSTITUTE ( _Priority, "&", "&amp;" )
+VAR _sOverall  = FORMAT ( _OverallPct, "0" )
+VAR _sSite     = FORMAT ( _SitePct, "0" )
+VAR _sCon      = FORMAT ( _ConPct, "0" )
+VAR _sEng      = FORMAT ( _EngPct, "0" )
+VAR _sReady    = FORMAT ( _ReadyTgt, "0" )
+VAR _sNear     = FORMAT ( _NearTgt, "0" )
+VAR _sPart     = FORMAT ( _PartTgt, "0" )
+VAR _sNearM1   = FORMAT ( _NearTgt - 1, "0" )
+VAR _sReadyM1  = FORMAT ( _ReadyTgt - 1, "0" )
+VAR _sGap      = IF ( _GapReady = 0, "Threshold met", FORMAT ( _GapReady, "0" ) & " pts" )
+VAR _sPlanned  = IF ( ISBLANK ( _Planned ), "Not defined", FORMAT ( _Planned, "dd mmm yyyy" ) )
+VAR _sForecast = IF ( ISBLANK ( _Forecast ), "Not defined", FORMAT ( _Forecast, "dd mmm yyyy" ) )
+VAR _sDelay    = FORMAT ( _DelayDays, "+#,##0;-#,##0;0" ) & " d"
+VAR _sDelayCr  = FORMAT ( _DelayCrit, "0" )
+
+VAR _pRing   = FORMAT ( ROUND ( _OverallPct, 0 ), "0" )
+VAR _pCap    = IF ( ROUND ( _OverallPct, 0 ) = 0, "butt", "round" )
+VAR _pOv     = FORMAT ( ROUND ( _OverallPct, 0 ), "0" )
+VAR _pSite   = FORMAT ( ROUND ( _SitePct, 0 ), "0" )
+VAR _pCon    = FORMAT ( ROUND ( _ConPct, 0 ), "0" )
+VAR _pEng    = FORMAT ( ROUND ( _EngPct, 0 ), "0" )
+VAR _pB1     = FORMAT ( _PartTgt, "0" )
+VAR _pB2     = FORMAT ( _NearTgt - _PartTgt, "0" )
+VAR _pB3     = FORMAT ( _ReadyTgt - _NearTgt, "0" )
+VAR _pB4     = FORMAT ( 100 - _ReadyTgt, "0" )
+
+-- Narrative + recommended action
+VAR _Narr =
+    IF ( NOT _HasCst,
+        "All readiness streams at or above the " & _sReady & "% threshold; work front can be released.",
+        "<b>" & _Constraint & "</b> is the binding constraint at " & FORMAT ( _MinPct, "0" ) & "%, "
+            & FORMAT ( _ReadyTgt - _MinPct, "0" ) & " pts below ready"
+            & IF ( _DelayDays > 0, "; finish forecast slips " & FORMAT ( _DelayDays, "#,##0" ) & " days.", "." ) )
+VAR _Action =
+    SWITCH ( _Constraint,
+        "Site",         "Close out site handover (access, permits, survey and temporary facilities) before mobilising crews to this work front.",
+        "Construction", "Secure construction prerequisites: resources, method statements, materials on site and subcontractor mobilisation before releasing the work front.",
+        "Engineering",  "Expedite IFC drawings and close the TQs affecting this building; freeze the construction package before mobilisation.",
+        "Release the work front and track execution progress against the baseline finish." )
+VAR _ActTitle = IF ( _HasCst, UPPER ( _Constraint ), "READY TO RELEASE" )
+
+-- 8. ICONS ----------------------------------------------------------------
+VAR _iBldg  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M3 21h18'/><path d='M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16'/><path d='M15 9h3a1 1 0 0 1 1 1v11'/><path d='M8.5 8h3'/><path d='M8.5 12h3'/><path d='M8.5 16h3'/></svg>"
+VAR _iSite  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 20s-6-5.2-6-10.5a6 6 0 1 1 12 0C18 14.8 12 20 12 20z'/><circle cx='12' cy='9.5' r='2.2'/><path d='M5 21h14'/></svg>"
+VAR _iCon   = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M3 18h18'/><path d='M5 18v-2.5a7 7 0 0 1 14 0V18'/><path d='M10 9V5.5h4V9'/><path d='M4 21h16'/></svg>"
+VAR _iEng   = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M6 3h8.5L18 6.5V21H6z'/><path d='M14 3v4h4'/><path d='M9 12h6'/><path d='M9 15.5h6'/><path d='M9 19h3'/></svg>"
+VAR _iCal   = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 10h18'/><path d='M8 3v4'/><path d='M16 3v4'/></svg>"
+VAR _iFcst  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 12h13'/><path d='M12 7l5 5-5 5'/><path d='M21 4v16'/></svg>"
+VAR _iClock = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/></svg>"
+VAR _iFlag  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M5 21V4'/><path d='M5 4h12l-2.5 4L17 12H5'/></svg>"
+VAR _iInfo  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round'><path d='M12 11v6'/><circle cx='12' cy='7.5' r='.9' fill='currentColor' stroke='none'/></svg>"
+VAR _iBack  = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 14L4 9l5-5'/><path d='M4 9h10a6 6 0 0 1 0 12h-3'/></svg>"
+
+-- 9. HTML -----------------------------------------------------------------
+RETURN
+"<div class='rc-root'>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent}
+body{font-family:'Segoe UI',Arial,sans-serif;font-variant-numeric:tabular-nums;color:" & _cInk & "}
+.rc-root{width:100%;height:420px;overflow:hidden}
+.flip{position:relative;width:100%;height:100%;perspective:1400px}
+.tg{display:none}
+.inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.4,.2,.2,1)}
+.tg:checked+.inner{transform:rotateY(180deg)}
+.card{position:absolute;inset:0;padding:13px 14px 12px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:14px;box-shadow:0 4px 14px rgba(28,58,94,.05);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.front{display:flex;flex-direction:column}
+.back{transform:rotateY(180deg);background:linear-gradient(180deg," & _cSoft & " 0%,#FFFFFF 42%)}
+
+/* info / back button */
+.btn{position:absolute;top:12px;right:12px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#FFFFFF;border:1px solid " & _cLine & ";color:" & _cText & ";cursor:pointer;transition:all .18s ease;z-index:2}
+.btn svg{width:12px;height:12px}
+.btn:hover{background:" & _cInk & ";border-color:" & _cInk & ";color:#FFFFFF}
+
+/* header */
+.hd{display:flex;gap:10px;align-items:center;padding:0 30px 10px 0;border-bottom:1px solid " & _cLine & "}
+.tile{width:38px;height:38px;min-width:38px;border-radius:10px;background:" & _cNavy & ";color:#FFFFFF;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(36,55,97,.22)}
+.tile svg{width:19px;height:19px}
+.eb{font-size:8px;font-weight:700;letter-spacing:.16em;color:" & _cMuted & ";text-transform:uppercase;white-space:nowrap}
+.nm{margin-top:3px;font-size:17px;line-height:1.1;font-weight:700;letter-spacing:-.02em;color:" & _cInk & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:5px;margin-top:5px}
+.chip{display:inline-flex;align-items:center;gap:4px;height:16px;padding:0 7px;border-radius:999px;background:#F4F6F9;border:1px solid " & _cLine & ";font-size:7.5px;font-weight:700;letter-spacing:.05em;color:" & _cInk & ";white-space:nowrap;text-transform:uppercase}
+.chip i{width:5px;height:5px;border-radius:50%;display:inline-block}
+.chip svg{width:8px;height:8px}
+.chip span{color:" & _cMuted & ";font-weight:600}
+
+/* hero : overall readiness */
+.hero{margin-top:9px;display:flex;gap:12px;align-items:center;padding:8px 12px 8px 10px;background:" & _cSoft & ";border:1px solid " & _cLine & ";border-radius:11px}
+.ring{position:relative;width:70px;height:70px;min-width:70px}
+.ring svg{width:70px;height:70px;display:block}
+.rv{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.rv b{font-size:21px;line-height:1;font-weight:700;letter-spacing:-.04em;color:" & _cInk & "}
+.rv b small{font-size:11px;font-weight:700;margin-left:1px;color:" & _cText & "}
+.rv span{margin-top:3px;font-size:6.5px;font-weight:700;letter-spacing:.14em;color:" & _cMuted & "}
+.ov{flex:1;min-width:0}
+.bd{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;font-weight:700;letter-spacing:-.01em;color:" & _cInk & ";white-space:nowrap}
+.bd i{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.sc{position:relative;display:flex;height:6px;margin-top:8px;border-radius:3px;overflow:visible}
+.sc>b{display:block;height:100%}
+.sc>b:first-child{border-radius:3px 0 0 3px}.sc>b:nth-child(4){border-radius:0 3px 3px 0}
+.mk{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#FFFFFF;border:3px solid;box-shadow:0 1px 3px rgba(28,58,94,.25)}
+.sl{position:relative;height:9px;margin-top:3px;font-size:6.5px;font-weight:600;color:" & _cMuted & "}
+.sl span{position:absolute;transform:translateX(-50%)}
+.gp{display:flex;justify-content:space-between;margin-top:4px;padding-top:5px;border-top:1px dashed #DCE3EB;font-size:8px;color:" & _cText & "}
+.gp b{font-size:9px;color:" & _cInk & "}
+
+/* breakdown */
+.sh{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.sh .lg{display:inline-flex;align-items:center;gap:4px;font-size:7px;font-weight:600;color:" & _cMuted & "}
+.sh .lg i{width:2px;height:8px;border-radius:1px;background:" & _cInk & ";display:inline-block}
+.rows{margin-top:3px}
+.row{position:relative;display:grid;grid-template-columns:26px minmax(0,1fr);column-gap:9px;align-items:center;padding:5px 0;border-bottom:1px solid #EEF2F6}
+.row:last-child{border-bottom:none}
+.row.cst:before{content:'';position:absolute;left:-14px;top:7px;bottom:7px;width:3px;border-radius:0 2px 2px 0;background:var(--st)}
+.ri{width:26px;height:26px;border-radius:8px;background:#F3F6FA;border:1px solid " & _cLine & ";color:" & _cData & ";display:flex;align-items:center;justify-content:center}
+.ri svg{width:14px;height:14px}
+.row.cst .ri{color:var(--st)}
+.rt{display:flex;align-items:center;gap:6px}
+.rn{font-size:10px;font-weight:600;color:" & _cInk & ";white-space:nowrap}
+.tag{height:13px;padding:0 5px;display:inline-flex;align-items:center;border-radius:4px;background:#FFFFFF;border:1px solid var(--st);color:var(--st);font-size:6.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.rp{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.rp i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.rp small{font-size:8px;font-weight:600;color:" & _cText & ";margin-left:-4px}
+.bar{position:relative;height:5px;margin-top:5px;border-radius:3px;background:#E9EEF4}
+.bar b{display:block;height:100%;border-radius:3px}
+.bar u{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;border-radius:1px;background:" & _cInk & ";opacity:.55}
+
+/* schedule strip */
+.st{margin-top:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:" & _cSoft & ";border:1px solid " & _cLine & ";border-radius:10px}
+.sx{min-width:0;padding:7px 9px 6px}
+.sx+.sx{border-left:1px solid " & _cLine & "}
+.sk{display:flex;align-items:center;gap:4px;font-size:6.5px;font-weight:700;letter-spacing:.1em;color:" & _cMuted & ";text-transform:uppercase;white-space:nowrap}
+.sk svg{width:9px;height:9px;color:" & _cData & ";flex-shrink:0}
+.sv{margin-top:5px;font-size:10.5px;font-weight:700;letter-spacing:-.01em;color:" & _cInk & ";white-space:nowrap}
+.dl{display:inline-flex;align-items:center;height:16px;padding:0 6px;border-radius:5px;font-size:10px;font-weight:700;color:#FFFFFF}
+.sc2{margin-top:3px;font-size:7px;color:" & _cMuted & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* narrative */
+.nar{position:relative;margin-top:8px;padding-left:9px;font-size:8.5px;line-height:1.4;color:" & _cText & "}
+.nar:before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:2px;border-radius:1px;background:var(--st)}
+.nar b{color:" & _cInk & "}
+
+/* back */
+.bt{margin-top:4px;padding-right:32px;font-size:17px;font-weight:700;letter-spacing:-.02em;color:" & _cInk & "}
+.bs{margin-top:3px;font-size:9.5px;color:" & _cText & ";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blk{margin-top:10px;padding:9px 11px;background:#FFFFFF;border:1px solid " & _cLine & ";border-radius:9px}
+.bl{font-size:7px;font-weight:700;letter-spacing:.12em;color:" & _cMuted & ";text-transform:uppercase}
+.bands{margin-top:6px;display:grid;grid-template-columns:1fr 1fr;row-gap:5px;column-gap:8px;font-size:8px;color:#4F5F70}
+.bands span{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.bands i{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.bands b{color:" & _cInk & "}
+.df{margin-top:5px;display:grid;grid-template-columns:auto 1fr;column-gap:8px;row-gap:4px;font-size:8px;line-height:1.35;color:#4F5F70}
+.df b{color:" & _cInk & ";white-space:nowrap}
+.act{position:absolute;left:14px;right:14px;bottom:12px;padding:9px 11px 9px 13px;border-radius:9px;border:1px solid " & _cLine & ";background:#FFFFFF}
+.act:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--st)}
+.act .bl{color:var(--st)}
+.bx{margin-top:5px;font-size:8.5px;line-height:1.45;color:#4F5F70}
+</style>
+
+<div class='flip'>
+ <input type='checkbox' id='flip-rc' class='tg'>
+ <div class='inner'>
+
+  <!-- ======================= FRONT ======================= -->
+  <div class='card front' style='--st:" & _cOverall & "'>
+   <label for='flip-rc' class='btn' title='How to read this card'>" & _iInfo & "</label>
+
+   <div class='hd'>
+    <div class='tile'>" & _iBldg & "</div>
+    <div style='min-width:0'>
+     <div class='eb'>Building Readiness</div>
+     <div class='nm' title='" & _sBuilding & "'>" & _sBuilding & "</div>
+     <div class='chips'>
+      <span class='chip'><i style='background:" & _cStatus & "'></i>" & _sStatus & "</span>
+      <span class='chip' style='color:" & _cPriority & "'>" & _iFlag & "<span>Priority</span>" & _sPriority & "</span>
+     </div>
+    </div>
+   </div>
+
+   <div class='hero'>
+    <div class='ring'>
+     <svg viewBox='0 0 84 84'>
+      <circle cx='42' cy='42' r='35' fill='none' stroke='#E3E9F0' stroke-width='8'/>
+      <circle cx='42' cy='42' r='35' fill='none' stroke='" & _cOverall & "' stroke-width='8' stroke-linecap='" & _pCap & "' pathLength='100' stroke-dasharray='" & _pRing & " 100' transform='rotate(-90 42 42)'/>
+     </svg>
+     <div class='rv'><b>" & _sOverall & "<small>%</small></b><span>OVERALL</span></div>
+    </div>
+    <div class='ov'>
+     <div class='eb'>Readiness Band</div>
+     <div class='bd'><i style='background:" & _cOverall & "'></i>" & _Band & "</div>
+     <div class='sc'>
+      <b style='width:" & _pB1 & "%;background:#E3E9F0'></b>
+      <b style='width:" & _pB2 & "%;background:#D3DBE5'></b>
+      <b style='width:" & _pB3 & "%;background:#BCC7D5'></b>
+      <b style='width:" & _pB4 & "%;background:#9FB0C4'></b>
+      <div class='mk' style='left:" & _pOv & "%;border-color:" & _cOverall & "'></div>
+     </div>
+     <div class='sl'>
+      <span style='left:" & _pB1 & "%'>" & _sPart & "</span>
+      <span style='left:" & _sNear & "%'>" & _sNear & "</span>
+      <span style='left:" & _sReady & "%'>" & _sReady & "</span>
+     </div>
+     <div class='gp'><span>Gap to ready (" & _sReady & "%)</span><b>" & _sGap & "</b></div>
+    </div>
+   </div>
+
+   <div class='sh'>
+    <span class='eb'>Readiness Breakdown</span>
+    <span class='lg'><i></i>Ready " & _sReady & "%</span>
+   </div>
+   <div class='rows'>
+    <div class='row" & _rSite & "' style='--st:" & _cSite & "'>
+     <div class='ri'>" & _iSite & "</div>
+     <div>
+      <div class='rt'><span class='rn'>Site</span>" & _tSite & "<span class='rp'><i style='background:" & _cSite & "'></i>" & _sSite & "<small>%</small></span></div>
+      <div class='bar'><b style='width:" & _pSite & "%;background:" & _fSite & "'></b><u style='left:" & _sReady & "%'></u></div>
+     </div>
+    </div>
+    <div class='row" & _rCon & "' style='--st:" & _cCon & "'>
+     <div class='ri'>" & _iCon & "</div>
+     <div>
+      <div class='rt'><span class='rn'>Construction</span>" & _tCon & "<span class='rp'><i style='background:" & _cCon & "'></i>" & _sCon & "<small>%</small></span></div>
+      <div class='bar'><b style='width:" & _pCon & "%;background:" & _fCon & "'></b><u style='left:" & _sReady & "%'></u></div>
+     </div>
+    </div>
+    <div class='row" & _rEng & "' style='--st:" & _cEng & "'>
+     <div class='ri'>" & _iEng & "</div>
+     <div>
+      <div class='rt'><span class='rn'>Engineering</span>" & _tEng & "<span class='rp'><i style='background:" & _cEng & "'></i>" & _sEng & "<small>%</small></span></div>
+      <div class='bar'><b style='width:" & _pEng & "%;background:" & _fEng & "'></b><u style='left:" & _sReady & "%'></u></div>
+     </div>
+    </div>
+   </div>
+
+   <div class='st'>
+    <div class='sx'>
+     <div class='sk'>" & _iCal & "Planned</div>
+     <div class='sv'>" & _sPlanned & "</div>
+     <div class='sc2'>Baseline finish</div>
+    </div>
+    <div class='sx'>
+     <div class='sk'>" & _iFcst & "Forecast</div>
+     <div class='sv'>" & _sForecast & "</div>
+     <div class='sc2'>Planned + delay</div>
+    </div>
+    <div class='sx'>
+     <div class='sk'>" & _iClock & "Delay</div>
+     <div class='sv'><span class='dl' style='background:" & _cDelay & "'>" & _sDelay & "</span></div>
+     <div class='sc2'>" & _DelayCap & "</div>
+    </div>
+   </div>
+
+   <div class='nar'>" & _Narr & "</div>
+  </div>
+
+  <!-- ======================= BACK ======================= -->
+  <div class='card back' style='--st:" & _cOverall & "'>
+   <label for='flip-rc' class='btn' title='Back to readiness'>" & _iBack & "</label>
+   <div class='eb'>How to read this card</div>
+   <div class='bt'>Readiness Assessment</div>
+   <div class='bs'>" & _sBuilding & " · work-front readiness for mobilisation</div>
+
+   <div class='blk'>
+    <div class='bl'>Readiness Bands · overall &amp; per stream</div>
+    <div class='bands'>
+     <span><i style='background:" & _cGood & "'></i><b>Ready</b>&ge; " & _sReady & "%</span>
+     <span><i style='background:" & _cGood & "'></i><b>Nearly</b>" & _sNear & "–" & _sReadyM1 & "%</span>
+     <span><i style='background:" & _cWarn & "'></i><b>Partial</b>" & _sPart & "–" & _sNearM1 & "%</span>
+     <span><i style='background:" & _cBad & "'></i><b>Low</b>&lt; " & _sPart & "%</span>
+    </div>
+   </div>
+
+   <div class='blk'>
+    <div class='bl'>Definitions</div>
+    <div class='df'>
+     <b>Site</b><span>Work front handed over: access, permits, survey, temporary facilities</span>
+     <b>Construction</b><span>Resources, materials, method statements and subcontractor ready</span>
+     <b>Engineering</b><span>IFC drawings issued and open TQs closed for the building</span>
+     <b>Constraint</b><span>Lowest stream still below the " & _sReady & "% ready threshold</span>
+     <b>Forecast</b><span>Planned finish + current delay; red when delay &gt; " & _sDelayCr & " days</span>
+    </div>
+   </div>
+
+   <div class='act'>
+    <div class='bl'>Recommended Action · " & _ActTitle & "</div>
+    <div class='bx'>" & _Action & "</div>
+   </div>
+  </div>
+
+ </div>
+</div>
+</div>"
