@@ -9,11 +9,16 @@
   4. Jenis: kumulatif → angka yang diisi adalah progress kumulatif,
             baris PERTAMA = posisi awal (tidak digambar sebagai batang mingguan).
      Jenis: mingguan  → angka yang diisi adalah progress per minggu.
-  5. Klik Save, lalu Publish/Update website. Grafik ikut berubah otomatis.
+  5. Kejar: jumlah minggu target untuk kembali ke rencana (untuk laju pemulihan).
+  6. Catatan: opsional, boleh lebih dari satu baris "Catatan : ...".
+  7. Klik Save, lalu Publish/Update website. Tampilan ikut berubah otomatis.
 ====================================================================== -->
 <script type="text/plain" id="pw-data">
-Judul : Progress Mingguan – Proyek Tol Segmen A Kalimantan
-Jenis : kumulatif
+Judul   : Progress Mingguan – Proyek Tol Segmen A Kalimantan
+Jenis   : kumulatif
+Kejar   : 8
+Catatan : Curah hujan tinggi 3 hari di STA 12+000 – 15+500, pekerjaan tanah tertunda.
+Catatan : Penambahan 2 unit excavator & 1 tim rigid pavement mulai W40.
 
 Minggu | Tanggal     | Rencana % | Aktual %
 Awal   | 28 Des 2025 | 13,4 | 12,9
@@ -75,81 +80,170 @@ W52    | 27 Des 2026 | 83,3 | -
 <div id="pmis-pw">
 <style>
   #pmis-pw{
-    --plane:#f9f9f7; --surface:#fcfcfb; --navy:#0f2240;
-    --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
-    --s1:#2a78d6; --s2:#eb6834;
+    --plane:#f3f5f8; --surface:#ffffff; --navy:#0f2240; --navy2:#1a3158;
+    --ink:#0f1b2d; --ink2:#4a5568; --muted:#8391a5; --grid:#e6eaf0; --axis:#cfd6df; --ring:rgba(15,27,45,.08);
+    --s1:#2a78d6; --s2:#eb6834; --spark:#aab4c3; --now:rgba(42,120,214,.07);
     --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
     position:relative; max-width:1200px; margin:0 auto; padding:16px; box-sizing:border-box;
-    background:var(--plane); border-radius:12px; color:var(--ink);
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-size:13px; line-height:1.4;
+    background:var(--plane); border-radius:16px; color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-size:13px; line-height:1.45;
   }
   #pmis-pw *{box-sizing:border-box}
-  #pmis-pw .hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:var(--navy);color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px}
-  #pmis-pw .hd h2{margin:0;font-size:16px;font-weight:600}
-  #pmis-pw .hd p{margin:2px 0 0;font-size:12px;color:#c9d6e3}
-  #pmis-pw .warn{display:none;border:1px solid var(--warning);background:#fff8e6;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px}
-  #pmis-pw .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
-  #pmis-pw .card{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:14px}
-  #pmis-pw .lbl{font-size:12px;color:var(--ink2)}
-  #pmis-pw .val{font-size:26px;font-weight:600;margin:4px 0 6px;white-space:nowrap}
-  #pmis-pw .sub{font-size:12px;color:var(--ink2);margin-top:4px}
-  #pmis-pw .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink)}
+  /* header */
+  #pmis-pw .hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+    background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;border-radius:14px;padding:16px 20px;margin-bottom:14px}
+  #pmis-pw .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9fb3cc;font-weight:600}
+  #pmis-pw .hd h2{margin:2px 0 0;font-size:18px;font-weight:650;line-height:1.3}
+  #pmis-pw .hd p{margin:4px 0 0;font-size:12px;color:#c9d6e3}
+  #pmis-pw .pill{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--ink);border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;white-space:nowrap}
+  #pmis-pw .pill small{font-weight:500;color:var(--ink2)}
+  /* warning */
+  #pmis-pw .warn{display:none;border:1px solid var(--warning);background:#fff8e6;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:12px}
+  #pmis-pw .warn b{display:block;margin-bottom:2px}
+  /* insight */
+  #pmis-pw .insight{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:14px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(15,27,45,.04)}
+  #pmis-pw .insight h3{margin:0 0 8px}
+  #pmis-pw .cols{display:grid;grid-template-columns:1.7fr 1fr;gap:20px}
+  #pmis-pw .notes{border-left:1px solid var(--grid);padding-left:20px}
+  #pmis-pw .notes h4{margin:0 0 6px;font-size:12px;font-weight:650;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+  #pmis-pw .notes ul{margin:0;padding-left:18px;color:var(--ink2);font-size:13px}
+  #pmis-pw .notes li{padding:3px 0}
+  #pmis-pw .ins{display:flex;gap:10px;align-items:flex-start;padding:4px 0;font-size:13px;color:var(--ink2)}
+  #pmis-pw .ins .txt{flex:1;min-width:0}
+  #pmis-pw .ins b{color:var(--ink);font-weight:650}
+  #pmis-pw .ins .ico{flex:none;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ink);margin-top:1px}
+  /* tiles */
+  #pmis-pw .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+  #pmis-pw .card{background:var(--surface);border:1px solid var(--ring);border-radius:14px;padding:16px;box-shadow:0 1px 2px rgba(15,27,45,.04)}
+  #pmis-pw .tile{display:flex;flex-direction:column;gap:6px;transition:box-shadow .2s,transform .2s}
+  #pmis-pw .tile:hover{box-shadow:0 8px 24px rgba(15,27,45,.08);transform:translateY(-1px)}
+  #pmis-pw .th{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
+  #pmis-pw .th .ic{width:26px;height:26px;border-radius:8px;background:#eef3fb;color:var(--navy);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  #pmis-pw .th .tag{margin-left:auto;font-size:11px;color:var(--muted);background:var(--plane);border-radius:6px;padding:2px 6px}
+  #pmis-pw .val{font-size:30px;font-weight:650;line-height:1.1;white-space:nowrap;letter-spacing:-.01em}
+  #pmis-pw .val small{font-size:15px;font-weight:600;color:var(--ink2);margin-left:2px}
+  #pmis-pw .sub{font-size:12px;color:var(--ink2)}
+  #pmis-pw .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink);align-self:flex-start;background:var(--plane);border-radius:999px;padding:3px 10px 3px 8px}
   #pmis-pw .dot{width:8px;height:8px;border-radius:50%;flex:none}
-  #pmis-pw .bar-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+  #pmis-pw .spark{height:34px;margin-top:auto}
+  #pmis-pw .spark svg{width:100%;height:34px;display:block;overflow:visible}
+  #pmis-pw .meter{position:relative;height:10px;background:#dbe7f7;border-radius:0 4px 4px 0;margin:10px 0 6px}
+  #pmis-pw .meter .fill{position:absolute;left:0;top:0;bottom:0;background:var(--s1);border-radius:0 4px 4px 0}
+  #pmis-pw .meter .tick{position:absolute;top:-5px;width:3px;height:20px;margin-left:-1.5px;background:var(--s2);border-radius:1px;box-shadow:0 0 0 2px var(--surface)}
+  /* chart card */
+  #pmis-pw h3{margin:0;font-size:14px;font-weight:650}
+  #pmis-pw .cap{font-size:12px;color:var(--ink2);margin-top:2px}
+  #pmis-pw .bar-row{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:10px}
   #pmis-pw .ctrls{display:flex;gap:8px;flex-wrap:wrap}
-  #pmis-pw .seg{display:inline-flex;border:1px solid var(--axis);border-radius:7px;overflow:hidden}
-  #pmis-pw .seg button,#pmis-pw .tbtn{font:inherit;font-size:12px;padding:5px 10px;border:0;background:var(--surface);color:var(--ink2);cursor:pointer}
-  #pmis-pw .seg button+button{border-left:1px solid var(--axis)}
-  #pmis-pw .seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
-  #pmis-pw .tbtn{border:1px solid var(--axis);border-radius:7px}
-  #pmis-pw .seg button:hover:not([aria-pressed="true"]),#pmis-pw .tbtn:hover{background:var(--plane)}
-  #pmis-pw h3{margin:0;font-size:14px;font-weight:600}
-  #pmis-pw .legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);margin:2px 0 4px}
+  #pmis-pw .seg{display:inline-flex;background:var(--plane);border-radius:10px;padding:3px;gap:2px}
+  #pmis-pw .seg button,#pmis-pw .tbtn{font:inherit;font-size:12px;font-weight:600;min-height:30px;padding:5px 12px;border:0;border-radius:8px;background:transparent;color:var(--ink2);cursor:pointer;transition:background .15s,color .15s,box-shadow .15s}
+  #pmis-pw .seg button[aria-pressed="true"]{background:var(--surface);color:var(--navy);box-shadow:0 1px 3px rgba(15,27,45,.15)}
+  #pmis-pw .seg button:hover:not([aria-pressed="true"]){color:var(--ink)}
+  #pmis-pw .tbtn{border:1px solid var(--axis);background:var(--surface);min-height:36px}
+  #pmis-pw .tbtn:hover{background:var(--plane)}
+  #pmis-pw button:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+  #pmis-pw .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--ink2);margin-bottom:6px}
   #pmis-pw .legend span{display:inline-flex;align-items:center;gap:6px}
   #pmis-pw .lr{width:10px;height:12px;border-radius:3px 3px 0 0}
-  #pmis-pw .lk{width:14px;height:2px;border-radius:1px}
-  #pmis-pw #pw-chart{position:relative;height:280px}
+  #pmis-pw .lk{width:14px;height:2px;border-radius:1px;flex:none}
+  #pmis-pw #pw-chart{position:relative;height:300px}
   #pmis-pw #pw-chart svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;overflow:visible}
-  #pmis-pw svg:focus{outline:2px solid var(--s1);outline-offset:2px;border-radius:4px}
-  #pmis-pw .tblwrap{display:none;max-height:280px;overflow:auto}
+  #pmis-pw svg:focus{outline:none}
+  #pmis-pw svg:focus-visible{outline:2px solid var(--s1);outline-offset:4px;border-radius:6px}
+  #pmis-pw .grp{transition:opacity .15s}
+  #pmis-pw .hovering .grp{opacity:.35}
+  #pmis-pw .hovering .grp.on{opacity:1}
+  #pmis-pw .future{opacity:.45}
+  #pmis-pw .bar{transform-box:fill-box;transform-origin:50% 100%}
+  #pmis-pw .bar.neg{transform-origin:50% 0}
+  #pmis-pw .anim .bar{animation:pwGrow .6s cubic-bezier(.2,.7,.2,1) both}
+  #pmis-pw .anim-in{animation:pwIn .45s ease-out both}
+  @keyframes pwGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+  @keyframes pwIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){#pmis-pw .anim .bar,#pmis-pw .anim-in{animation:none}#pmis-pw .tile,#pmis-pw .grp{transition:none}}
+  /* table */
+  #pmis-pw .tblwrap{display:none;max-height:320px;overflow:auto;border:1px solid var(--grid);border-radius:10px}
   #pmis-pw.show-table .tblwrap{display:block}
   #pmis-pw.show-table .viz{display:none}
   #pmis-pw table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
-  #pmis-pw th,#pmis-pw td{padding:5px 6px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+  #pmis-pw th,#pmis-pw td{padding:7px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
   #pmis-pw th:nth-child(-n+2),#pmis-pw td:nth-child(-n+2){text-align:left}
-  #pmis-pw th{color:var(--ink2);font-weight:600;position:sticky;top:0;background:var(--surface)}
-  #pmis-pw .tt{position:absolute;pointer-events:none;display:none;min-width:170px;background:var(--surface);border:1px solid var(--ring);border-radius:8px;box-shadow:0 6px 18px rgba(11,11,11,.12);padding:8px 10px;font-size:12px;z-index:5}
-  #pmis-pw .tt .t{color:var(--ink2);margin-bottom:4px}
-  #pmis-pw .tt .r{display:flex;align-items:center;gap:8px}
-  #pmis-pw .tt .r b{color:var(--ink);font-variant-numeric:tabular-nums}
+  #pmis-pw th{color:var(--ink2);font-weight:600;position:sticky;top:0;background:var(--plane);z-index:1}
+  #pmis-pw tbody tr:nth-child(even){background:#fafbfc}
+  #pmis-pw tr.now td{background:#eef4fc;font-weight:600}
+  #pmis-pw tr.fut td{color:var(--muted)}
+  #pmis-pw td .dot{display:inline-block;margin-right:6px;vertical-align:middle}
+  /* tooltip */
+  #pmis-pw .tt{position:absolute;pointer-events:none;display:none;min-width:190px;background:var(--surface);border:1px solid var(--ring);border-radius:12px;box-shadow:0 12px 32px rgba(15,27,45,.16);padding:10px 12px;font-size:12px;z-index:5}
+  #pmis-pw .tt .t{font-weight:650;color:var(--ink);margin-bottom:6px;display:flex;justify-content:space-between;gap:10px}
+  #pmis-pw .tt .t span{font-weight:500;color:var(--muted)}
+  #pmis-pw .tt .r{display:flex;align-items:center;gap:8px;padding:1px 0}
+  #pmis-pw .tt .r b{color:var(--ink);font-variant-numeric:tabular-nums;min-width:52px}
   #pmis-pw .tt .r span{color:var(--ink2)}
-  #pmis-pw .tt .sep{border-top:1px solid var(--grid);margin:5px 0}
-  #pmis-pw .ft{margin-top:10px;font-size:11px;color:var(--muted)}
+  #pmis-pw .tt .sep{border-top:1px solid var(--grid);margin:6px 0}
+  #pmis-pw .tt .chip{margin-top:8px}
+  /* footer */
+  #pmis-pw .ft{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;font-size:11px;color:var(--muted)}
+  #pmis-pw .ft span{display:inline-flex;align-items:center;gap:6px}
   @media (max-width:900px){
-    #pmis-pw .tiles{grid-template-columns:1fr 1fr}
-    #pmis-pw .val{font-size:22px}
+    #pmis-pw{padding:12px}
+    #pmis-pw .tiles{grid-template-columns:1fr 1fr;gap:10px}
+    #pmis-pw .val{font-size:24px}
+    #pmis-pw #pw-chart{height:250px}
+    #pmis-pw .ctrls{width:100%}
+    #pmis-pw .hd{padding:14px 16px}
+  }
+  @media (max-width:700px){
+    #pmis-pw .cols{grid-template-columns:1fr;gap:10px}
+    #pmis-pw .notes{border-left:0;padding-left:0;border-top:1px solid var(--grid);padding-top:10px}
+  }
+  #pmis-pw .swipe{display:none;font-size:11px;color:var(--muted);margin:-8px 0 12px}
+  @media (max-width:560px){
+    #pmis-pw .tiles{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 12px;gap:10px;margin:0 -12px 14px;padding:2px 12px 6px;scrollbar-width:none}
+    #pmis-pw .tiles::-webkit-scrollbar{display:none}
+    #pmis-pw .tile{flex:0 0 80%;scroll-snap-align:start}
+    #pmis-pw .swipe{display:block}
+  }
+  @media (max-width:420px){
+    #pmis-pw .card{padding:12px}
+    #pmis-pw .val{font-size:21px}
+    #pmis-pw .seg button{padding:5px 9px}
   }
 </style>
 
-<div class="hd"><div><h2 id="pw-title"></h2><p id="pw-sub"></p></div></div>
-<div class="warn" id="pw-warn"></div>
-<div class="tiles" id="pw-tiles"></div>
+<header class="hd">
+  <div>
+    <div class="eyebrow">PMIS · Laporan Progress Mingguan</div>
+    <h2 id="pw-title"></h2>
+    <p id="pw-sub"></p>
+  </div>
+  <div id="pw-status"></div>
+</header>
 
-<div class="card">
+<div class="warn" id="pw-warn"></div>
+
+<section class="insight anim-in" id="pw-insight">
+  <div class="cols" id="pw-cols">
+    <div><h3>Ringkasan minggu ini</h3><div id="pw-ins"></div></div>
+    <div class="notes" id="pw-notes"><h4>✎ Catatan project control</h4><ul id="pw-notelist"></ul></div>
+  </div>
+</section>
+
+<div class="tiles" id="pw-tiles"></div>
+<div class="swipe">← Geser ke samping untuk melihat KPI lainnya →</div>
+
+<section class="card anim-in" style="animation-delay:.12s">
   <div class="bar-row">
     <div>
       <h3 id="pw-ctitle"></h3>
-      <div class="legend">
-        <span><i class="lr" style="background:var(--s1)"></i>Aktual</span>
-        <span><i class="lr" style="background:var(--s2)"></i>Rencana</span>
-      </div>
+      <div class="cap" id="pw-ccap"></div>
     </div>
     <div class="ctrls">
-      <div class="seg" id="pw-mode">
+      <div class="seg" id="pw-mode" role="group" aria-label="Jenis angka">
         <button type="button" data-v="weekly" aria-pressed="true">Mingguan</button>
         <button type="button" data-v="cum" aria-pressed="false">Kumulatif</button>
       </div>
-      <div class="seg" id="pw-range">
+      <div class="seg" id="pw-range" role="group" aria-label="Rentang minggu">
         <button type="button" data-v="12" aria-pressed="true">12 mgg</button>
         <button type="button" data-v="26" aria-pressed="false">26 mgg</button>
         <button type="button" data-v="all" aria-pressed="false">Semua</button>
@@ -157,23 +251,26 @@ W52    | 27 Des 2026 | 83,3 | -
       <button type="button" class="tbtn" id="pw-tbtn">Tabel</button>
     </div>
   </div>
+  <div class="legend" id="pw-legend"></div>
   <div class="viz"><div id="pw-chart"></div></div>
   <div class="tblwrap" id="pw-tbl"></div>
-</div>
+</section>
 
-<div class="ft" id="pw-ft"></div>
-<div class="tt" id="pw-tt"></div>
+<footer class="ft" id="pw-ft"></footer>
+<div class="tt" id="pw-tt" role="status" aria-live="polite"></div>
 </div>
 
 <script>
 (function () {
   var root = document.getElementById('pmis-pw');
   var tt = document.getElementById('pw-tt');
+  var NS = 'http://www.w3.org/2000/svg';
   var STATUS = {
-    good:     { c: 'var(--good)',     i: '✓' },
-    warning:  { c: 'var(--warning)',  i: '!' },
-    critical: { c: 'var(--critical)', i: '✕' }
+    good:     { c: 'var(--good)',     i: '✓', t: 'Sesuai' },
+    warning:  { c: 'var(--warning)',  i: '!', t: 'Waspada' },
+    critical: { c: 'var(--critical)', i: '✕', t: 'Kritis' }
   };
+  var RANK = { good: 0, warning: 1, critical: 2 };
   function $(id) { return document.getElementById(id); }
   function num(v, d) { return v.toLocaleString('id-ID', { minimumFractionDigits: d, maximumFractionDigits: d }); }
   function signed(v, d) { return (v > 0 ? '+' : v < 0 ? '−' : '') + num(Math.abs(v), d); }
@@ -183,27 +280,53 @@ W52    | 27 Des 2026 | 83,3 | -
     if (text != null) e.textContent = text;
     return e;
   }
+  function s(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var a in attrs) e.setAttribute(a, attrs[a]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function dot(level) { var d = el('i', 'dot'); d.style.background = STATUS[level].c; return d; }
   function chip(level, text) {
-    var s = el('span', 'chip'), d = el('i', 'dot');
-    d.style.background = STATUS[level].c;
-    s.appendChild(d);
-    s.appendChild(document.createTextNode(STATUS[level].i + ' ' + text));
-    return s;
+    var c = el('span', 'chip');
+    c.appendChild(dot(level));
+    c.appendChild(document.createTextNode(STATUS[level].i + ' ' + text));
+    return c;
+  }
+  // rich text: ['biasa ', ['tebal'], ' biasa']
+  function rich(parent, parts) {
+    parts.forEach(function (p) { parent.appendChild(Array.isArray(p) ? el('b', null, p[0]) : document.createTextNode(p)); });
+    return parent;
+  }
+  var ICON = {
+    week:  'M3 5h10M3 5v8h10V5M3 5V3h10v2M6 1.5v3M10 1.5v3M5.5 9.5h2',
+    stack: 'M8 2 2 5l6 3 6-3-6-3ZM2 8l6 3 6-3M2 11l6 3 6-3',
+    gauge: 'M2.5 11a5.5 5.5 0 1 1 11 0M8 11l3-3.5',
+    target:'M8 14.5A6.5 6.5 0 1 0 8 1.5a6.5 6.5 0 0 0 0 13ZM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM8 8h.01'
+  };
+  function icon(name) {
+    var sv = s('svg', { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' });
+    s('path', { d: ICON[name] }, sv);
+    return sv;
   }
 
   /* ---------- 1. Baca bagian data ---------- */
-  var cfg = { judul: 'Progress Mingguan', jenis: 'kumulatif' };
+  var cfg = { judul: 'Progress Mingguan', jenis: 'kumulatif', kejar: '8' }, notes = [];
   var rows = [], problems = [];
-  function parseNum(s) {
-    s = (s || '').replace(/%/g, '').replace(/\s/g, '').replace(',', '.');
-    if (s === '' || s === '-' || s === '–') return null;
-    return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
+  function parseNum(v) {
+    v = (v || '').replace(/%/g, '').replace(/\s/g, '').replace(',', '.');
+    if (v === '' || v === '-' || v === '–') return null;
+    return /^-?\d+(\.\d+)?$/.test(v) ? parseFloat(v) : NaN;
   }
-  $('pw-data').textContent.split(/\r?\n/).forEach(function (line, n) {
+  $('pw-data').textContent.split(/\r?\n/).forEach(function (line) {
     var raw = line.trim();
     if (!raw || raw.charAt(0) === '#') return;
-    var kv = raw.match(/^(judul|jenis)\s*:\s*(.+)$/i);
-    if (kv) { cfg[kv[1].toLowerCase()] = kv[2].trim(); return; }
+    var kv = raw.match(/^(judul|jenis|kejar|catatan)\s*:\s*(.+)$/i);
+    if (kv) {
+      var key = kv[1].toLowerCase();
+      if (key === 'catatan') notes.push(kv[2].trim()); else cfg[key] = kv[2].trim();
+      return;
+    }
     var cells = raw.indexOf('\t') > -1 ? raw.split('\t') : raw.indexOf('|') > -1 ? raw.split('|') : raw.indexOf(';') > -1 ? raw.split(';') : raw.split(/\s{2,}/);
     cells = cells.map(function (c) { return c.trim(); });
     if (cells.length < 3) { problems.push('Baris “' + raw + '”: kolom kurang'); return; }
@@ -217,11 +340,9 @@ W52    | 27 Des 2026 | 83,3 | -
   });
 
   var cumMode = !/^mingguan/i.test(cfg.jenis);
-  // Susun nilai mingguan & kumulatif
   var data = [];
   rows.forEach(function (r, i) {
-    var prev = data[i - 1];
-    var o = { w: r.w, d: r.d };
+    var prev = data[i - 1], o = { w: r.w, d: r.d };
     if (cumMode) {
       o.cp = r.p; o.ca = r.a;
       o.wp = prev ? r.p - prev.cp : null;
@@ -241,74 +362,155 @@ W52    | 27 Des 2026 | 83,3 | -
     if (o.ca != null && lastA != null && o.ca < lastA) problems.push(o.w + ': Aktual kumulatif lebih kecil dari minggu sebelumnya (cek kembali)');
     if (o.ca != null) lastA = o.ca;
   });
-
   if (problems.length) {
     var wb = $('pw-warn');
     wb.style.display = 'block';
-    wb.appendChild(chip('warning', 'Periksa bagian data:'));
+    wb.appendChild(el('b', null, '⚠ Periksa bagian data (Edit kode → tabel di bagian atas):'));
     problems.slice(0, 6).forEach(function (t) { wb.appendChild(el('div', null, '• ' + t)); });
   }
   $('pw-title').textContent = cfg.judul;
   var first = cumMode ? 1 : 0;   // mode kumulatif: baris pertama = posisi awal
-  if (cut < first) { $('pw-sub').textContent = 'Belum ada data aktual yang bisa dihitung.'; return; }
-  var C = data[cut];
-  $('pw-sub').textContent = 'Cut-off ' + C.w + (C.d ? ' · ' + C.d : '') + ' · ' + (cut + 1) + ' baris data';
+  if (cut < first) { $('pw-sub').textContent = 'Belum ada data aktual yang bisa dihitung.'; $('pw-insight').style.display = 'none'; return; }
 
-  /* ---------- 2. KPI tiles ---------- */
+  /* ---------- 2. Hitungan KPI ---------- */
+  var C = data[cut], P = data[cut - 1];
   function ratioLevel(r) { return r >= 0.95 ? 'good' : r >= 0.85 ? 'warning' : 'critical'; }
   function devLevel(d) { return d >= -2 ? 'good' : d >= -5 ? 'warning' : 'critical'; }
-  function tile(label, value, level, chipText, sub) {
-    var c = el('div', 'card');
-    c.appendChild(el('div', 'lbl', label));
-    c.appendChild(el('div', 'val', value));
-    c.appendChild(chip(level, chipText));
-    c.appendChild(el('div', 'sub', sub));
-    return c;
-  }
-  var tiles = $('pw-tiles');
-  var dW = C.wa - C.wp;
-  tiles.appendChild(tile('Progress minggu ini · ' + C.w, num(C.wa, 2) + '%', ratioLevel(C.wp ? C.wa / C.wp : 1),
-    signed(dW, 2) + ' poin vs rencana', 'Rencana ' + num(C.wp, 2) + '%'));
-  var dC = C.ca - C.cp;
-  tiles.appendChild(tile('Kumulatif s.d. ' + C.w, num(C.ca, 1) + '%', devLevel(dC),
-    signed(dC, 1) + ' poin vs rencana', 'Rencana ' + num(C.cp, 1) + '%'));
+  var wRatio = C.wp ? C.wa / C.wp : 1;
+  var dev = C.ca - C.cp, devPrev = P && P.ca != null ? P.ca - P.cp : null;
   var spi = C.ca / C.cp;
-  tiles.appendChild(tile('SPI kumulatif', num(spi, 2), ratioLevel(spi),
-    spi >= 0.95 ? 'Sesuai jadwal' : 'Terlambat', 'Aktual ÷ rencana kumulatif'));
   var k = 0, sa = 0, sp = 0;
   for (var i = cut; i >= first && k < 4; i--) { if (data[i].wa != null) { sa += data[i].wa; sp += data[i].wp; k++; } }
-  tiles.appendChild(tile('Rata-rata ' + k + ' minggu terakhir', num(sa / k, 2) + '%/mgg', ratioLevel(sp ? sa / sp : 1),
-    signed((sa - sp) / k, 2) + ' poin/mgg', 'Rencana ' + num(sp / k, 2) + '%/mgg'));
-  $('pw-ft').textContent = 'Progress mingguan = selisih kumulatif minggu ini dan minggu sebelumnya · Status: ✓ sesuai (≥ 95% rencana), ! waspada (85–95%), ✕ kritis (< 85%). Arahkan kursor ke batang untuk detail.';
+  var avgA = k ? sa / k : 0, avgP = k ? sp / k : 0;
+  var K = Math.max(1, parseInt(cfg.kejar, 10) || 8);
+  var tIdx = Math.min(cut + K, data.length - 1), ahead = tIdx - cut;
+  var need = ahead > 0 ? (data[tIdx].cp - C.ca) / ahead : null;
+  var needRatio = need != null && avgA > 0 ? need / avgA : null;
+  var needLevel = needRatio == null ? 'warning' : needRatio <= 1.1 ? 'good' : needRatio <= 1.3 ? 'warning' : 'critical';
+  var overall = [ratioLevel(spi), devLevel(dev)].sort(function (a, b) { return RANK[b] - RANK[a]; })[0];
 
-  /* ---------- 3. Tabel ---------- */
+  $('pw-sub').textContent = 'Cut-off ' + C.w + (C.d ? ' · ' + C.d : '');
+  var pill = el('div', 'pill');
+  pill.appendChild(dot(overall));
+  pill.appendChild(document.createTextNode(STATUS[overall].i + ' Status jadwal: ' + STATUS[overall].t + ' '));
+  pill.appendChild(el('small', null, '· SPI ' + num(spi, 2)));
+  $('pw-status').appendChild(pill);
+
+  /* ---------- 3. Ringkasan otomatis ---------- */
+  var ins = $('pw-ins');
+  function insight(level, parts) {
+    var row = el('div', 'ins');
+    var ic = el('span', 'ico', STATUS[level].i);
+    ic.style.background = STATUS[level].c;
+    if (level === 'good' || level === 'critical') ic.style.color = '#fff';
+    row.appendChild(ic);
+    row.appendChild(rich(el('span', 'txt'), parts));
+    ins.appendChild(row);
+  }
+  insight(ratioLevel(wRatio), ['Progress minggu ini ', [num(C.wa, 2) + '%'], ' vs rencana ' + num(C.wp, 2) + '% (' + num(wRatio * 100, 0) + '% dari rencana).']);
+  var trend = devPrev == null ? '' : Math.abs(dev - devPrev) < 0.05 ? ', sama seperti minggu lalu' :
+    (Math.abs(dev) > Math.abs(devPrev) ? ', melebar ' : ', menyempit ') + num(Math.abs(dev - devPrev), 1) + ' poin dari minggu lalu';
+  insight(devLevel(dev), ['Kumulatif ', [num(C.ca, 1) + '%'], ' vs rencana ' + num(C.cp, 1) + '% — deviasi ', [signed(dev, 1) + ' poin'], trend + '.']);
+  if (need != null && dev < 0) {
+    insight(needLevel, ['Untuk kembali sesuai rencana dalam ' + ahead + ' minggu (s.d. ' + data[tIdx].w + '), dibutuhkan ', [num(need, 2) + '%/minggu'],
+      needRatio ? ' — ' + num(needRatio, 1) + '× rata-rata ' + k + ' minggu terakhir (' + num(avgA, 2) + '%/minggu).' : '.']);
+  } else if (dev >= 0) {
+    insight('good', ['Progress kumulatif sudah ', ['sesuai atau di depan rencana'], '. Pertahankan laju ' + num(avgA, 2) + '%/minggu.']);
+  }
+  if (notes.length) notes.forEach(function (n) { $('pw-notelist').appendChild(el('li', null, n)); });
+  else { $('pw-notes').style.display = 'none'; $('pw-cols').style.gridTemplateColumns = '1fr'; }
+
+  /* ---------- 4. KPI tiles ---------- */
+  function sparkline(values, ref) {
+    var box = el('div', 'spark'), W = 200, H = 34, pad = 4;
+    var vv = values.filter(function (v) { return v != null; });
+    if (vv.length < 2) return box;
+    var lo = Math.min.apply(null, vv), hi = Math.max.apply(null, vv);
+    if (hi - lo < 1e-9) { hi += 1; lo -= 1; }
+    if (ref != null && (ref < lo || ref > hi)) ref = null;
+    var x = function (i) { return pad + i * (W - pad * 2) / (values.length - 1); };
+    var y = function (v) { return pad + (hi - v) / (hi - lo) * (H - pad * 2); };
+    var sv = s('svg', { viewBox: '0 0 ' + W + ' ' + H, preserveAspectRatio: 'none', 'aria-hidden': 'true' }, box);
+    if (ref != null) s('line', { x1: 0, x2: W, y1: y(ref), y2: y(ref), stroke: 'var(--grid)', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }, sv);
+    var d = values.map(function (v, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join(' ');
+    s('path', { d: d, fill: 'none', stroke: 'var(--spark)', 'stroke-width': 1.75, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'vector-effect': 'non-scaling-stroke' }, sv);
+    var li = values.length - 1;
+    var dt = el('i'); // HTML dot keeps its round shape when the svg stretches
+    dt.style.cssText = 'position:absolute;width:8px;height:8px;border-radius:50%;background:var(--s1);box-shadow:0 0 0 2px var(--surface);left:calc(' + (x(li) / W * 100) + '% - 4px);top:' + (y(values[li]) - 4) + 'px';
+    box.style.position = 'relative';
+    box.appendChild(dt);
+    return box;
+  }
+  function tile(opt, idx) {
+    var c = el('div', 'card tile anim-in');
+    c.style.animationDelay = (0.05 + idx * 0.05) + 's';
+    var th = el('div', 'th'), ic = el('span', 'ic');
+    ic.appendChild(icon(opt.icon));
+    th.appendChild(ic); th.appendChild(el('span', null, opt.label));
+    if (opt.tag) th.appendChild(el('span', 'tag', opt.tag));
+    c.appendChild(th);
+    var v = el('div', 'val', opt.value);
+    if (opt.unit) v.appendChild(el('small', null, opt.unit));
+    c.appendChild(v);
+    c.appendChild(chip(opt.level, opt.chip));
+    if (opt.extra) c.appendChild(opt.extra);
+    c.appendChild(el('div', 'sub', opt.sub));
+    return c;
+  }
+  var last12 = data.slice(Math.max(first, cut - 11), cut + 1);
+  var meter = el('div', 'meter'), mf = el('div', 'fill'), mt = el('div', 'tick');
+  mf.style.width = Math.min(100, C.ca) + '%'; mt.style.left = Math.min(100, C.cp) + '%';
+  meter.appendChild(mf); meter.appendChild(mt);
+  var tiles = $('pw-tiles');
+  [
+    { icon: 'week', label: 'Progress minggu ini', tag: C.w, value: num(C.wa, 2), unit: '%', level: ratioLevel(wRatio),
+      chip: signed(C.wa - C.wp, 2) + ' poin vs rencana', sub: 'Rencana ' + num(C.wp, 2) + '% · tren 12 minggu',
+      extra: sparkline(last12.map(function (o) { return o.wa; })) },
+    { icon: 'stack', label: 'Kumulatif', tag: 's.d. ' + C.w, value: num(C.ca, 1), unit: '%', level: devLevel(dev),
+      chip: signed(dev, 1) + ' poin vs rencana', sub: 'Rencana ' + num(C.cp, 1) + '% (garis oranye)', extra: meter },
+    { icon: 'gauge', label: 'SPI kumulatif', value: num(spi, 2), level: ratioLevel(spi),
+      chip: spi >= 0.95 ? 'Sesuai jadwal' : 'Di bawah target 0,95', sub: 'Tren SPI 12 minggu terakhir',
+      extra: sparkline(last12.map(function (o) { return o.ca / o.cp; }), 1) },
+    need != null && dev < 0 ?
+      { icon: 'target', label: 'Laju untuk kejar rencana', tag: ahead + ' mgg', value: num(need, 2), unit: '%/mgg', level: needLevel,
+        chip: needRatio ? num(needRatio, 1) + '× laju saat ini' : 'Target s.d. ' + data[tIdx].w,
+        sub: 'Rata-rata ' + k + ' mgg terakhir ' + num(avgA, 2) + '%/mgg' } :
+      { icon: 'target', label: 'Rata-rata ' + k + ' minggu', value: num(avgA, 2), unit: '%/mgg', level: ratioLevel(avgP ? avgA / avgP : 1),
+        chip: signed(avgA - avgP, 2) + ' poin/mgg', sub: 'Rencana ' + num(avgP, 2) + '%/mgg' }
+  ].forEach(function (o, j) { tiles.appendChild(tile(o, j)); });
+
+  var ft = $('pw-ft');
+  ['good', 'warning', 'critical'].forEach(function (l) {
+    var sp = el('span'); sp.appendChild(dot(l));
+    sp.appendChild(document.createTextNode(STATUS[l].i + ' ' + STATUS[l].t + (l === 'good' ? ' (≥ 95% rencana)' : l === 'warning' ? ' (85–95%)' : ' (< 85%)')));
+    ft.appendChild(sp);
+  });
+  ft.appendChild(el('span', null, 'Progress mingguan = selisih kumulatif minggu ini dan minggu sebelumnya'));
+
+  /* ---------- 5. Tabel ---------- */
   (function () {
     var t = el('table'), th = el('thead'), tr = el('tr');
     ['Minggu', 'Tanggal', 'Rencana mgg', 'Aktual mgg', 'Rencana kum', 'Aktual kum', 'Deviasi kum'].forEach(function (h) { tr.appendChild(el('th', null, h)); });
     th.appendChild(tr); t.appendChild(th);
     var tb = el('tbody');
-    data.forEach(function (o) {
-      var r = el('tr');
+    data.forEach(function (o, i) {
+      var r = el('tr', i === cut ? 'now' : o.ca == null ? 'fut' : '');
       [o.w, o.d,
        o.wp == null ? '–' : num(o.wp, 2), o.wa == null ? '–' : num(o.wa, 2),
-       num(o.cp, 1), o.ca == null ? '–' : num(o.ca, 1),
-       o.ca == null ? '–' : signed(o.ca - o.cp, 1)
+       num(o.cp, 1), o.ca == null ? '–' : num(o.ca, 1)
       ].forEach(function (v) { r.appendChild(el('td', null, v)); });
+      var td = el('td');
+      if (o.ca != null) { var l = devLevel(o.ca - o.cp); td.appendChild(dot(l)); td.appendChild(document.createTextNode(STATUS[l].i + ' ' + signed(o.ca - o.cp, 1))); }
+      else td.textContent = '–';
+      r.appendChild(td);
       tb.appendChild(r);
     });
     t.appendChild(tb);
     $('pw-tbl').appendChild(t);
   })();
 
-  /* ---------- 4. Bar chart ---------- */
+  /* ---------- 6. Bar chart ---------- */
   var state = { mode: 'weekly', range: '12' };
-  var NS = 'http://www.w3.org/2000/svg';
-  function s(tag, attrs, parent) {
-    var e = document.createElementNS(NS, tag);
-    for (var a in attrs) e.setAttribute(a, attrs[a]);
-    if (parent) parent.appendChild(e);
-    return e;
-  }
   function niceStep(max, count) {
     var raw = max / count, p = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), f = raw / p;
     return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
@@ -322,45 +524,65 @@ W52    | 27 Des 2026 | 83,3 | -
     return 'M' + x + ' ' + y0 + 'V' + (top - r) + 'Q' + x + ' ' + top + ' ' + (x + r) + ' ' + top +
       'H' + (x + w - r) + 'Q' + (x + w) + ' ' + top + ' ' + (x + w) + ' ' + (top - r) + 'V' + y0 + 'Z';
   }
-  function showTip(o, cx, cy) {
+  function showTip(o, idx, cx, cy) {
     tt.innerHTML = '';
-    tt.appendChild(el('div', 't', o.w + (o.d ? ' · ' + o.d : '')));
+    var t = el('div', 't'); t.appendChild(document.createTextNode(o.w)); t.appendChild(el('span', null, o.d));
+    tt.appendChild(t);
     function row(color, value, label) {
       var r = el('div', 'r');
-      if (color) { var k = el('i', 'lk'); k.style.background = color; r.appendChild(k); }
+      var kk = el('i', 'lk'); kk.style.background = color || 'transparent'; r.appendChild(kk);
       r.appendChild(el('b', null, value)); r.appendChild(el('span', null, label));
       tt.appendChild(r);
     }
     var wk = state.mode === 'weekly';
-    var A = wk ? o.wa : o.ca, P = wk ? o.wp : o.cp, d = wk ? 2 : 1;
-    if (A != null) row('var(--s1)', num(A, d) + '%', wk ? 'Aktual minggu ini' : 'Aktual kumulatif');
-    row('var(--s2)', num(P, d) + '%', wk ? 'Rencana minggu ini' : 'Rencana kumulatif');
-    if (A != null) row(null, signed(A - P, d) + ' poin', 'Deviasi');
+    var A = wk ? o.wa : o.ca, Pv = wk ? o.wp : o.cp, d = wk ? 2 : 1;
+    if (A != null) row('var(--s1)', num(A, d) + '%', 'Aktual');
+    row('var(--s2)', num(Pv, d) + '%', idx > cut ? 'Rencana (mendatang)' : 'Rencana');
+    if (A != null) row(null, signed(A - Pv, d), 'poin deviasi');
     if (wk) {
       tt.appendChild(el('div', 'sep'));
       if (o.ca != null) row(null, num(o.ca, 1) + '%', 'Aktual kumulatif');
       row(null, num(o.cp, 1) + '%', 'Rencana kumulatif');
     }
+    if (A != null && Pv) {
+      var lv = wk ? ratioLevel(A / Pv) : devLevel(A - Pv);
+      tt.appendChild(chip(lv, wk ? num(A / Pv * 100, 0) + '% dari rencana' : STATUS[lv].t));
+    }
     tt.style.display = 'block';
     var rb = root.getBoundingClientRect();
-    var x = cx - rb.left + 14, y = cy - rb.top + 14;
-    if (x + tt.offsetWidth > rb.width - 8) x = cx - rb.left - tt.offsetWidth - 14;
+    var x = cx - rb.left + 16, y = cy - rb.top + 16;
+    if (x + tt.offsetWidth > rb.width - 8) x = cx - rb.left - tt.offsetWidth - 16;
+    if (y + tt.offsetHeight > rb.height - 8) y = cy - rb.top - tt.offsetHeight - 16;
     tt.style.left = Math.max(8, x) + 'px';
-    tt.style.top = y + 'px';
+    tt.style.top = Math.max(8, y) + 'px';
   }
   function hideTip() { tt.style.display = 'none'; }
 
   var focusIdx = null;
-  function draw() {
+  function legend(showFuture) {
+    var lg = $('pw-legend'); lg.innerHTML = '';
+    function item(color, text, op) {
+      var sp = el('span'), sw = el('i', 'lr'); sw.style.background = color; if (op) sw.style.opacity = op;
+      sp.appendChild(sw); sp.appendChild(document.createTextNode(text)); lg.appendChild(sp);
+    }
+    item('var(--s1)', 'Aktual'); item('var(--s2)', 'Rencana');
+    if (showFuture) item('var(--s2)', 'Rencana minggu mendatang', 0.45);
+    var nw = el('span'), sw = el('i', 'lr'); sw.style.cssText = 'background:var(--now);border:1px solid rgba(42,120,214,.35);border-radius:3px';
+    nw.appendChild(sw); nw.appendChild(document.createTextNode('Minggu ini (' + C.w + ')')); lg.appendChild(nw);
+  }
+  function draw(animate) {
     var wk = state.mode === 'weekly';
-    $('pw-ctitle').textContent = wk ? 'Progress per Minggu (%)' : 'Progress Kumulatif per Minggu (%)';
+    $('pw-ctitle').textContent = wk ? 'Progress per Minggu' : 'Progress Kumulatif per Minggu';
+    $('pw-ccap').textContent = wk ? 'Rencana vs aktual yang dicapai setiap minggu (%)' : 'Posisi progress kumulatif di akhir setiap minggu (%)';
     var lo = wk ? first : 0;
     var end = state.range === 'all' ? data.length - 1 : cut;
     var start = state.range === 'all' ? lo : Math.max(lo, cut - (+state.range) + 1);
     var view = data.slice(start, end + 1);
+    legend(end > cut);
     var box = $('pw-chart'); box.innerHTML = '';
-    var W = box.clientWidth || 700, H = box.clientHeight || 280;
-    var m = { t: 14, r: 8, b: 26, l: 40 };
+    var W = box.clientWidth || 700, H = box.clientHeight || 300;
+    lastSize = box.clientWidth + 'x' + box.clientHeight;
+    var m = { t: 22, r: 8, b: 26, l: 42 };
     var iw = W - m.l - m.r, ih = H - m.t - m.b;
     var vals = [];
     view.forEach(function (o) { vals.push(wk ? o.wp : o.cp); if ((wk ? o.wa : o.ca) != null) vals.push(wk ? o.wa : o.ca); });
@@ -373,40 +595,44 @@ W52    | 27 Des 2026 | 83,3 | -
     var bw = Math.max(2, Math.min(24, (band * 0.72 - 2) / 2));
     var gw = bw * 2 + 2;
 
-    var svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, tabindex: 0, role: 'img',
-      'aria-label': 'Grafik batang ' + (wk ? 'progress mingguan' : 'progress kumulatif') + ' rencana dan aktual' }, box);
-    var hl = s('rect', { y: m.t, height: ih, fill: 'var(--grid)', opacity: 0.45, visibility: 'hidden' }, svg);
+    var svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, tabindex: 0, role: 'img', 'class': animate ? 'anim' : '',
+      'aria-label': 'Grafik batang ' + (wk ? 'progress mingguan' : 'progress kumulatif') + ' rencana dan aktual. Gunakan panah kiri/kanan untuk melihat nilai.' }, box);
+    // current-week band
+    var ci = cut - start;
+    if (ci >= 0 && ci < view.length) {
+      s('rect', { x: m.l + ci * band + 1, y: m.t - 18, width: band - 2, height: ih + 18, rx: 6, fill: 'var(--now)' }, svg);
+      var nl = s('text', { x: m.l + ci * band + band / 2, y: m.t - 6, 'text-anchor': band < 40 ? 'end' : 'middle', 'font-size': 10.5, 'font-weight': 600, fill: 'var(--s1)' }, svg);
+      if (band < 40) nl.setAttribute('x', m.l + (ci + 1) * band - 2);
+      nl.textContent = 'Minggu ini';
+    }
     for (var v = bot; v <= top + 1e-9; v += step) {
       s('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: Math.abs(v) < 1e-9 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }, svg);
-      var tl = s('text', { x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)' }, svg);
+      var tl = s('text', { x: m.l - 8, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)' }, svg);
       tl.textContent = num(v, step < 1 ? 1 : 0) + '%';
     }
-    var lstep = Math.max(1, Math.ceil(36 / band));
-    var cutPos = null;
+    var lstep = Math.max(1, Math.ceil(38 / band));
+    var groups = [];
     view.forEach(function (o, i) {
+      var g = s('g', { 'class': 'grp' + (start + i > cut ? ' future' : '') }, svg);
+      groups.push(g);
       var gx = m.l + i * band + (band - gw) / 2;
-      var A = wk ? o.wa : o.ca, P = wk ? o.wp : o.cp;
-      if (A != null) { var pa = barPath(gx, y0, bw, A, y); if (pa) s('path', { d: pa, fill: 'var(--s1)' }, svg); }
-      var pp = barPath(gx + bw + 2, y0, bw, P, y); if (pp) s('path', { d: pp, fill: 'var(--s2)' }, svg);
+      var A = wk ? o.wa : o.ca, Pv = wk ? o.wp : o.cp;
+      var delay = Math.min(i * 18, 450) + 'ms';
+      if (A != null) { var pa = barPath(gx, y0, bw, A, y); if (pa) s('path', { d: pa, fill: 'var(--s1)', 'class': 'bar' + (A < 0 ? ' neg' : ''), style: 'animation-delay:' + delay }, g); }
+      var pp = barPath(gx + bw + 2, y0, bw, Pv, y); if (pp) s('path', { d: pp, fill: 'var(--s2)', 'class': 'bar' + (Pv < 0 ? ' neg' : ''), style: 'animation-delay:' + delay }, g);
       if ((view.length - 1 - i) % lstep === 0) {
-        var xl = s('text', { x: m.l + i * band + band / 2, y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' }, svg);
+        var xl = s('text', { x: m.l + i * band + band / 2, y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: start + i === cut ? 'var(--ink)' : 'var(--muted)', 'font-weight': start + i === cut ? 600 : 400 }, svg);
         xl.textContent = o.w;
       }
-      if (start + i === cut && i < view.length - 1) cutPos = m.l + (i + 1) * band;
     });
-    if (cutPos != null) {
-      s('line', { x1: cutPos, x2: cutPos, y1: m.t, y2: m.t + ih, stroke: 'var(--ink2)', 'stroke-width': 1 }, svg);
-      var ct = s('text', { x: cutPos + 4, y: m.t + 10, 'font-size': 11, fill: 'var(--muted)' }, svg);
-      ct.textContent = 'Cut-off';
-    }
-    // hover / focus layer: whole week band is the hit target
     function pick(i, cx, cy) {
       focusIdx = i;
-      hl.setAttribute('x', m.l + i * band); hl.setAttribute('width', band); hl.setAttribute('visibility', 'visible');
-      showTip(view[i], cx, cy);
+      svg.classList.add('hovering');
+      groups.forEach(function (g, j) { g.classList.toggle('on', j === i); });
+      showTip(view[i], start + i, cx, cy);
     }
-    function clear() { hl.setAttribute('visibility', 'hidden'); hideTip(); }
-    var hit = s('rect', { x: m.l, y: m.t, width: iw, height: ih, fill: 'transparent' }, svg);
+    function clear() { svg.classList.remove('hovering'); hideTip(); }
+    var hit = s('rect', { x: m.l, y: m.t - 18, width: iw, height: ih + 18, fill: 'transparent' }, svg);
     hit.addEventListener('pointermove', function (e) {
       var r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
       pick(Math.max(0, Math.min(view.length - 1, Math.floor((px - m.l) / band))), e.clientX, e.clientY);
@@ -416,13 +642,13 @@ W52    | 27 Des 2026 | 83,3 | -
       var r = svg.getBoundingClientRect();
       pick(i, r.left + (m.l + (i + 0.5) * band) * r.width / W, r.top + m.t * r.height / H);
     }
-    var ci = Math.max(0, Math.min(view.length - 1, cut - start));
-    svg.addEventListener('focus', function () { kb(focusIdx == null || focusIdx >= view.length ? ci : focusIdx); });
+    var cIdx = Math.max(0, Math.min(view.length - 1, ci));
+    svg.addEventListener('focus', function () { kb(focusIdx == null || focusIdx >= view.length ? cIdx : focusIdx); });
     svg.addEventListener('blur', clear);
     svg.addEventListener('keydown', function (e) {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      var i = (focusIdx == null ? ci : focusIdx) + (e.key === 'ArrowRight' ? 1 : -1);
-      kb(Math.max(0, Math.min(view.length - 1, i))); e.preventDefault();
+      var n = (focusIdx == null ? cIdx : focusIdx) + (e.key === 'ArrowRight' ? 1 : -1);
+      kb(Math.max(0, Math.min(view.length - 1, n))); e.preventDefault();
     });
   }
 
@@ -432,7 +658,7 @@ W52    | 27 Des 2026 | 83,3 | -
       b.addEventListener('click', function () {
         state[key] = b.getAttribute('data-v');
         Array.prototype.forEach.call(g.querySelectorAll('button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-        focusIdx = null; draw();
+        focusIdx = null; draw(true);
       });
     });
   }
@@ -441,12 +667,15 @@ W52    | 27 Des 2026 | 83,3 | -
   $('pw-tbtn').addEventListener('click', function () {
     var on = root.classList.toggle('show-table');
     this.textContent = on ? 'Grafik' : 'Tabel';
-    if (!on) draw();
+    if (!on) draw(true);
   });
 
-  draw();
-  var last = '';
-  function onResize() { var b = $('pw-chart'), k = b.clientWidth + 'x' + b.clientHeight; if (b.clientWidth && k !== last) { last = k; draw(); } }
+  var lastSize = '';
+  draw(true);
+  function onResize() {
+    var b = $('pw-chart');
+    if (b.clientWidth && b.clientWidth + 'x' + b.clientHeight !== lastSize) draw(false);
+  }
   if (window.ResizeObserver) new ResizeObserver(onResize).observe($('pw-chart'));
   else window.addEventListener('resize', onResize);
 })();
