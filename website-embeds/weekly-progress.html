@@ -1,0 +1,453 @@
+<!-- =====================================================================
+  ✏️  BAGIAN YANG ANDA UPDATE SETIAP MINGGU  (hanya ubah isi di bawah ini)
+
+  1. Tambahkan 1 baris untuk minggu baru, atau copy-paste kolom dari Excel.
+  2. Kolom: Minggu | Tanggal | Rencana % | Aktual %
+     Pemisah kolom boleh  |  atau  ;  atau Tab (hasil copy dari Excel).
+     Desimal boleh koma (59,6) atau titik (59.6).
+  3. Minggu yang belum ada realisasinya: kolom Aktual diisi  -  atau dikosongkan.
+  4. Jenis: kumulatif → angka yang diisi adalah progress kumulatif,
+            baris PERTAMA = posisi awal (tidak digambar sebagai batang mingguan).
+     Jenis: mingguan  → angka yang diisi adalah progress per minggu.
+  5. Klik Save, lalu Publish/Update website. Grafik ikut berubah otomatis.
+====================================================================== -->
+<script type="text/plain" id="pw-data">
+Judul : Progress Mingguan – Proyek Tol Segmen A Kalimantan
+Jenis : kumulatif
+
+Minggu | Tanggal     | Rencana % | Aktual %
+Awal   | 28 Des 2025 | 13,4 | 12,9
+W01    | 04 Jan 2026 | 14,1 | 13,4
+W02    | 11 Jan 2026 | 14,9 | 14,1
+W03    | 18 Jan 2026 | 15,8 | 14,5
+W04    | 25 Jan 2026 | 16,7 | 15,3
+W05    | 01 Feb 2026 | 17,6 | 15,8
+W06    | 08 Feb 2026 | 18,5 | 16,3
+W07    | 15 Feb 2026 | 19,5 | 17,3
+W08    | 22 Feb 2026 | 20,6 | 18,3
+W09    | 01 Mar 2026 | 21,6 | 19,0
+W10    | 08 Mar 2026 | 22,7 | 19,6
+W11    | 15 Mar 2026 | 23,9 | 20,6
+W12    | 22 Mar 2026 | 25,1 | 21,6
+W13    | 29 Mar 2026 | 26,3 | 22,9
+W14    | 05 Apr 2026 | 27,6 | 24,1
+W15    | 12 Apr 2026 | 28,9 | 25,2
+W16    | 19 Apr 2026 | 30,2 | 26,3
+W17    | 26 Apr 2026 | 31,6 | 27,4
+W18    | 03 Mei 2026 | 33,0 | 28,9
+W19    | 10 Mei 2026 | 34,4 | 30,2
+W20    | 17 Mei 2026 | 35,9 | 31,5
+W21    | 24 Mei 2026 | 37,4 | 33,0
+W22    | 31 Mei 2026 | 38,9 | 34,4
+W23    | 07 Jun 2026 | 40,5 | 35,8
+W24    | 14 Jun 2026 | 42,0 | 37,4
+W25    | 21 Jun 2026 | 43,6 | 39,1
+W26    | 28 Jun 2026 | 45,2 | 40,4
+W27    | 05 Jul 2026 | 46,9 | 42,0
+W28    | 12 Jul 2026 | 48,5 | 43,5
+W29    | 19 Jul 2026 | 50,1 | 45,3
+W30    | 26 Jul 2026 | 51,8 | 46,9
+W31    | 02 Agu 2026 | 53,4 | 48,3
+W32    | 09 Agu 2026 | 55,1 | 50,1
+W33    | 16 Agu 2026 | 56,7 | 51,3
+W34    | 23 Agu 2026 | 58,3 | 52,8
+W35    | 30 Agu 2026 | 59,9 | 54,4
+W36    | 06 Sep 2026 | 61,5 | 55,6
+W37    | 13 Sep 2026 | 63,1 | 57,0
+W38    | 20 Sep 2026 | 64,7 | 58,2
+W39    | 27 Sep 2026 | 66,2 | 59,6
+W40    | 04 Okt 2026 | 67,7 | -
+W41    | 11 Okt 2026 | 69,2 | -
+W42    | 18 Okt 2026 | 70,7 | -
+W43    | 25 Okt 2026 | 72,1 | -
+W44    | 01 Nov 2026 | 73,5 | -
+W45    | 08 Nov 2026 | 74,9 | -
+W46    | 15 Nov 2026 | 76,2 | -
+W47    | 22 Nov 2026 | 77,5 | -
+W48    | 29 Nov 2026 | 78,7 | -
+W49    | 06 Des 2026 | 79,9 | -
+W50    | 13 Des 2026 | 81,1 | -
+W51    | 20 Des 2026 | 82,2 | -
+W52    | 27 Des 2026 | 83,3 | -
+</script>
+<!-- ================= Di bawah ini tidak perlu diubah ================= -->
+
+<div id="pmis-pw">
+<style>
+  #pmis-pw{
+    --plane:#f9f9f7; --surface:#fcfcfb; --navy:#0f2240;
+    --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s2:#eb6834;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    position:relative; max-width:1200px; margin:0 auto; padding:16px; box-sizing:border-box;
+    background:var(--plane); border-radius:12px; color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-size:13px; line-height:1.4;
+  }
+  #pmis-pw *{box-sizing:border-box}
+  #pmis-pw .hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:var(--navy);color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px}
+  #pmis-pw .hd h2{margin:0;font-size:16px;font-weight:600}
+  #pmis-pw .hd p{margin:2px 0 0;font-size:12px;color:#c9d6e3}
+  #pmis-pw .warn{display:none;border:1px solid var(--warning);background:#fff8e6;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px}
+  #pmis-pw .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+  #pmis-pw .card{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:14px}
+  #pmis-pw .lbl{font-size:12px;color:var(--ink2)}
+  #pmis-pw .val{font-size:26px;font-weight:600;margin:4px 0 6px;white-space:nowrap}
+  #pmis-pw .sub{font-size:12px;color:var(--ink2);margin-top:4px}
+  #pmis-pw .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink)}
+  #pmis-pw .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  #pmis-pw .bar-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+  #pmis-pw .ctrls{display:flex;gap:8px;flex-wrap:wrap}
+  #pmis-pw .seg{display:inline-flex;border:1px solid var(--axis);border-radius:7px;overflow:hidden}
+  #pmis-pw .seg button,#pmis-pw .tbtn{font:inherit;font-size:12px;padding:5px 10px;border:0;background:var(--surface);color:var(--ink2);cursor:pointer}
+  #pmis-pw .seg button+button{border-left:1px solid var(--axis)}
+  #pmis-pw .seg button[aria-pressed="true"]{background:var(--navy);color:#fff}
+  #pmis-pw .tbtn{border:1px solid var(--axis);border-radius:7px}
+  #pmis-pw .seg button:hover:not([aria-pressed="true"]),#pmis-pw .tbtn:hover{background:var(--plane)}
+  #pmis-pw h3{margin:0;font-size:14px;font-weight:600}
+  #pmis-pw .legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);margin:2px 0 4px}
+  #pmis-pw .legend span{display:inline-flex;align-items:center;gap:6px}
+  #pmis-pw .lr{width:10px;height:12px;border-radius:3px 3px 0 0}
+  #pmis-pw .lk{width:14px;height:2px;border-radius:1px}
+  #pmis-pw #pw-chart{position:relative;height:280px}
+  #pmis-pw #pw-chart svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;overflow:visible}
+  #pmis-pw svg:focus{outline:2px solid var(--s1);outline-offset:2px;border-radius:4px}
+  #pmis-pw .tblwrap{display:none;max-height:280px;overflow:auto}
+  #pmis-pw.show-table .tblwrap{display:block}
+  #pmis-pw.show-table .viz{display:none}
+  #pmis-pw table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+  #pmis-pw th,#pmis-pw td{padding:5px 6px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+  #pmis-pw th:nth-child(-n+2),#pmis-pw td:nth-child(-n+2){text-align:left}
+  #pmis-pw th{color:var(--ink2);font-weight:600;position:sticky;top:0;background:var(--surface)}
+  #pmis-pw .tt{position:absolute;pointer-events:none;display:none;min-width:170px;background:var(--surface);border:1px solid var(--ring);border-radius:8px;box-shadow:0 6px 18px rgba(11,11,11,.12);padding:8px 10px;font-size:12px;z-index:5}
+  #pmis-pw .tt .t{color:var(--ink2);margin-bottom:4px}
+  #pmis-pw .tt .r{display:flex;align-items:center;gap:8px}
+  #pmis-pw .tt .r b{color:var(--ink);font-variant-numeric:tabular-nums}
+  #pmis-pw .tt .r span{color:var(--ink2)}
+  #pmis-pw .tt .sep{border-top:1px solid var(--grid);margin:5px 0}
+  #pmis-pw .ft{margin-top:10px;font-size:11px;color:var(--muted)}
+  @media (max-width:900px){
+    #pmis-pw .tiles{grid-template-columns:1fr 1fr}
+    #pmis-pw .val{font-size:22px}
+  }
+</style>
+
+<div class="hd"><div><h2 id="pw-title"></h2><p id="pw-sub"></p></div></div>
+<div class="warn" id="pw-warn"></div>
+<div class="tiles" id="pw-tiles"></div>
+
+<div class="card">
+  <div class="bar-row">
+    <div>
+      <h3 id="pw-ctitle"></h3>
+      <div class="legend">
+        <span><i class="lr" style="background:var(--s1)"></i>Aktual</span>
+        <span><i class="lr" style="background:var(--s2)"></i>Rencana</span>
+      </div>
+    </div>
+    <div class="ctrls">
+      <div class="seg" id="pw-mode">
+        <button type="button" data-v="weekly" aria-pressed="true">Mingguan</button>
+        <button type="button" data-v="cum" aria-pressed="false">Kumulatif</button>
+      </div>
+      <div class="seg" id="pw-range">
+        <button type="button" data-v="12" aria-pressed="true">12 mgg</button>
+        <button type="button" data-v="26" aria-pressed="false">26 mgg</button>
+        <button type="button" data-v="all" aria-pressed="false">Semua</button>
+      </div>
+      <button type="button" class="tbtn" id="pw-tbtn">Tabel</button>
+    </div>
+  </div>
+  <div class="viz"><div id="pw-chart"></div></div>
+  <div class="tblwrap" id="pw-tbl"></div>
+</div>
+
+<div class="ft" id="pw-ft"></div>
+<div class="tt" id="pw-tt"></div>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('pmis-pw');
+  var tt = document.getElementById('pw-tt');
+  var STATUS = {
+    good:     { c: 'var(--good)',     i: '✓' },
+    warning:  { c: 'var(--warning)',  i: '!' },
+    critical: { c: 'var(--critical)', i: '✕' }
+  };
+  function $(id) { return document.getElementById(id); }
+  function num(v, d) { return v.toLocaleString('id-ID', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  function signed(v, d) { return (v > 0 ? '+' : v < 0 ? '−' : '') + num(Math.abs(v), d); }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function chip(level, text) {
+    var s = el('span', 'chip'), d = el('i', 'dot');
+    d.style.background = STATUS[level].c;
+    s.appendChild(d);
+    s.appendChild(document.createTextNode(STATUS[level].i + ' ' + text));
+    return s;
+  }
+
+  /* ---------- 1. Baca bagian data ---------- */
+  var cfg = { judul: 'Progress Mingguan', jenis: 'kumulatif' };
+  var rows = [], problems = [];
+  function parseNum(s) {
+    s = (s || '').replace(/%/g, '').replace(/\s/g, '').replace(',', '.');
+    if (s === '' || s === '-' || s === '–') return null;
+    return /^-?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : NaN;
+  }
+  $('pw-data').textContent.split(/\r?\n/).forEach(function (line, n) {
+    var raw = line.trim();
+    if (!raw || raw.charAt(0) === '#') return;
+    var kv = raw.match(/^(judul|jenis)\s*:\s*(.+)$/i);
+    if (kv) { cfg[kv[1].toLowerCase()] = kv[2].trim(); return; }
+    var cells = raw.indexOf('\t') > -1 ? raw.split('\t') : raw.indexOf('|') > -1 ? raw.split('|') : raw.indexOf(';') > -1 ? raw.split(';') : raw.split(/\s{2,}/);
+    cells = cells.map(function (c) { return c.trim(); });
+    if (cells.length < 3) { problems.push('Baris “' + raw + '”: kolom kurang'); return; }
+    var p = parseNum(cells[2]), a = parseNum(cells[3]);
+    if (p === null || isNaN(p)) {
+      if (!rows.length && isNaN(p)) return;            // baris judul kolom
+      problems.push(cells[0] + ': angka Rencana “' + cells[2] + '” tidak terbaca'); return;
+    }
+    if (isNaN(a)) { problems.push(cells[0] + ': angka Aktual “' + cells[3] + '” tidak terbaca'); a = null; }
+    rows.push({ w: cells[0], d: cells[1] || '', p: p, a: a });
+  });
+
+  var cumMode = !/^mingguan/i.test(cfg.jenis);
+  // Susun nilai mingguan & kumulatif
+  var data = [];
+  rows.forEach(function (r, i) {
+    var prev = data[i - 1];
+    var o = { w: r.w, d: r.d };
+    if (cumMode) {
+      o.cp = r.p; o.ca = r.a;
+      o.wp = prev ? r.p - prev.cp : null;
+      o.wa = prev && r.a != null && prev.ca != null ? r.a - prev.ca : null;
+    } else {
+      o.wp = r.p; o.wa = r.a;
+      o.cp = (prev ? prev.cp : 0) + r.p;
+      o.ca = r.a == null || (prev && prev.ca == null) ? null : (prev ? prev.ca : 0) + r.a;
+    }
+    data.push(o);
+  });
+  var cut = -1;
+  data.forEach(function (o, i) { if (o.ca != null) cut = i; });
+  var lastA = null;
+  data.forEach(function (o, i) {
+    if (o.ca == null && i < cut) problems.push(o.w + ': Aktual kosong, padahal minggu sesudahnya sudah terisi');
+    if (o.ca != null && lastA != null && o.ca < lastA) problems.push(o.w + ': Aktual kumulatif lebih kecil dari minggu sebelumnya (cek kembali)');
+    if (o.ca != null) lastA = o.ca;
+  });
+
+  if (problems.length) {
+    var wb = $('pw-warn');
+    wb.style.display = 'block';
+    wb.appendChild(chip('warning', 'Periksa bagian data:'));
+    problems.slice(0, 6).forEach(function (t) { wb.appendChild(el('div', null, '• ' + t)); });
+  }
+  $('pw-title').textContent = cfg.judul;
+  var first = cumMode ? 1 : 0;   // mode kumulatif: baris pertama = posisi awal
+  if (cut < first) { $('pw-sub').textContent = 'Belum ada data aktual yang bisa dihitung.'; return; }
+  var C = data[cut];
+  $('pw-sub').textContent = 'Cut-off ' + C.w + (C.d ? ' · ' + C.d : '') + ' · ' + (cut + 1) + ' baris data';
+
+  /* ---------- 2. KPI tiles ---------- */
+  function ratioLevel(r) { return r >= 0.95 ? 'good' : r >= 0.85 ? 'warning' : 'critical'; }
+  function devLevel(d) { return d >= -2 ? 'good' : d >= -5 ? 'warning' : 'critical'; }
+  function tile(label, value, level, chipText, sub) {
+    var c = el('div', 'card');
+    c.appendChild(el('div', 'lbl', label));
+    c.appendChild(el('div', 'val', value));
+    c.appendChild(chip(level, chipText));
+    c.appendChild(el('div', 'sub', sub));
+    return c;
+  }
+  var tiles = $('pw-tiles');
+  var dW = C.wa - C.wp;
+  tiles.appendChild(tile('Progress minggu ini · ' + C.w, num(C.wa, 2) + '%', ratioLevel(C.wp ? C.wa / C.wp : 1),
+    signed(dW, 2) + ' poin vs rencana', 'Rencana ' + num(C.wp, 2) + '%'));
+  var dC = C.ca - C.cp;
+  tiles.appendChild(tile('Kumulatif s.d. ' + C.w, num(C.ca, 1) + '%', devLevel(dC),
+    signed(dC, 1) + ' poin vs rencana', 'Rencana ' + num(C.cp, 1) + '%'));
+  var spi = C.ca / C.cp;
+  tiles.appendChild(tile('SPI kumulatif', num(spi, 2), ratioLevel(spi),
+    spi >= 0.95 ? 'Sesuai jadwal' : 'Terlambat', 'Aktual ÷ rencana kumulatif'));
+  var k = 0, sa = 0, sp = 0;
+  for (var i = cut; i >= first && k < 4; i--) { if (data[i].wa != null) { sa += data[i].wa; sp += data[i].wp; k++; } }
+  tiles.appendChild(tile('Rata-rata ' + k + ' minggu terakhir', num(sa / k, 2) + '%/mgg', ratioLevel(sp ? sa / sp : 1),
+    signed((sa - sp) / k, 2) + ' poin/mgg', 'Rencana ' + num(sp / k, 2) + '%/mgg'));
+  $('pw-ft').textContent = 'Progress mingguan = selisih kumulatif minggu ini dan minggu sebelumnya · Status: ✓ sesuai (≥ 95% rencana), ! waspada (85–95%), ✕ kritis (< 85%). Arahkan kursor ke batang untuk detail.';
+
+  /* ---------- 3. Tabel ---------- */
+  (function () {
+    var t = el('table'), th = el('thead'), tr = el('tr');
+    ['Minggu', 'Tanggal', 'Rencana mgg', 'Aktual mgg', 'Rencana kum', 'Aktual kum', 'Deviasi kum'].forEach(function (h) { tr.appendChild(el('th', null, h)); });
+    th.appendChild(tr); t.appendChild(th);
+    var tb = el('tbody');
+    data.forEach(function (o) {
+      var r = el('tr');
+      [o.w, o.d,
+       o.wp == null ? '–' : num(o.wp, 2), o.wa == null ? '–' : num(o.wa, 2),
+       num(o.cp, 1), o.ca == null ? '–' : num(o.ca, 1),
+       o.ca == null ? '–' : signed(o.ca - o.cp, 1)
+      ].forEach(function (v) { r.appendChild(el('td', null, v)); });
+      tb.appendChild(r);
+    });
+    t.appendChild(tb);
+    $('pw-tbl').appendChild(t);
+  })();
+
+  /* ---------- 4. Bar chart ---------- */
+  var state = { mode: 'weekly', range: '12' };
+  var NS = 'http://www.w3.org/2000/svg';
+  function s(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var a in attrs) e.setAttribute(a, attrs[a]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function niceStep(max, count) {
+    var raw = max / count, p = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), f = raw / p;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+  }
+  function barPath(x, y0, w, v, y) {
+    // 4px rounded data-end, square at the baseline
+    var top = y(v), h = Math.abs(top - y0), r = Math.min(4, w / 2, h);
+    if (h < 0.5) return '';
+    if (v >= 0) return 'M' + x + ' ' + y0 + 'V' + (top + r) + 'Q' + x + ' ' + top + ' ' + (x + r) + ' ' + top +
+      'H' + (x + w - r) + 'Q' + (x + w) + ' ' + top + ' ' + (x + w) + ' ' + (top + r) + 'V' + y0 + 'Z';
+    return 'M' + x + ' ' + y0 + 'V' + (top - r) + 'Q' + x + ' ' + top + ' ' + (x + r) + ' ' + top +
+      'H' + (x + w - r) + 'Q' + (x + w) + ' ' + top + ' ' + (x + w) + ' ' + (top - r) + 'V' + y0 + 'Z';
+  }
+  function showTip(o, cx, cy) {
+    tt.innerHTML = '';
+    tt.appendChild(el('div', 't', o.w + (o.d ? ' · ' + o.d : '')));
+    function row(color, value, label) {
+      var r = el('div', 'r');
+      if (color) { var k = el('i', 'lk'); k.style.background = color; r.appendChild(k); }
+      r.appendChild(el('b', null, value)); r.appendChild(el('span', null, label));
+      tt.appendChild(r);
+    }
+    var wk = state.mode === 'weekly';
+    var A = wk ? o.wa : o.ca, P = wk ? o.wp : o.cp, d = wk ? 2 : 1;
+    if (A != null) row('var(--s1)', num(A, d) + '%', wk ? 'Aktual minggu ini' : 'Aktual kumulatif');
+    row('var(--s2)', num(P, d) + '%', wk ? 'Rencana minggu ini' : 'Rencana kumulatif');
+    if (A != null) row(null, signed(A - P, d) + ' poin', 'Deviasi');
+    if (wk) {
+      tt.appendChild(el('div', 'sep'));
+      if (o.ca != null) row(null, num(o.ca, 1) + '%', 'Aktual kumulatif');
+      row(null, num(o.cp, 1) + '%', 'Rencana kumulatif');
+    }
+    tt.style.display = 'block';
+    var rb = root.getBoundingClientRect();
+    var x = cx - rb.left + 14, y = cy - rb.top + 14;
+    if (x + tt.offsetWidth > rb.width - 8) x = cx - rb.left - tt.offsetWidth - 14;
+    tt.style.left = Math.max(8, x) + 'px';
+    tt.style.top = y + 'px';
+  }
+  function hideTip() { tt.style.display = 'none'; }
+
+  var focusIdx = null;
+  function draw() {
+    var wk = state.mode === 'weekly';
+    $('pw-ctitle').textContent = wk ? 'Progress per Minggu (%)' : 'Progress Kumulatif per Minggu (%)';
+    var lo = wk ? first : 0;
+    var end = state.range === 'all' ? data.length - 1 : cut;
+    var start = state.range === 'all' ? lo : Math.max(lo, cut - (+state.range) + 1);
+    var view = data.slice(start, end + 1);
+    var box = $('pw-chart'); box.innerHTML = '';
+    var W = box.clientWidth || 700, H = box.clientHeight || 280;
+    var m = { t: 14, r: 8, b: 26, l: 40 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b;
+    var vals = [];
+    view.forEach(function (o) { vals.push(wk ? o.wp : o.cp); if ((wk ? o.wa : o.ca) != null) vals.push(wk ? o.wa : o.ca); });
+    var vmax = Math.max.apply(null, vals.concat([0])), vmin = Math.min.apply(null, vals.concat([0]));
+    var step = niceStep((vmax - vmin) || 1, 4);
+    var top = Math.ceil(vmax / step) * step || step, bot = Math.floor(vmin / step) * step;
+    var y = function (v) { return m.t + (top - v) / (top - bot) * ih; };
+    var y0 = y(0);
+    var band = iw / view.length;
+    var bw = Math.max(2, Math.min(24, (band * 0.72 - 2) / 2));
+    var gw = bw * 2 + 2;
+
+    var svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, tabindex: 0, role: 'img',
+      'aria-label': 'Grafik batang ' + (wk ? 'progress mingguan' : 'progress kumulatif') + ' rencana dan aktual' }, box);
+    var hl = s('rect', { y: m.t, height: ih, fill: 'var(--grid)', opacity: 0.45, visibility: 'hidden' }, svg);
+    for (var v = bot; v <= top + 1e-9; v += step) {
+      s('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: Math.abs(v) < 1e-9 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }, svg);
+      var tl = s('text', { x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)' }, svg);
+      tl.textContent = num(v, step < 1 ? 1 : 0) + '%';
+    }
+    var lstep = Math.max(1, Math.ceil(36 / band));
+    var cutPos = null;
+    view.forEach(function (o, i) {
+      var gx = m.l + i * band + (band - gw) / 2;
+      var A = wk ? o.wa : o.ca, P = wk ? o.wp : o.cp;
+      if (A != null) { var pa = barPath(gx, y0, bw, A, y); if (pa) s('path', { d: pa, fill: 'var(--s1)' }, svg); }
+      var pp = barPath(gx + bw + 2, y0, bw, P, y); if (pp) s('path', { d: pp, fill: 'var(--s2)' }, svg);
+      if ((view.length - 1 - i) % lstep === 0) {
+        var xl = s('text', { x: m.l + i * band + band / 2, y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' }, svg);
+        xl.textContent = o.w;
+      }
+      if (start + i === cut && i < view.length - 1) cutPos = m.l + (i + 1) * band;
+    });
+    if (cutPos != null) {
+      s('line', { x1: cutPos, x2: cutPos, y1: m.t, y2: m.t + ih, stroke: 'var(--ink2)', 'stroke-width': 1 }, svg);
+      var ct = s('text', { x: cutPos + 4, y: m.t + 10, 'font-size': 11, fill: 'var(--muted)' }, svg);
+      ct.textContent = 'Cut-off';
+    }
+    // hover / focus layer: whole week band is the hit target
+    function pick(i, cx, cy) {
+      focusIdx = i;
+      hl.setAttribute('x', m.l + i * band); hl.setAttribute('width', band); hl.setAttribute('visibility', 'visible');
+      showTip(view[i], cx, cy);
+    }
+    function clear() { hl.setAttribute('visibility', 'hidden'); hideTip(); }
+    var hit = s('rect', { x: m.l, y: m.t, width: iw, height: ih, fill: 'transparent' }, svg);
+    hit.addEventListener('pointermove', function (e) {
+      var r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+      pick(Math.max(0, Math.min(view.length - 1, Math.floor((px - m.l) / band))), e.clientX, e.clientY);
+    });
+    hit.addEventListener('pointerleave', clear);
+    function kb(i) {
+      var r = svg.getBoundingClientRect();
+      pick(i, r.left + (m.l + (i + 0.5) * band) * r.width / W, r.top + m.t * r.height / H);
+    }
+    var ci = Math.max(0, Math.min(view.length - 1, cut - start));
+    svg.addEventListener('focus', function () { kb(focusIdx == null || focusIdx >= view.length ? ci : focusIdx); });
+    svg.addEventListener('blur', clear);
+    svg.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      var i = (focusIdx == null ? ci : focusIdx) + (e.key === 'ArrowRight' ? 1 : -1);
+      kb(Math.max(0, Math.min(view.length - 1, i))); e.preventDefault();
+    });
+  }
+
+  function seg(id, key) {
+    var g = $(id);
+    Array.prototype.forEach.call(g.querySelectorAll('button'), function (b) {
+      b.addEventListener('click', function () {
+        state[key] = b.getAttribute('data-v');
+        Array.prototype.forEach.call(g.querySelectorAll('button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        focusIdx = null; draw();
+      });
+    });
+  }
+  seg('pw-mode', 'mode');
+  seg('pw-range', 'range');
+  $('pw-tbtn').addEventListener('click', function () {
+    var on = root.classList.toggle('show-table');
+    this.textContent = on ? 'Grafik' : 'Tabel';
+    if (!on) draw();
+  });
+
+  draw();
+  var last = '';
+  function onResize() { var b = $('pw-chart'), k = b.clientWidth + 'x' + b.clientHeight; if (b.clientWidth && k !== last) { last = k; draw(); } }
+  if (window.ResizeObserver) new ResizeObserver(onResize).observe($('pw-chart'));
+  else window.addEventListener('resize', onResize);
+})();
+</script>
