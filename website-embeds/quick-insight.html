@@ -1,0 +1,404 @@
+<div id="pmis-qi">
+<style>
+  #pmis-qi{
+    --plane:#f9f9f7; --surface:#fcfcfb; --navy:#0f2240;
+    --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+    --s1:#2a78d6; --s1wash:rgba(42,120,214,.10); --s2:#eb6834; --track:#cde2fb;
+    --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+    position:relative; max-width:1200px; margin:0 auto; padding:16px; box-sizing:border-box;
+    background:var(--plane); border-radius:12px; color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-size:13px; line-height:1.4;
+  }
+  #pmis-qi *{box-sizing:border-box}
+  #pmis-qi .hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:var(--navy);color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px}
+  #pmis-qi .hd h2{margin:0;font-size:16px;font-weight:600}
+  #pmis-qi .hd p{margin:2px 0 0;font-size:12px;color:#c9d6e3}
+  #pmis-qi .badge{font-size:11px;font-weight:600;letter-spacing:.04em;padding:4px 8px;border-radius:6px;background:rgba(255,255,255,.12);color:#fff}
+  #pmis-qi .tiles{display:grid;grid-template-columns:1.6fr repeat(4,1fr);gap:12px;margin-bottom:12px}
+  #pmis-qi .card{background:var(--surface);border:1px solid var(--ring);border-radius:10px;padding:14px}
+  #pmis-qi .lbl{font-size:12px;color:var(--ink2)}
+  #pmis-qi .val{font-size:26px;font-weight:600;margin:4px 0 6px;white-space:nowrap}
+  #pmis-qi .hero .val{font-size:48px;line-height:1.05;margin:2px 0 8px}
+  #pmis-qi .val.sm{font-size:22px;line-height:34px}
+  #pmis-qi .sub{font-size:12px;color:var(--ink2)}
+  #pmis-qi .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink)}
+  #pmis-qi .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  #pmis-qi .grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:12px}
+  #pmis-qi .ch{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+  #pmis-qi .ch h3{margin:0;font-size:14px;font-weight:600}
+  #pmis-qi .ch p{margin:2px 0 0;font-size:12px;color:var(--ink2)}
+  #pmis-qi .tbtn{font:inherit;font-size:12px;padding:4px 10px;border:1px solid var(--axis);border-radius:6px;background:var(--surface);color:var(--ink2);cursor:pointer}
+  #pmis-qi .tbtn:hover{background:var(--plane)}
+  #pmis-qi .legend{display:flex;gap:14px;font-size:12px;color:var(--ink2);margin-bottom:4px}
+  #pmis-qi .legend span{display:inline-flex;align-items:center;gap:6px}
+  #pmis-qi .lk{width:14px;height:2px;border-radius:1px}
+  #pmis-qi .lr{width:12px;height:10px;border-radius:0 3px 3px 0}
+  #pmis-qi .lt{width:3px;height:12px;border-radius:1px}
+  #pmis-qi .flex{display:flex;flex-direction:column}
+  #pmis-qi .flex .viz{flex:1;display:flex;flex-direction:column}
+  #pmis-qi #qi-curve{flex:1;min-height:240px;position:relative}
+  #pmis-qi #qi-curve svg{position:absolute;left:0;top:0;width:100%;height:100%;display:block;overflow:visible}
+  #pmis-qi svg:focus{outline:2px solid var(--s1);outline-offset:2px;border-radius:4px}
+  #pmis-qi .meter{position:relative;height:12px;background:var(--track);border-radius:0 4px 4px 0;margin:4px 0 8px}
+  #pmis-qi .meter .bar{position:absolute;left:0;top:0;bottom:0;background:var(--s1);border-radius:0 4px 4px 0}
+  #pmis-qi .meter .tick{position:absolute;top:-5px;width:3px;height:22px;margin-left:-1.5px;background:var(--s2);border-radius:1px;box-shadow:0 0 0 2px var(--surface)}
+  #pmis-qi .row{padding:6px 4px;border-radius:6px;outline:none}
+  #pmis-qi .row:hover,#pmis-qi .row:focus{background:var(--plane)}
+  #pmis-qi .row .top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
+  #pmis-qi .row .right{display:inline-flex;align-items:center;gap:10px;white-space:nowrap}
+  #pmis-qi .row .nm{color:var(--ink);font-weight:600}
+  #pmis-qi .row .nums{color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  #pmis-qi .row .meter{margin:5px 0 3px}
+  #pmis-qi table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+  #pmis-qi th,#pmis-qi td{padding:5px 6px;border-bottom:1px solid var(--grid);text-align:right}
+  #pmis-qi th:first-child,#pmis-qi td:first-child{text-align:left}
+  #pmis-qi th{color:var(--ink2);font-weight:600}
+  #pmis-qi .tblwrap{display:none;max-height:260px;overflow:auto}
+  #pmis-qi .show-table .tblwrap{display:block}
+  #pmis-qi .show-table .viz{display:none}
+  #pmis-qi .tt{position:absolute;pointer-events:none;display:none;min-width:150px;background:var(--surface);border:1px solid var(--ring);border-radius:8px;box-shadow:0 6px 18px rgba(11,11,11,.12);padding:8px 10px;font-size:12px;z-index:5}
+  #pmis-qi .tt .t{color:var(--ink2);margin-bottom:4px}
+  #pmis-qi .tt .r{display:flex;align-items:center;gap:8px}
+  #pmis-qi .tt .r b{color:var(--ink);font-variant-numeric:tabular-nums}
+  #pmis-qi .tt .r span{color:var(--ink2)}
+  #pmis-qi .ft{margin-top:10px;font-size:11px;color:var(--muted)}
+  @media (max-width:900px){
+    #pmis-qi .tiles{grid-template-columns:1fr 1fr}
+    #pmis-qi .tiles .hero{grid-column:1 / -1}
+    #pmis-qi .grid2{grid-template-columns:1fr}
+    #pmis-qi .val{font-size:22px}
+    #pmis-qi .hero .val{font-size:44px}
+    #pmis-qi .val.sm{font-size:19px;line-height:30px}
+  }
+</style>
+
+<div class="hd">
+  <div><h2 id="qi-title"></h2><p id="qi-sub"></p></div>
+  <span class="badge">DATA CONTOH</span>
+</div>
+
+<div class="tiles" id="qi-tiles"></div>
+
+<div class="grid2">
+  <div class="card flex" id="qi-curve-card">
+    <div class="ch">
+      <div><h3>Kurva S – Progress Fisik Kumulatif</h3><p>Rencana vs aktual per bulan (%)</p></div>
+      <button type="button" class="tbtn" data-toggle="qi-curve-card">Tabel</button>
+    </div>
+    <div class="viz">
+      <div class="legend">
+        <span><i class="lk" style="background:var(--s1)"></i>Aktual</span>
+        <span><i class="lk" style="background:var(--s2)"></i>Rencana</span>
+      </div>
+      <div id="qi-curve"></div>
+    </div>
+    <div class="tblwrap" id="qi-curve-tbl"></div>
+  </div>
+
+  <div class="card" id="qi-pkg-card">
+    <div class="ch">
+      <div><h3>Progress per Paket Pekerjaan</h3><p>Aktual vs rencana s.d. cut-off (%)</p></div>
+      <button type="button" class="tbtn" data-toggle="qi-pkg-card">Tabel</button>
+    </div>
+    <div class="viz">
+      <div class="legend">
+        <span><i class="lr" style="background:var(--s1)"></i>Aktual</span>
+        <span><i class="lt" style="background:var(--s2)"></i>Rencana</span>
+      </div>
+      <div id="qi-pkg"></div>
+    </div>
+    <div class="tblwrap" id="qi-pkg-tbl"></div>
+  </div>
+</div>
+
+<div class="ft" id="qi-ft"></div>
+<div class="tt" id="qi-tt"></div>
+</div>
+
+<script>
+(function () {
+  /* =====================================================================
+     DATA PROYEK – cukup ubah bagian ini setiap update mingguan/bulanan.
+     Angka di bawah adalah DATA CONTOH, bukan data proyek sebenarnya.
+     ===================================================================== */
+  var DATA = {
+    proyek: 'Proyek Tol Segmen A Kalimantan',
+    cutoff: '2026-09-27',          // tanggal cut-off laporan (YYYY-MM-DD)
+    mingguKe: 39,
+    bulanMulai: '2025-01',         // bulan pertama kurva S (YYYY-MM)
+    bac: 4850,                     // Budget at Completion, miliar Rp
+    cpi: 1.03,                     // Cost Performance Index dari sistem biaya
+    baselineFinish: '2027-06-30',
+    forecastFinish: '2027-08-07',
+    // Kurva S kumulatif (%) per akhir bulan, mulai dari bulanMulai
+    rencana: [0.2,0.4,0.8,1.2,1.7,2.4,3.4,4.5,6.0,7.9,10.3,13.3,16.9,21.2,26.2,31.9,38.3,45.2,52.3,59.4,66.2,72.6,78.3,83.4,87.7,91.3,94.2,96.6,98.5,100.0],
+    aktual:  [0.2,0.4,0.8,1.2,1.7,2.4,3.4,4.5,5.9,7.7,10.0,12.9,16.2,20.2,24.8,29.9,35.7,41.7,47.9,53.9,59.6],
+    paket: [
+      { nama: 'Pembebasan Lahan',       rencana: 97, aktual: 94 },
+      { nama: 'Pekerjaan Tanah',        rencana: 88, aktual: 81 },
+      { nama: 'Box Culvert & Drainase', rencana: 74, aktual: 70 },
+      { nama: 'Struktur Jembatan',      rencana: 69, aktual: 64 },
+      { nama: 'Perkerasan Kaku',        rencana: 52, aktual: 41 },
+      { nama: 'Pelengkap Jalan',        rencana: 18, aktual: 11 }
+    ]
+  };
+  /* ===================================================================== */
+
+  var BLN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  var STATUS = {
+    good:     { c: 'var(--good)',     i: '✓' },
+    warning:  { c: 'var(--warning)',  i: '!' },
+    serious:  { c: 'var(--serious)',  i: '▲' },
+    critical: { c: 'var(--critical)', i: '✕' }
+  };
+  var root = document.getElementById('pmis-qi');
+  var tt = document.getElementById('qi-tt');
+
+  function $(id) { return document.getElementById(id); }
+  function num(v, d) { return v.toLocaleString('id-ID', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  function date(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function fdate(s) { var d = date(s); return d.getDate() + ' ' + BLN[d.getMonth()] + ' ' + d.getFullYear(); }
+  function monthLabel(i, long) {
+    var p = DATA.bulanMulai.split('-'), m = (+p[1] - 1) + i, y = +p[0] + Math.floor(m / 12);
+    return BLN[m % 12] + ' ' + (long ? y : String(y).slice(2));
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function chip(level, text) {
+    var s = el('span', 'chip'), d = el('i', 'dot');
+    d.style.background = STATUS[level].c;
+    s.appendChild(d);
+    s.appendChild(document.createTextNode(STATUS[level].i + ' ' + text));
+    return s;
+  }
+  function idxLevel(v) { return v >= 0.95 ? 'good' : v >= 0.90 ? 'warning' : 'critical'; }
+  function varLevel(v) { return v >= -2 ? 'good' : v >= -5 ? 'warning' : 'critical'; }
+  function meter(actual, plan) {
+    var m = el('div', 'meter'), b = el('div', 'bar'), t = el('div', 'tick');
+    b.style.width = Math.max(0, Math.min(100, actual)) + '%';
+    t.style.left = Math.max(0, Math.min(100, plan)) + '%';
+    m.appendChild(b); m.appendChild(t);
+    return m;
+  }
+
+  /* ---------- Tooltip ---------- */
+  function showTip(rows, title, cx, cy) {
+    tt.innerHTML = '';
+    tt.appendChild(el('div', 't', title));
+    rows.forEach(function (r) {
+      var row = el('div', 'r');
+      if (r.color) { var k = el('i', 'lk'); k.style.background = r.color; row.appendChild(k); }
+      row.appendChild(el('b', null, r.value));
+      row.appendChild(el('span', null, r.label));
+      tt.appendChild(row);
+    });
+    tt.style.display = 'block';
+    var rb = root.getBoundingClientRect();
+    var x = cx - rb.left + 14, y = cy - rb.top + 14;
+    if (x + tt.offsetWidth > rb.width - 8) x = cx - rb.left - tt.offsetWidth - 14;
+    tt.style.left = Math.max(8, x) + 'px';
+    tt.style.top = y + 'px';
+  }
+  function hideTip() { tt.style.display = 'none'; }
+
+  /* ---------- Hitungan KPI ---------- */
+  var cut = DATA.aktual.length - 1;
+  var planNow = DATA.rencana[cut], actNow = DATA.aktual[cut];
+  var spi = actNow / planNow;
+  var eac = DATA.bac / DATA.cpi, vac = DATA.bac - eac;
+  var delay = Math.round((date(DATA.forecastFinish) - date(DATA.baselineFinish)) / 864e5);
+
+  $('qi-title').textContent = 'Quick Insight – ' + DATA.proyek;
+  $('qi-sub').textContent = 'Cut-off ' + fdate(DATA.cutoff) + ' · Minggu ke-' + DATA.mingguKe;
+  $('qi-ft').textContent = 'SPI = progress aktual ÷ progress rencana pada cut-off · EAC = BAC ÷ CPI · Status: ✓ sesuai, ! waspada, ▲ serius, ✕ kritis.';
+
+  /* ---------- Stat tiles ---------- */
+  function tile(label, value, sub, level, statusText, hero) {
+    var c = el('div', 'card' + (hero ? ' hero' : ''));
+    c.appendChild(el('div', 'lbl', label));
+    c.appendChild(el('div', 'val', value));
+    if (hero) c.appendChild(meter(actNow, planNow));
+    if (level) c.appendChild(chip(level, statusText));
+    if (sub) { var s = el('div', 'sub', sub); s.style.marginTop = '4px'; c.appendChild(s); }
+    return c;
+  }
+  var dev = actNow - planNow;
+  var tiles = $('qi-tiles');
+  tiles.appendChild(tile('Progress fisik aktual', num(actNow, 1) + '%',
+    'Rencana ' + num(planNow, 1) + '% pada cut-off', varLevel(dev),
+    (dev < 0 ? num(-dev, 1) + ' poin di belakang rencana' : num(dev, 1) + ' poin di depan rencana'), true));
+  tiles.appendChild(tile('SPI', num(spi, 2), 'Target ≥ 0,95', idxLevel(spi), spi >= 0.95 ? 'Sesuai jadwal' : 'Terlambat'));
+  tiles.appendChild(tile('CPI', num(DATA.cpi, 2), 'Target ≥ 0,95', idxLevel(DATA.cpi), DATA.cpi >= 1 ? 'Efisien biaya' : 'Biaya melebihi nilai kerja'));
+  tiles.appendChild(tile('EAC', 'Rp ' + num(eac / 1000, 2) + ' T', 'BAC Rp ' + num(DATA.bac / 1000, 2) + ' T',
+    vac >= 0 ? 'good' : 'critical', 'VAC ' + (vac >= 0 ? '+' : '−') + 'Rp ' + num(Math.abs(vac), 0) + ' M'));
+  tiles.appendChild(tile('Prakiraan selesai', fdate(DATA.forecastFinish), 'Baseline ' + fdate(DATA.baselineFinish),
+    delay <= 0 ? 'good' : delay <= 30 ? 'warning' : delay <= 60 ? 'serious' : 'critical',
+    (delay > 0 ? '+' : '') + delay + ' hari vs baseline'));
+  tiles.lastChild.querySelector('.val').classList.add('sm');
+
+  /* ---------- Kurva S (SVG) ---------- */
+  var NS = 'http://www.w3.org/2000/svg';
+  function s(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  var curIdx = cut;
+  function drawCurve() {
+    var box = $('qi-curve');
+    var W = box.clientWidth || 600, H = box.clientHeight || 250;
+    var m = { t: 16, r: 12, b: 26, l: 38 };
+    var iw = W - m.l - m.r, ih = H - m.t - m.b, n = DATA.rencana.length;
+    var x = function (i) { return m.l + i * iw / (n - 1); };
+    var y = function (v) { return m.t + ih - v / 100 * ih; };
+    box.innerHTML = '';
+    var svg = s('svg', { viewBox: '0 0 ' + W + ' ' + H, tabindex: 0, role: 'img',
+      'aria-label': 'Kurva S: aktual ' + num(actNow, 1) + '%, rencana ' + num(planNow, 1) + '% pada cut-off' }, box);
+
+    [0, 25, 50, 75, 100].forEach(function (v) {
+      s('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 }, svg);
+      var t = s('text', { x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)' }, svg);
+      t.textContent = v + '%';
+    });
+    var step = iw > 420 ? 3 : 6;
+    for (var i = 0; i < n; i += step) {
+      var t = s('text', { x: x(i), y: H - 6, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' }, svg);
+      t.textContent = monthLabel(i);
+    }
+
+    // cut-off marker
+    s('line', { x1: x(cut), x2: x(cut), y1: m.t, y2: m.t + ih, stroke: 'var(--axis)', 'stroke-width': 1 }, svg);
+    var co = s('text', { x: x(cut) + 4, y: m.t + 10, 'font-size': 11, fill: 'var(--muted)' }, svg);
+    co.textContent = 'Cut-off';
+
+    function path(arr) { return arr.map(function (v, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(v).toFixed(1); }).join(' '); }
+    s('path', { d: path(DATA.aktual) + ' L' + x(cut) + ' ' + y(0) + ' L' + x(0) + ' ' + y(0) + ' Z', fill: 'var(--s1wash)' }, svg);
+    s('path', { d: path(DATA.rencana), fill: 'none', stroke: 'var(--s2)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    s('path', { d: path(DATA.aktual), fill: 'none', stroke: 'var(--s1)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+
+    // end dots + selective direct labels at cut-off
+    s('circle', { cx: x(cut), cy: y(planNow), r: 4, fill: 'var(--s2)', stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+    s('circle', { cx: x(cut), cy: y(actNow), r: 4, fill: 'var(--s1)', stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+    var lp = s('text', { x: x(cut) - 8, y: y(planNow) - 8, 'text-anchor': 'end', 'font-size': 12, 'font-weight': 600, fill: 'var(--ink)' }, svg);
+    lp.textContent = 'Rencana ' + num(planNow, 1) + '%';
+    var la = s('text', { x: x(cut) + 8, y: y(actNow) + 16, 'font-size': 12, 'font-weight': 600, fill: 'var(--ink)' }, svg);
+    la.textContent = 'Aktual ' + num(actNow, 1) + '%';
+    var lw = la.getComputedTextLength ? la.getComputedTextLength() : 0;
+    if (x(cut) + 8 + lw > W - 2) { la.setAttribute('x', W - 2); la.setAttribute('text-anchor', 'end'); }
+
+    // crosshair + hover layer
+    var cross = s('line', { y1: m.t, y2: m.t + ih, stroke: 'var(--ink2)', 'stroke-width': 1, visibility: 'hidden' }, svg);
+    var hp = s('circle', { r: 4, fill: 'var(--s2)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+    var ha = s('circle', { r: 4, fill: 'var(--s1)', stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg);
+    var hit = s('rect', { x: m.l, y: m.t, width: iw, height: ih, fill: 'transparent' }, svg);
+
+    function show(i, cx, cy) {
+      curIdx = i;
+      cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
+      hp.setAttribute('cx', x(i)); hp.setAttribute('cy', y(DATA.rencana[i])); hp.setAttribute('visibility', 'visible');
+      var has = i < DATA.aktual.length;
+      if (has) { ha.setAttribute('cx', x(i)); ha.setAttribute('cy', y(DATA.aktual[i])); }
+      ha.setAttribute('visibility', has ? 'visible' : 'hidden');
+      var rows = [];
+      if (has) rows.push({ color: 'var(--s1)', value: num(DATA.aktual[i], 1) + '%', label: 'Aktual' });
+      rows.push({ color: 'var(--s2)', value: num(DATA.rencana[i], 1) + '%', label: 'Rencana' });
+      if (has) { var d = DATA.aktual[i] - DATA.rencana[i]; rows.push({ value: (d > 0 ? '+' : d < 0 ? '−' : '') + num(Math.abs(d), 1) + ' poin', label: 'Deviasi' }); }
+      showTip(rows, monthLabel(i, true), cx, cy);
+    }
+    function clear() {
+      [cross, hp, ha].forEach(function (e) { e.setAttribute('visibility', 'hidden'); });
+      hideTip();
+    }
+    hit.addEventListener('pointermove', function (e) {
+      var r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width);
+      var i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / (iw / (n - 1)))));
+      show(i, e.clientX, e.clientY);
+    });
+    hit.addEventListener('pointerleave', clear);
+    function kbShow() {
+      var r = svg.getBoundingClientRect();
+      show(curIdx, r.left + x(curIdx) * r.width / W, r.top + m.t * r.height / H);
+    }
+    svg.addEventListener('focus', kbShow);
+    svg.addEventListener('blur', clear);
+    svg.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        curIdx = Math.max(0, Math.min(n - 1, curIdx + (e.key === 'ArrowRight' ? 1 : -1)));
+        kbShow(); e.preventDefault();
+      }
+    });
+  }
+
+  /* ---------- Progress per paket (bullet bars) ---------- */
+  function drawPkg() {
+    var box = $('qi-pkg');
+    DATA.paket.forEach(function (p) {
+      var d = p.aktual - p.rencana;
+      var row = el('div', 'row'); row.tabIndex = 0;
+      var top = el('div', 'top');
+      top.appendChild(el('span', 'nm', p.nama));
+      var right = el('span', 'right');
+      right.appendChild(el('span', 'nums', num(p.aktual, 0) + '% / ' + num(p.rencana, 0) + '%'));
+      right.appendChild(chip(varLevel(d), (d > 0 ? '+' : d < 0 ? '−' : '') + num(Math.abs(d), 0) + ' poin'));
+      top.appendChild(right);
+      row.appendChild(top);
+      row.appendChild(meter(p.aktual, p.rencana));
+      var rows = [
+        { color: 'var(--s1)', value: num(p.aktual, 1) + '%', label: 'Aktual' },
+        { color: 'var(--s2)', value: num(p.rencana, 1) + '%', label: 'Rencana' },
+        { value: (d > 0 ? '+' : d < 0 ? '−' : '') + num(Math.abs(d), 1) + ' poin', label: 'Deviasi' }
+      ];
+      row.addEventListener('pointermove', function (e) { showTip(rows, p.nama, e.clientX, e.clientY); });
+      row.addEventListener('pointerleave', hideTip);
+      row.addEventListener('focus', function () { var r = row.getBoundingClientRect(); showTip(rows, p.nama, r.left + r.width / 2, r.bottom); });
+      row.addEventListener('blur', hideTip);
+      box.appendChild(row);
+    });
+  }
+
+  /* ---------- Tabel (tampilan alternatif) ---------- */
+  function table(head, body) {
+    var t = el('table'), tr = el('tr');
+    head.forEach(function (h) { tr.appendChild(el('th', null, h)); });
+    var th = el('thead'); th.appendChild(tr); t.appendChild(th);
+    var tb = el('tbody');
+    body.forEach(function (r) {
+      var row = el('tr');
+      r.forEach(function (c) { row.appendChild(el('td', null, c)); });
+      tb.appendChild(row);
+    });
+    t.appendChild(tb);
+    return t;
+  }
+  $('qi-curve-tbl').appendChild(table(['Bulan', 'Rencana', 'Aktual', 'Deviasi'], DATA.rencana.map(function (v, i) {
+    var a = DATA.aktual[i];
+    return [monthLabel(i, true), num(v, 1) + '%', a == null ? '–' : num(a, 1) + '%', a == null ? '–' : num(a - v, 1)];
+  })));
+  $('qi-pkg-tbl').appendChild(table(['Paket', 'Rencana', 'Aktual', 'Deviasi'], DATA.paket.map(function (p) {
+    return [p.nama, num(p.rencana, 1) + '%', num(p.aktual, 1) + '%', num(p.aktual - p.rencana, 1)];
+  })));
+  Array.prototype.forEach.call(root.querySelectorAll('[data-toggle]'), function (b) {
+    b.addEventListener('click', function () {
+      var card = $(b.getAttribute('data-toggle'));
+      var on = card.classList.toggle('show-table');
+      b.textContent = on ? 'Grafik' : 'Tabel';
+      if (!on && card.id === 'qi-curve-card') drawCurve();
+    });
+  });
+
+  drawPkg();
+  drawCurve();
+  var lastSize = '';
+  function onResize() {
+    var b = $('qi-curve'), k = b.clientWidth + 'x' + b.clientHeight;
+    if (b.clientWidth && k !== lastSize) { lastSize = k; drawCurve(); }
+  }
+  if (window.ResizeObserver) new ResizeObserver(onResize).observe($('qi-curve'));
+  else window.addEventListener('resize', onResize);
+})();
+</script>
