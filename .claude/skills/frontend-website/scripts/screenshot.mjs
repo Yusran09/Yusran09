@@ -13,6 +13,19 @@ const n = fs.readdirSync(dir).map(f => +(/^screenshot-(\d+)/.exec(f)?.[1] ?? 0))
 const out = path.join(dir, `screenshot-${n}${label ? '-' + label : ''}.png`);
 const viewport = { width: Number(width), height: 900 };
 
+
+// Scroll through the page so scroll-triggered animations and lazy content render.
+const autoScroll = async (page) => {
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 400) {
+      window.scrollTo(0, y);
+      await new Promise(r => setTimeout(r, 120));
+    }
+    window.scrollTo(0, 0);
+    await new Promise(r => setTimeout(r, 400));
+  });
+};
+
 let lib;
 try { lib = require('playwright'); } catch {
   try { lib = require('puppeteer'); } catch {
@@ -27,6 +40,7 @@ if (lib.chromium) {
   catch { browser = await lib.chromium.launch(); }
   const page = await browser.newPage({ viewport });
   await page.goto(url, { waitUntil: 'networkidle' });
+  await autoScroll(page);
   await page.screenshot({ path: out, fullPage: true });
   await browser.close();
 } else {
@@ -34,6 +48,7 @@ if (lib.chromium) {
   const page = await browser.newPage();
   await page.setViewport(viewport);
   await page.goto(url, { waitUntil: 'networkidle0' });
+  await autoScroll(page);
   await page.screenshot({ path: out, fullPage: true });
   await browser.close();
 }

@@ -25,7 +25,7 @@ description: Rules and screenshot-verification workflow for building or restylin
 - Run from the project root:
   `node .claude/skills/frontend-website/scripts/screenshot.mjs http://localhost:3000 [label] [width]`
 - Uses Playwright if installed (preinstalled in Claude Code cloud sessions), otherwise Puppeteer. Locally, install one first: `npm i -D playwright` (then `npx playwright install chromium`).
-- Screenshots save to `./temporary screenshots/screenshot-N[-label].png` (auto-incremented, never overwritten, full page). Default width 1440; pass `390` for a mobile check.
+- Screenshots save to `./temporary screenshots/screenshot-N[-label].png` (auto-incremented, never overwritten, full page). The script scrolls the page first so scroll-triggered animations render. Default width 1440; pass `390` for a mobile check.
 - After screenshotting, read the PNG with the Read tool to see and analyze it.
 - When comparing, be specific: "heading is 32px but reference shows ~24px", "card gap is 16px but should be 24px".
 - Check: spacing/padding, font size/weight/line-height, colors (exact hex), alignment, border-radius, shadows, image sizing.
