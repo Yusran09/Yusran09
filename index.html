@@ -9,24 +9,29 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
     :root {
-      --navy-900: #050d1a;
-      --navy-800: #0a1628;
-      --navy-700: #0f2240;
-      --navy-600: #1a3158;
-      --navy-500: #1e3a5f;
-      --blue-400: #2980b9;
-      --blue-300: #3498db;
-      --blue-200: #5dade2;
+      /* Ocean Depths theme */
+      --ocean-navy: #1a2332;   /* Deep Navy: primary background */
+      --teal: #2d8b8b;         /* Teal: accent, fills, glows */
+      --seafoam: #a8dadc;      /* Seafoam: light accent, highlight text */
+      --cream: #f1faee;        /* Cream: text */
+      --teal-bright: #4bb5b5;  /* derived from Teal for data series on dark */
+      --accent: var(--seafoam);
+      --navy-900: #111821;
+      --navy-800: #1a2332;
+      --navy-700: #223044;
+      --navy-600: #2b3c54;
+      --navy-500: #34485f;
+      /* RAG status colours stay standard for unambiguous reporting */
       --amber: #f39c12;
       --amber-light: #f5c842;
       --green: #27ae60;
       --red: #e74c3c;
-      --white: #ffffff;
-      --gray-100: #f0f4f8;
-      --gray-200: #d5e0ec;
-      --gray-400: #8ba3c0;
-      --glass: rgba(255,255,255,0.05);
-      --glass-border: rgba(255,255,255,0.1);
+      --white: #f1faee;
+      --gray-100: #f1faee;
+      --gray-200: #cfe0e0;
+      --gray-400: #9fb3b8;
+      --glass: rgba(168,218,220,0.05);
+      --glass-border: rgba(168,218,220,0.12);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -40,7 +45,7 @@
     /* ── NAVBAR ─────────────────────────────────── */
     nav {
       position: fixed; top: 0; width: 100%; z-index: 1000;
-      background: rgba(5,13,26,0.92);
+      background: rgba(17,24,33,0.92);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--glass-border);
       padding: 0 5%;
@@ -53,10 +58,10 @@
       font-size: 1.3rem; font-weight: 700; color: var(--white);
       text-decoration: none;
     }
-    .nav-logo span { color: var(--amber); }
+    .nav-logo span { color: var(--accent); }
     .nav-logo-icon {
       width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--amber), var(--blue-300));
+      background: linear-gradient(135deg, var(--accent), var(--teal-bright));
       border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1rem;
@@ -65,23 +70,24 @@
     .nav-links a {
       color: var(--gray-200); text-decoration: none;
       padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 500;
-      transition: all 0.2s;
+      transition: transform 0.2s, background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
     }
-    .nav-links a:hover { background: var(--glass); color: var(--amber); }
+    .nav-links a:hover { background: var(--glass); color: var(--accent); }
     .nav-cta {
-      background: var(--amber); color: var(--navy-800) !important;
+      background: var(--accent); color: var(--navy-800) !important;
       font-weight: 700 !important; border-radius: 6px !important;
     }
-    .nav-cta:hover { background: var(--amber-light) !important; color: var(--navy-800) !important; }
+    .nav-cta:hover { background: #c9ecee !important; color: var(--navy-800) !important; }
     .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
-    .hamburger span { width: 24px; height: 2px; background: var(--white); border-radius: 2px; transition: 0.3s; }
+    .hamburger span { width: 24px; height: 2px; background: var(--white); border-radius: 2px; transition: opacity 0.3s, transform 0.3s; }
 
     /* ── HERO ─────────────────────────────────────── */
     #hero {
       min-height: 100vh;
-      background: radial-gradient(ellipse at 20% 50%, rgba(30,58,95,0.8) 0%, transparent 60%),
-                  radial-gradient(ellipse at 80% 20%, rgba(41,128,185,0.3) 0%, transparent 50%),
-                  linear-gradient(160deg, var(--navy-900) 0%, var(--navy-800) 50%, #0c1e38 100%);
+      background: radial-gradient(ellipse at 20% 50%, rgba(45,139,139,0.22) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(45,139,139,0.3) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 110%, rgba(168,218,220,0.10) 0%, transparent 55%),
+                  linear-gradient(160deg, var(--navy-900) 0%, var(--navy-800) 50%, #1d2a3b 100%);
       display: flex; align-items: center; justify-content: center;
       padding: 120px 5% 80px;
       position: relative; overflow: hidden;
@@ -89,15 +95,15 @@
     .hero-grid {
       position: absolute; inset: 0;
       background-image:
-        linear-gradient(rgba(41,128,185,0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(41,128,185,0.06) 1px, transparent 1px);
+        linear-gradient(rgba(45,139,139,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45,139,139,0.06) 1px, transparent 1px);
       background-size: 60px 60px;
     }
     .hero-content { max-width: 900px; text-align: center; position: relative; z-index: 2; }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(243,156,18,0.15); border: 1px solid rgba(243,156,18,0.3);
-      color: var(--amber); border-radius: 50px; padding: 6px 18px;
+      background: rgba(45,139,139,0.15); border: 1px solid rgba(45,139,139,0.3);
+      color: var(--accent); border-radius: 50px; padding: 6px 18px;
       font-size: 0.78rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
       margin-bottom: 28px;
     }
@@ -108,8 +114,8 @@
       font-weight: 700; line-height: 1.1;
       margin-bottom: 24px;
     }
-    .hero-title .highlight { color: var(--amber); }
-    .hero-title .blue { color: var(--blue-300); }
+    .hero-title .highlight { color: var(--accent); }
+    .hero-title .blue { color: var(--teal-bright); }
     .hero-subtitle {
       font-size: clamp(1rem, 2vw, 1.25rem);
       color: var(--gray-400); line-height: 1.7;
@@ -117,23 +123,23 @@
     }
     .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
     .btn-primary {
-      background: linear-gradient(135deg, var(--amber), #e67e22);
+      background: linear-gradient(135deg, var(--seafoam), #7fc4c6);
       color: var(--navy-800); font-weight: 700;
       padding: 14px 32px; border-radius: 8px; border: none;
       font-size: 0.95rem; cursor: pointer; text-decoration: none;
       display: inline-flex; align-items: center; gap: 8px;
-      transition: all 0.3s; box-shadow: 0 4px 20px rgba(243,156,18,0.35);
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s; box-shadow: 0 4px 20px rgba(45,139,139,0.35);
     }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(243,156,18,0.5); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(45,139,139,0.5); }
     .btn-secondary {
       background: transparent; color: var(--white); font-weight: 600;
       padding: 14px 32px; border-radius: 8px;
       border: 1px solid rgba(255,255,255,0.25);
       font-size: 0.95rem; cursor: pointer; text-decoration: none;
       display: inline-flex; align-items: center; gap: 8px;
-      transition: all 0.3s;
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
     }
-    .btn-secondary:hover { background: var(--glass); border-color: var(--blue-300); }
+    .btn-secondary:hover { background: var(--glass); border-color: var(--teal-bright); }
     .hero-stats {
       display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;
       margin-top: 60px; padding-top: 40px;
@@ -142,14 +148,14 @@
     .hero-stat { text-align: center; }
     .hero-stat-number {
       font-family: 'Rajdhani', sans-serif;
-      font-size: 2.2rem; font-weight: 700; color: var(--amber);
+      font-size: 2.2rem; font-weight: 700; color: var(--accent);
     }
     .hero-stat-label { font-size: 0.78rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; }
 
     /* ── SECTIONS ─────────────────────────────────── */
     section { padding: 90px 5%; }
     .section-tag {
-      display: inline-block; color: var(--amber);
+      display: inline-block; color: var(--accent);
       font-size: 0.75rem; font-weight: 700; letter-spacing: 2px;
       text-transform: uppercase; margin-bottom: 12px;
     }
@@ -178,18 +184,18 @@
       display: flex; align-items: center; gap: 20px;
       background: var(--glass); border: 1px solid var(--glass-border);
       border-radius: 12px; padding: 20px 24px;
-      transition: all 0.3s; cursor: default;
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s; cursor: default;
     }
-    .epc-phase:hover { border-color: var(--amber); background: rgba(243,156,18,0.05); }
+    .epc-phase:hover { border-color: var(--accent); background: rgba(45,139,139,0.05); }
     .epc-icon {
       width: 48px; height: 48px; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.3rem; flex-shrink: 0;
     }
-    .epc-phase:nth-child(1) .epc-icon { background: rgba(52,152,219,0.2); color: var(--blue-300); }
-    .epc-phase:nth-child(2) .epc-icon { background: rgba(243,156,18,0.2); color: var(--amber); }
-    .epc-phase:nth-child(3) .epc-icon { background: rgba(39,174,96,0.2); color: var(--green); }
-    .epc-phase:nth-child(4) .epc-icon { background: rgba(231,76,60,0.2); color: var(--red); }
+    .epc-phase:nth-child(1) .epc-icon { background: rgba(168,218,220,0.16); color: var(--seafoam); }
+    .epc-phase:nth-child(2) .epc-icon { background: rgba(75,181,181,0.16); color: var(--teal-bright); }
+    .epc-phase:nth-child(3) .epc-icon { background: rgba(241,250,238,0.16); color: var(--cream); }
+    .epc-phase:nth-child(4) .epc-icon { background: rgba(127,196,198,0.16); color: #7fc4c6; }
     .epc-phase-label { font-weight: 700; font-size: 0.95rem; }
     .epc-phase-desc { font-size: 0.82rem; color: var(--gray-400); margin-top: 3px; }
     .epc-connector {
@@ -208,30 +214,30 @@
       background: var(--glass);
       border: 1px solid var(--glass-border);
       border-radius: 16px; padding: 28px;
-      transition: all 0.3s;
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
       position: relative; overflow: hidden;
     }
     .feature-card::before {
       content: ''; position: absolute;
       top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, var(--amber), transparent);
-      opacity: 0; transition: 0.3s;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0; transition: opacity 0.3s, transform 0.3s;
     }
-    .feature-card:hover { border-color: rgba(243,156,18,0.3); transform: translateY(-4px); }
+    .feature-card:hover { border-color: rgba(45,139,139,0.3); transform: translateY(-4px); }
     .feature-card:hover::before { opacity: 1; }
     .feature-icon {
       width: 52px; height: 52px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.4rem; margin-bottom: 20px;
     }
-    .feature-card:nth-child(1) .feature-icon { background: rgba(52,152,219,0.15); color: var(--blue-300); }
-    .feature-card:nth-child(2) .feature-icon { background: rgba(243,156,18,0.15); color: var(--amber); }
-    .feature-card:nth-child(3) .feature-icon { background: rgba(39,174,96,0.15); color: var(--green); }
-    .feature-card:nth-child(4) .feature-icon { background: rgba(231,76,60,0.15); color: var(--red); }
-    .feature-card:nth-child(5) .feature-icon { background: rgba(155,89,182,0.15); color: #9b59b6; }
-    .feature-card:nth-child(6) .feature-icon { background: rgba(241,196,15,0.15); color: #f1c40f; }
-    .feature-card:nth-child(7) .feature-icon { background: rgba(26,188,156,0.15); color: #1abc9c; }
-    .feature-card:nth-child(8) .feature-icon { background: rgba(230,126,34,0.15); color: #e67e22; }
+    .feature-card:nth-child(1) .feature-icon { background: rgba(168,218,220,0.14); color: var(--seafoam); }
+    .feature-card:nth-child(2) .feature-icon { background: rgba(75,181,181,0.14); color: var(--teal-bright); }
+    .feature-card:nth-child(3) .feature-icon { background: rgba(241,250,238,0.14); color: var(--cream); }
+    .feature-card:nth-child(4) .feature-icon { background: rgba(127,196,198,0.14); color: #7fc4c6; }
+    .feature-card:nth-child(5) .feature-icon { background: rgba(168,218,220,0.14); color: var(--seafoam); }
+    .feature-card:nth-child(6) .feature-icon { background: rgba(75,181,181,0.14); color: var(--teal-bright); }
+    .feature-card:nth-child(7) .feature-icon { background: rgba(241,250,238,0.14); color: var(--cream); }
+    .feature-card:nth-child(8) .feature-icon { background: rgba(127,196,198,0.14); color: #7fc4c6; }
     .feature-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; }
     .feature-desc { font-size: 0.85rem; color: var(--gray-400); line-height: 1.6; }
     .feature-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
@@ -244,13 +250,13 @@
     /* ── DASHBOARD MOCKUP ─────────────────────────── */
     #dashboard { background: var(--navy-900); }
     .dashboard-frame {
-      background: #0d1b2e;
+      background: #15202d;
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 16px; overflow: hidden;
       box-shadow: 0 40px 80px rgba(0,0,0,0.5);
     }
     .dashboard-topbar {
-      background: #071120; padding: 12px 20px;
+      background: #111a26; padding: 12px 20px;
       display: flex; align-items: center; gap: 12px;
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
@@ -280,7 +286,7 @@
       border-radius: 6px; padding: 5px 14px; font-size: 0.72rem; color: var(--gray-200);
       cursor: default;
     }
-    .db-filter.active { background: rgba(243,156,18,0.15); border-color: rgba(243,156,18,0.4); color: var(--amber); }
+    .db-filter.active { background: rgba(45,139,139,0.15); border-color: rgba(45,139,139,0.4); color: var(--accent); }
     /* KPI row */
     .db-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
     .db-kpi-card {
@@ -307,8 +313,8 @@
     .donut-chart {
       width: 90px; height: 90px; border-radius: 50%; flex-shrink: 0;
       background: conic-gradient(
-        var(--blue-300) 0% 67%,
-        var(--amber) 67% 82%,
+        var(--teal-bright) 0% 67%,
+        var(--seafoam) 67% 82%,
         var(--navy-700) 82% 100%
       );
       display: flex; align-items: center; justify-content: center;
@@ -316,7 +322,7 @@
     }
     .donut-center {
       width: 60px; height: 60px; border-radius: 50%;
-      background: #0d1b2e;
+      background: #15202d;
       display: flex; align-items: center; justify-content: center;
       font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.1rem;
     }
@@ -330,10 +336,10 @@
       border-radius: 10px; padding: 16px;
     }
     .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 70px; margin-top: 10px; }
-    .bar-col { display: flex; align-items: flex-end; gap: 3px; flex: 1; }
+    .bar-col { display: flex; align-items: flex-end; gap: 3px; flex: 1; height: 100%; }
     .bar {
       flex: 1; border-radius: 3px 3px 0 0; min-height: 4px;
-      transition: all 0.3s;
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
     }
     /* Table row */
     .db-table-panel {
@@ -366,12 +372,12 @@
       display: flex; gap: 16px; align-items: flex-start;
       background: var(--glass); border: 1px solid var(--glass-border);
       border-radius: 12px; padding: 20px;
-      transition: all 0.3s;
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
     }
-    .pbi-item:hover { border-color: rgba(243,156,18,0.3); background: rgba(243,156,18,0.04); }
+    .pbi-item:hover { border-color: rgba(45,139,139,0.3); background: rgba(45,139,139,0.04); }
     .pbi-icon {
       width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-      background: rgba(243,156,18,0.15); color: var(--amber);
+      background: rgba(45,139,139,0.15); color: var(--accent);
       display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
     }
     .pbi-label { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
@@ -396,7 +402,7 @@
       background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
       border-radius: 10px; padding: 16px; text-align: center;
     }
-    .pbi-stat-num { font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--amber); }
+    .pbi-stat-num { font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--accent); }
     .pbi-stat-lbl { font-size: 0.72rem; color: var(--gray-400); margin-top: 2px; }
     .pbi-refresh-indicator {
       display: flex; align-items: center; gap: 10px;
@@ -419,16 +425,16 @@
       text-align: center;
       background: var(--glass); border: 1px solid var(--glass-border);
       border-radius: 16px; padding: 36px 24px;
-      transition: all 0.3s;
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
     }
-    .metric-card:hover { border-color: rgba(243,156,18,0.4); transform: translateY(-4px); }
-    .metric-icon { font-size: 2rem; color: var(--amber); margin-bottom: 16px; }
+    .metric-card:hover { border-color: rgba(45,139,139,0.4); transform: translateY(-4px); }
+    .metric-icon { font-size: 2rem; color: var(--accent); margin-bottom: 16px; }
     .metric-number {
       font-family: 'Rajdhani', sans-serif;
       font-size: 3rem; font-weight: 700; color: var(--white);
       line-height: 1;
     }
-    .metric-number span { color: var(--amber); }
+    .metric-number span { color: var(--accent); }
     .metric-label { font-size: 0.85rem; color: var(--gray-400); margin-top: 8px; font-weight: 500; }
 
     /* ── EPC PHASES TIMELINE ─────────────────────── */
@@ -440,7 +446,7 @@
     .phases-timeline::before {
       content: ''; position: absolute;
       top: 56px; left: 12.5%; right: 12.5%; height: 2px;
-      background: linear-gradient(90deg, var(--blue-300), var(--amber), var(--green), #e67e22);
+      background: linear-gradient(90deg, var(--seafoam), var(--teal-bright), var(--cream), #7fc4c6);
       z-index: 0;
     }
     .phase-item { text-align: center; padding: 0 16px; position: relative; }
@@ -450,10 +456,10 @@
       margin: 0 auto 24px; font-size: 1.1rem; font-weight: 700;
       position: relative; z-index: 1;
     }
-    .phase-item:nth-child(1) .phase-dot { background: rgba(52,152,219,0.2); border: 2px solid var(--blue-300); color: var(--blue-300); }
-    .phase-item:nth-child(2) .phase-dot { background: rgba(243,156,18,0.2); border: 2px solid var(--amber); color: var(--amber); }
-    .phase-item:nth-child(3) .phase-dot { background: rgba(39,174,96,0.2); border: 2px solid var(--green); color: var(--green); }
-    .phase-item:nth-child(4) .phase-dot { background: rgba(230,126,34,0.2); border: 2px solid #e67e22; color: #e67e22; }
+    .phase-item:nth-child(1) .phase-dot { background: rgba(168,218,220,0.16); border: 2px solid var(--seafoam); color: var(--seafoam); }
+    .phase-item:nth-child(2) .phase-dot { background: rgba(75,181,181,0.16); border: 2px solid var(--teal-bright); color: var(--teal-bright); }
+    .phase-item:nth-child(3) .phase-dot { background: rgba(241,250,238,0.16); border: 2px solid var(--cream); color: var(--cream); }
+    .phase-item:nth-child(4) .phase-dot { background: rgba(127,196,198,0.16); border: 2px solid #7fc4c6; color: #7fc4c6; }
     .phase-name { font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
     .phase-kpis { list-style: none; display: flex; flex-direction: column; gap: 6px; }
     .phase-kpis li {
@@ -461,7 +467,7 @@
       background: var(--glass); border: 1px solid var(--glass-border);
       border-radius: 6px; padding: 6px 10px; text-align: left;
     }
-    .phase-kpis li::before { content: '▸ '; color: var(--amber); }
+    .phase-kpis li::before { content: '▸ '; color: var(--accent); }
 
     /* ── TECH STACK ──────────────────────────────── */
     #stack { background: var(--navy-900); }
@@ -470,16 +476,16 @@
       background: var(--glass); border: 1px solid var(--glass-border);
       border-radius: 12px; padding: 20px 28px;
       display: flex; align-items: center; gap: 14px;
-      transition: all 0.3s; min-width: 180px;
+      transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s; min-width: 180px;
     }
-    .stack-item:hover { border-color: rgba(243,156,18,0.4); transform: translateY(-3px); }
+    .stack-item:hover { border-color: rgba(45,139,139,0.4); transform: translateY(-3px); }
     .stack-icon { font-size: 2rem; }
     .stack-label { font-weight: 700; font-size: 0.95rem; }
     .stack-desc { font-size: 0.75rem; color: var(--gray-400); }
 
     /* ── CONTACT / CTA ───────────────────────────── */
     #contact {
-      background: linear-gradient(135deg, var(--navy-900) 0%, #071a3e 100%);
+      background: linear-gradient(135deg, var(--navy-900) 0%, #1d3340 100%);
       text-align: center;
     }
     .contact-card {
@@ -489,25 +495,25 @@
     }
     .contact-avatar {
       width: 80px; height: 80px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--amber), var(--blue-300));
+      background: linear-gradient(135deg, var(--accent), var(--teal-bright));
       display: flex; align-items: center; justify-content: center;
       font-size: 2rem; margin: 0 auto 24px;
     }
     .contact-name { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; }
-    .contact-role { color: var(--amber); font-weight: 600; margin: 6px 0 20px; }
+    .contact-role { color: var(--accent); font-weight: 600; margin: 6px 0 20px; }
     .contact-bio { color: var(--gray-400); font-size: 0.9rem; line-height: 1.7; margin-bottom: 32px; }
     .contact-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
     .contact-link {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 11px 22px; border-radius: 8px; font-size: 0.88rem; font-weight: 600;
-      text-decoration: none; transition: all 0.3s;
+      text-decoration: none; transition: transform 0.3s, background-color 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
     }
     .contact-link.github { background: rgba(255,255,255,0.08); color: var(--white); border: 1px solid rgba(255,255,255,0.15); }
     .contact-link.github:hover { background: rgba(255,255,255,0.14); }
-    .contact-link.linkedin { background: rgba(10,102,194,0.2); color: #0a66c2; border: 1px solid rgba(10,102,194,0.35); }
+    .contact-link.linkedin { background: rgba(10,102,194,0.22); color: var(--cream); border: 1px solid rgba(10,102,194,0.5); }
     .contact-link.linkedin:hover { background: rgba(10,102,194,0.3); }
-    .contact-link.email { background: rgba(243,156,18,0.15); color: var(--amber); border: 1px solid rgba(243,156,18,0.35); }
-    .contact-link.email:hover { background: rgba(243,156,18,0.25); }
+    .contact-link.email { background: rgba(45,139,139,0.15); color: var(--accent); border: 1px solid rgba(45,139,139,0.35); }
+    .contact-link.email:hover { background: rgba(45,139,139,0.25); }
 
     /* ── FOOTER ──────────────────────────────────── */
     footer {
@@ -516,7 +522,7 @@
       font-size: 0.8rem; color: var(--gray-400);
       display: flex; align-items: center; justify-content: space-between; flex-wrap: gap;
     }
-    footer .footer-brand { color: var(--amber); font-weight: 600; }
+    footer .footer-brand { color: var(--accent); font-weight: 600; }
 
     /* ── ANIMATIONS ──────────────────────────────── */
     .fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
@@ -634,7 +640,7 @@
         dan risiko dalam satu platform terpadu.
       </p>
       <p class="section-desc">
-        Menggunakan <strong style="color:var(--amber)">Microsoft Power BI</strong> sebagai
+        Menggunakan <strong style="color:var(--accent)">Microsoft Power BI</strong> sebagai
         engine visualisasi data, dashboard ini menghubungkan data dari lapangan
         langsung ke ruang rapat — memungkinkan pengambilan keputusan berbasis data
         secara cepat dan akurat.
@@ -811,7 +817,7 @@
       <div class="db-dots">
         <div class="db-dot"></div><div class="db-dot"></div><div class="db-dot"></div>
       </div>
-      <div class="db-title"><i class="fas fa-chart-bar" style="color:var(--amber);margin-right:6px"></i>Project Control Dashboard — Power BI</div>
+      <div class="db-title"><i class="fas fa-chart-bar" style="color:var(--accent);margin-right:6px"></i>Project Control Dashboard — Power BI</div>
       <div class="db-date">Updated: 12 Jun 2026 · 08:00 WIB</div>
     </div>
     <div class="dashboard-body">
@@ -834,7 +840,7 @@
       <div class="db-kpi-row">
         <div class="db-kpi-card">
           <div class="db-kpi-label">Overall Progress</div>
-          <div class="db-kpi-value" style="color:var(--blue-300)">67.3%</div>
+          <div class="db-kpi-value" style="color:var(--teal-bright)">67.3%</div>
           <div class="db-kpi-delta up"><i class="fas fa-arrow-up"></i> +1.8% vs Plan (65.5%)</div>
         </div>
         <div class="db-kpi-card">
@@ -857,16 +863,16 @@
       <div class="db-charts-row">
         <!-- S-Curve -->
         <div class="db-chart-panel">
-          <div class="db-panel-title"><i class="fas fa-chart-area" style="color:var(--amber);margin-right:6px"></i>S-Curve — Cumulative Progress (%)</div>
+          <div class="db-panel-title"><i class="fas fa-chart-area" style="color:var(--accent);margin-right:6px"></i>S-Curve — Cumulative Progress (%)</div>
           <svg class="scurve-container" viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="planGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#3498db" stop-opacity="0.3"/>
-                <stop offset="100%" stop-color="#3498db" stop-opacity="0"/>
+                <stop offset="0%" stop-color="#a8dadc" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#a8dadc" stop-opacity="0"/>
               </linearGradient>
               <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#f39c12" stop-opacity="0.3"/>
-                <stop offset="100%" stop-color="#f39c12" stop-opacity="0"/>
+                <stop offset="0%" stop-color="#4bb5b5" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#4bb5b5" stop-opacity="0"/>
               </linearGradient>
             </defs>
             <!-- Grid lines -->
@@ -879,36 +885,36 @@
                   fill="url(#planGrad)"/>
             <!-- Planned S-Curve line -->
             <path d="M0,108 C20,108 40,104 80,98 C120,92 150,82 200,68 C250,54 290,36 340,24 C380,15 420,12 500,10"
-                  fill="none" stroke="#3498db" stroke-width="2" stroke-dasharray="5,3"/>
+                  fill="none" stroke="#a8dadc" stroke-width="2" stroke-dasharray="5,3"/>
             <!-- Actual fill (up to current point) -->
             <path d="M0,108 C20,108 40,104 80,99 C120,93 150,83 200,70 C250,57 280,43 336,32 L336,116 L0,116 Z"
                   fill="url(#actualGrad)"/>
             <!-- Actual line -->
             <path d="M0,108 C20,108 40,104 80,99 C120,93 150,83 200,70 C250,57 280,43 336,32"
-                  fill="none" stroke="#f39c12" stroke-width="2.5"/>
+                  fill="none" stroke="#4bb5b5" stroke-width="2.5"/>
             <!-- Current point dot -->
-            <circle cx="336" cy="32" r="5" fill="#f39c12"/>
+            <circle cx="336" cy="32" r="5" fill="#4bb5b5"/>
             <!-- Labels -->
             <text x="8" y="112" fill="rgba(255,255,255,0.3)" font-size="9">0%</text>
             <text x="8" y="18" fill="rgba(255,255,255,0.3)" font-size="9">100%</text>
             <text x="270" y="112" fill="rgba(255,255,255,0.3)" font-size="9">W23</text>
             <!-- Legend -->
-            <line x1="340" y1="14" x2="360" y2="14" stroke="#3498db" stroke-width="2" stroke-dasharray="4,2"/>
-            <text x="364" y="18" fill="#8ba3c0" font-size="9">Plan</text>
-            <line x1="395" y1="14" x2="415" y2="14" stroke="#f39c12" stroke-width="2"/>
-            <text x="419" y="18" fill="#8ba3c0" font-size="9">Actual</text>
+            <line x1="340" y1="14" x2="360" y2="14" stroke="#a8dadc" stroke-width="2" stroke-dasharray="4,2"/>
+            <text x="364" y="18" fill="#9fb3b8" font-size="9">Plan</text>
+            <line x1="395" y1="14" x2="415" y2="14" stroke="#4bb5b5" stroke-width="2"/>
+            <text x="419" y="18" fill="#9fb3b8" font-size="9">Actual</text>
           </svg>
         </div>
         <!-- Donut progress -->
         <div class="db-chart-panel">
-          <div class="db-panel-title"><i class="fas fa-circle-notch" style="color:var(--amber);margin-right:6px"></i>Discipline Progress</div>
+          <div class="db-panel-title"><i class="fas fa-circle-notch" style="color:var(--accent);margin-right:6px"></i>Discipline Progress</div>
           <div class="donut-wrap">
             <div class="donut-chart"><div class="donut-center">67%</div></div>
             <div class="donut-legend">
-              <div class="donut-item"><div class="donut-dot" style="background:var(--blue-300)"></div>Civil 82%</div>
-              <div class="donut-item"><div class="donut-dot" style="background:var(--amber)"></div>Mech 54%</div>
-              <div class="donut-item"><div class="donut-dot" style="background:#9b59b6"></div>Elec 71%</div>
-              <div class="donut-item"><div class="donut-dot" style="background:var(--green)"></div>Pipe 63%</div>
+              <div class="donut-item"><div class="donut-dot" style="background:var(--teal-bright)"></div>Civil 82%</div>
+              <div class="donut-item"><div class="donut-dot" style="background:var(--seafoam)"></div>Mech 54%</div>
+              <div class="donut-item"><div class="donut-dot" style="background:var(--cream)"></div>Elec 71%</div>
+              <div class="donut-item"><div class="donut-dot" style="background:#7fc4c6"></div>Pipe 63%</div>
               <div class="donut-item"><div class="donut-dot" style="background:var(--navy-700)"></div>Inst 48%</div>
             </div>
           </div>
@@ -917,43 +923,43 @@
       <!-- Bar charts row -->
       <div class="db-bar-row">
         <div class="db-bar-panel">
-          <div class="db-panel-title"><i class="fas fa-chart-bar" style="color:var(--blue-300);margin-right:6px"></i>Weekly Progress (%)</div>
+          <div class="db-panel-title"><i class="fas fa-chart-bar" style="color:var(--teal-bright);margin-right:6px"></i>Weekly Progress (%)</div>
           <div class="bar-chart">
-            <div class="bar-col"><div class="bar" style="height:45%;background:rgba(52,152,219,0.4)"></div><div class="bar" style="height:38%;background:var(--blue-300)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:52%;background:rgba(52,152,219,0.4)"></div><div class="bar" style="height:50%;background:var(--blue-300)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:60%;background:rgba(52,152,219,0.4)"></div><div class="bar" style="height:58%;background:var(--blue-300)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:55%;background:rgba(52,152,219,0.4)"></div><div class="bar" style="height:60%;background:var(--blue-300)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:70%;background:rgba(52,152,219,0.4)"></div><div class="bar" style="height:72%;background:var(--blue-300)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:65%;background:rgba(52,152,219,0.4)"></div><div class="bar" style="height:67%;background:var(--amber)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:45%;background:rgba(75,181,181,0.4)"></div><div class="bar" style="height:38%;background:var(--teal-bright)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:52%;background:rgba(75,181,181,0.4)"></div><div class="bar" style="height:50%;background:var(--teal-bright)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:60%;background:rgba(75,181,181,0.4)"></div><div class="bar" style="height:58%;background:var(--teal-bright)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:55%;background:rgba(75,181,181,0.4)"></div><div class="bar" style="height:60%;background:var(--teal-bright)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:70%;background:rgba(75,181,181,0.4)"></div><div class="bar" style="height:72%;background:var(--teal-bright)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:65%;background:rgba(75,181,181,0.4)"></div><div class="bar" style="height:67%;background:var(--accent)"></div></div>
           </div>
         </div>
         <div class="db-bar-panel">
           <div class="db-panel-title"><i class="fas fa-users" style="color:var(--green);margin-right:6px"></i>Manpower Trend</div>
           <div class="bar-chart">
-            <div class="bar-col"><div class="bar" style="height:60%;background:rgba(39,174,96,0.3)"></div><div class="bar" style="height:55%;background:var(--green)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:75%;background:rgba(39,174,96,0.3)"></div><div class="bar" style="height:80%;background:var(--green)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:90%;background:rgba(39,174,96,0.3)"></div><div class="bar" style="height:85%;background:var(--green)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:95%;background:rgba(39,174,96,0.3)"></div><div class="bar" style="height:92%;background:var(--green)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:88%;background:rgba(39,174,96,0.3)"></div><div class="bar" style="height:90%;background:var(--green)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:85%;background:rgba(39,174,96,0.3)"></div><div class="bar" style="height:97%;background:var(--green)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:60%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:55%;background:var(--seafoam)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:75%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:80%;background:var(--seafoam)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:90%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:85%;background:var(--seafoam)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:95%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:92%;background:var(--seafoam)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:88%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:90%;background:var(--seafoam)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:85%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:97%;background:var(--seafoam)"></div></div>
           </div>
         </div>
         <div class="db-bar-panel">
-          <div class="db-panel-title"><i class="fas fa-wallet" style="color:var(--amber);margin-right:6px"></i>Cost Variance (M$)</div>
+          <div class="db-panel-title"><i class="fas fa-wallet" style="color:var(--accent);margin-right:6px"></i>Cost Variance (M$)</div>
           <div class="bar-chart">
-            <div class="bar-col"><div class="bar" style="height:40%;background:rgba(243,156,18,0.3)"></div><div class="bar" style="height:42%;background:var(--amber)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:55%;background:rgba(243,156,18,0.3)"></div><div class="bar" style="height:50%;background:var(--amber)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:62%;background:rgba(243,156,18,0.3)"></div><div class="bar" style="height:65%;background:var(--amber)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:70%;background:rgba(243,156,18,0.3)"></div><div class="bar" style="height:72%;background:var(--green)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:68%;background:rgba(243,156,18,0.3)"></div><div class="bar" style="height:65%;background:var(--green)"></div></div>
-            <div class="bar-col"><div class="bar" style="height:75%;background:rgba(243,156,18,0.3)"></div><div class="bar" style="height:78%;background:var(--green)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:40%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:42%;background:var(--amber)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:55%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:50%;background:var(--amber)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:62%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:65%;background:var(--amber)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:70%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:72%;background:var(--green)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:68%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:65%;background:var(--green)"></div></div>
+            <div class="bar-col"><div class="bar" style="height:75%;background:rgba(168,218,220,0.22)"></div><div class="bar" style="height:78%;background:var(--green)"></div></div>
           </div>
         </div>
       </div>
       <!-- Activity Table -->
       <div style="margin-top:16px">
         <div class="db-chart-panel">
-          <div class="db-panel-title"><i class="fas fa-list" style="color:var(--amber);margin-right:6px"></i>Critical Milestone Status</div>
+          <div class="db-panel-title"><i class="fas fa-list" style="color:var(--accent);margin-right:6px"></i>Critical Milestone Status</div>
           <table class="db-table">
             <thead>
               <tr>
@@ -983,7 +989,7 @@
                 <td>Civil Foundation Complete</td>
                 <td>W25</td>
                 <td>W25</td>
-                <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:72%;background:var(--blue-300)"></div></div></td>
+                <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:72%;background:var(--teal-bright)"></div></div></td>
                 <td><span class="status-pill on-track">On Track</span></td>
               </tr>
               <tr>
@@ -1074,7 +1080,7 @@
         <div style="font-size:0.72rem;color:var(--gray-400);margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Connected Data Sources</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem">
-            <i class="fas fa-database" style="color:var(--blue-300);width:16px"></i>
+            <i class="fas fa-database" style="color:var(--teal-bright);width:16px"></i>
             SQL Server — Project Control DB
           </div>
           <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem">
@@ -1082,11 +1088,11 @@
             Excel — Weekly Report Master
           </div>
           <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem">
-            <i class="fab fa-microsoft" style="color:var(--amber);width:16px"></i>
+            <i class="fab fa-microsoft" style="color:var(--accent);width:16px"></i>
             SharePoint — Document Library
           </div>
           <div style="display:flex;align-items:center;gap:10px;font-size:0.78rem">
-            <i class="fas fa-project-diagram" style="color:#9b59b6;width:16px"></i>
+            <i class="fas fa-project-diagram" style="color:#7fc4c6;width:16px"></i>
             Primavera P6 — Schedule Data
           </div>
         </div>
@@ -1243,7 +1249,7 @@
       </div>
     </div>
     <div class="stack-item">
-      <div class="stack-icon" style="color:var(--amber)"><i class="fas fa-function"></i></div>
+      <div class="stack-icon" style="color:var(--accent)"><i class="fas fa-function"></i></div>
       <div>
         <div class="stack-label">DAX / Power Query</div>
         <div class="stack-desc">Calculations & Transform</div>
@@ -1359,9 +1365,9 @@
   window.addEventListener('scroll', () => {
     const nav = document.getElementById('navbar');
     if (window.scrollY > 50) {
-      nav.style.background = 'rgba(5,13,26,0.98)';
+      nav.style.background = 'rgba(17,24,33,0.98)';
     } else {
-      nav.style.background = 'rgba(5,13,26,0.92)';
+      nav.style.background = 'rgba(17,24,33,0.92)';
     }
   });
 </script>
