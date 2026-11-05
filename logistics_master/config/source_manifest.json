@@ -1,0 +1,28 @@
+{
+  "project": {
+    "name": "Logistics Master Database - Packing Lists Batch 4 / Batch 5",
+    "note": "File matching uses match_tokens (all must appear in the lower-cased file name with '_' and '-' treated as spaces), so upload prefixes or renamed copies are still recognised. Exactly one file must match each entry."
+  },
+  "batches": [
+    {"batch_id": "B4", "batch_no": 4, "batch_name": "Batch 4", "description": "4th shipment (Logistics Documents of the 4th)"},
+    {"batch_id": "B5", "batch_no": 5, "batch_name": "Batch 5", "description": "5th shipment (Final Packing List, Batch 5)"}
+  ],
+  "categories": [
+    {"category_id": "P3", "category_name": "P3", "mdr_prefix_observed": "315 / 316", "description": "Category P3 as labelled in invoice (P3-HHI-xxx) and package numbers."},
+    {"category_id": "P5", "category_name": "P5", "mdr_prefix_observed": "515 / 516", "description": "Category P5 as labelled in invoice (P5-HHI-xxx) and package numbers."}
+  ],
+  "documents": [
+    {"source_document_id": "DOC-B4-P3", "batch_id": "B4", "category": "P3",
+     "source_document_name": "P3 Logisitcs Documents of the 4th_FA.xlsx",
+     "match_tokens": ["p3", "logisitcs", "4th"]},
+    {"source_document_id": "DOC-B4-P5", "batch_id": "B4", "category": "P5",
+     "source_document_name": "P5 Logisitcs Documents of the 4th_FA.xlsx",
+     "match_tokens": ["p5", "logisitcs", "4th"]},
+    {"source_document_id": "DOC-B5-P3", "batch_id": "B5", "category": "P3",
+     "source_document_name": "Final Packing List, Batch 5- P3_SMS -2026.10.3_FA.xlsx",
+     "match_tokens": ["batch 5", "p3"]},
+    {"source_document_id": "DOC-B5-P5", "batch_id": "B5", "category": "P5",
+     "source_document_name": "Final Packing List, Batch 5- P5_SMS260902_FA.xlsx",
+     "match_tokens": ["batch 5", "p5"]}
+  ]
+}

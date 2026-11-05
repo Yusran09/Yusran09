@@ -1,0 +1,9 @@
+# Confidential project data - keep out of the (public) repository
+source/
+output/
+*.xlsx
+*.sqlite
+*.sqlite.tmp
+# Python
+__pycache__/
+*.pyc
