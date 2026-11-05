@@ -200,7 +200,8 @@
     if (p.st === 'BLOCK') a += blocking.length ? ' ' + blocking.map(function (x) { return x.type; }).filter(function (v, k, ar) { return ar.indexOf(v) === k; }).sort().join('; ') : ' No linked detail block.';
     p.act = a;
     p.age = p.st === 'PEND' && p.recv != null ? Math.round((dd - p.recv) / DAY) : null;
-    p.lv = p.st === 'PEND' ? (p.age != null && p.age > AGEV[1] ? 'crit' : 'warn') : ST[p.st].lv;
+    /* MDR pending: grey up to the first limit, amber after it, red after the second (Batas MDR, default 7 / 14 days) */
+    p.lv = p.st === 'PEND' ? (p.age == null ? 'warn' : p.age > AGEV[1] ? 'crit' : p.age > AGEV[0] ? 'warn' : '') : ST[p.st].lv;
     p.locN = p.loc || 'No site record';
   }
   function mondayOf(t) { var d = new Date(t), k = (d.getUTCDay() + 6) % 7; return t - k * DAY; }
@@ -380,7 +381,7 @@
         ['check', 'PL verified', bv(B_(a, 'pl')), '', pc(share(a, 'pl')) + ' of shipped', 'Summary package linked to its detail packing list, no blocking issue'],
         ['flag', 'Blocked', bv(B_(a, 'BLOCK')), '', 'packing list issue', 'Summary package without a verified detail packing list']],
       ramp: pend.length ? { icon: 'clock', html: '<b>' + nf(pend.length) + ' package(s)</b> on site cannot be issued — MDR not approved; oldest <b>' + nf(oldest) + ' days</b> since inspection.',
-        badge: [oldest > AGEV[1] ? 'crit' : 'warn', oldest > AGEV[1] ? '> ' + nf(AGEV[1]) + ' days' : '≤ ' + nf(AGEV[1]) + ' days'] }
+        badge: [oldest > AGEV[1] ? 'crit' : oldest > AGEV[0] ? 'warn' : '', oldest > AGEV[1] ? '> ' + nf(AGEV[1]) + ' days' : oldest > AGEV[0] ? '> ' + nf(AGEV[0]) + ' days' : '≤ ' + nf(AGEV[0]) + ' days'] }
         : { icon: 'check', html: 'Every package received on site has an approved MDR.', badge: ['good', 'OK'] },
       legend: [['var(--good)', 'Approved / not req.', 'sq'], ['var(--warn)', 'Resubmit', 'sq'], ['var(--crit)', 'Not submitted / no MDR', 'sq'], ['var(--muted)', 'No status', 'sq']],
       link: ['Open Packing List', 3], miniCls: 'mstk', mini: mdrMini });
@@ -411,7 +412,7 @@
     if (pend.length) {
       var byM = {}; pend.forEach(function (p) { byM[p.mdr] = (byM[p.mdr] || 0) + 1; });
       var old = pend.reduce(function (m, p) { return Math.max(m, p.age || 0); }, 0);
-      add(old > AGEV[1] ? 'crit' : 'warn', 'doc', '<b>' + nf(pend.length) + ' package(s) inspected on site cannot be issued</b> — MDR not approved: ' + Object.keys(byM).map(function (k) { return nf(byM[k]) + ' ' + (MDRL[k] || k).toLowerCase(); }).join(' · ') + '.', 'Oldest ' + nf(old) + ' days since inspection · flagged after ' + nf(AGEV[0]) + ' / ' + nf(AGEV[1]) + ' days (Batas MDR).');
+      add(old > AGEV[1] ? 'crit' : old > AGEV[0] ? 'warn' : '', 'doc', '<b>' + nf(pend.length) + ' package(s) inspected on site cannot be issued</b> — MDR not approved: ' + Object.keys(byM).map(function (k) { return nf(byM[k]) + ' ' + (MDRL[k] || k).toLowerCase(); }).join(' · ') + '.', 'Oldest ' + nf(old) + ' days since inspection · flagged after ' + nf(AGEV[0]) + ' / ' + nf(AGEV[1]) + ' days (Batas MDR).');
     }
     var site = R.pk.filter(function (p) { return p.st === 'SITE'; });
     if (site.length) add('warn', 'pin', '<b>' + nf(site.length) + ' package(s)</b> are on site (site tag / laydown) without RFS Material Receiving or inspection date.', 'Raise the RFS so they enter the receiving count.');
