@@ -358,14 +358,14 @@ def write_master(ctx, db_path, out_path):
     ws = tw.sheet("LOGISTICS_READINESS")
     cols, rows = _q(con, """SELECT r.package_number_original, r.batch_id, r.category, r.system_group, r.equipment_number,
             r.gross_weight_kg, r.volume_m3, s.label AS readiness_status_label, r.readiness_score, r.pl_verified,
-            r.mdr_state_label, r.mdr_credit, r.on_site, r.on_site_evidence, r.site_location, r.rfs_raised, r.inspected,
+            r.mdr_state_label, r.mdr_credit, r.on_site, r.on_site_evidence, r.site_location, r.site_location_group, r.rfs_raised, r.inspected,
             r.receiving_date, r.inspection_dates, r.open_issue_count, r.blocking_issue_count, r.next_action,
             r.readiness_status, r.package_id
         FROM PACKAGE_READINESS r JOIN REFERENCE_READINESS_STATUS s ON s.status_code = r.readiness_status
         JOIN PACKAGE_MASTER pm ON pm.package_id = r.package_id ORDER BY pm.rowid""")
     t = _types("PACKAGE_READINESS")
     tw.table(ws, "tbl_LOGISTICS_READINESS", cols, rows, t,
-             widths=dict(next_action=70, readiness_status_label=30, site_location=26))
+             widths=dict(next_action=70, readiness_status_label=30, site_location=26, site_location_group=20))
 
     con.close()
     wb.save(out_path)

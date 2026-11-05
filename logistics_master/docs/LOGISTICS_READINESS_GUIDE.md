@@ -46,6 +46,38 @@ Each package is evaluated against four gates. Weights and credits are configurab
 | `ON_SITE_AWAITING_INSPECTION` | Site evidence, no RFS / inspection | Raise RFS, inspect |
 | `AWAITING_RECEIVING` | Shipped (in the final packing list), no site record | Track delivery; finish MDR before arrival |
 
+### Where "on site" and the location come from (Summary Packing List columns)
+
+The SITE gate and the site location are read from the **Summary Packing List** sheet of each workbook. The Remark
+column is not in the same place in every workbook:
+
+| Workbook | RFS Material Receiving | Inspection Date | Remark = location | Tags right of the table |
+|---|---|---|---|---|
+| B4-P3 (`P3 Logisitcs Documents of the 4th`) | R | S | T (no location written) | – |
+| B4-P5 (`P5 Logisitcs Documents of the 4th`) | R | S | **U**: Laydown 5 ×258, Laydown 4 ×70, Askara ×7 | W–X: site pivot "Delivery at Site" (not read as data) |
+| B5-P3 (`Final Packing List, Batch 5- P3`) | R | S | **U**: Laydown 4 ×10 | **V**: `onsite` ×19 · **W**: `Mechanical part at Camp HHI` ×6 |
+| B5-P5 (`Final Packing List, Batch 5- P5`) | R | S | T (empty) | – |
+
+* **Received & inspected** = RFS (R) **and** inspection date (S).
+* **On site** = received & inspected, **or** a location in the Remark column (U / T: laydown, askara, camp, warehouse, yard,
+  store), **or** an `onsite` / `arrived` tag on the same row (V / W). The words are configurable.
+* **Location group** (`site_location_group`) = the location keyword plus its number or code, taken from the Remark column first,
+  then from the tags: `Laydown 4`, `Laydown 5`, `Askara`, `Camp HHI`. On site without any location = `Location not stated`;
+  not on site = NULL. View `v_readiness_by_location` and query Q34 summarise it.
+* The status `ON_SITE_AWAITING_INSPECTION` (short label "On site, no RFS") is only the part of the on-site material that has
+  no RFS / inspection yet. All material on site is the sum of Ready, MDR pending and "On site, no RFS".
+
+Current result, which equals the site team's own pivot in B4-P5 (Askara 7 · Laydown 4 70 · Laydown 5 258 · blank 251):
+
+| Location | Packages | t | Ready | MDR pending | On site, no RFS |
+|---|---:|---:|---:|---:|---:|
+| Laydown 5 (B4-P5 258) | 258 | 1,291.8 | 258 | – | – |
+| Laydown 4 (B4-P5 70 · B5-P3 10) | 80 | 376.2 | 70 | 10 | – |
+| Askara (B4-P5 7) | 7 | 20.0 | 7 | – | – |
+| Location not stated (B4-P3 6 inspected · B5-P3 10 `onsite` tags) | 16 | 139.4 | 6 | – | 10 |
+| **On site** | **361** | **1,827.5** | **341** | **10** | **10** |
+| Not on site | 792 | 4,991.4 | | | |
+
 The engine computes the status once, in the ETL. The web app, Excel and SQL views only filter and aggregate it, so all
 outputs give the same answer. Invoice and weight discrepancies are shown as *Document Discrepancies*. They do not
 block readiness by default; the list of blocking issue types is configurable (`blocking_issue_types`).

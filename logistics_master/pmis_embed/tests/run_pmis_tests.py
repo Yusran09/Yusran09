@@ -29,9 +29,10 @@ import build_pmis_embed as B  # noqa: E402
 
 def reference(db):
     c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
-    pk = {r[0]: dict(st=r[1], sc=r[2], recv=r[3], loc=r[4], mdr=r[5], open=r[6], act=r[7]) for r in c.execute(
-        "SELECT package_id, readiness_status, readiness_score, receiving_date, site_location, mdr_state, open_issue_count, next_action "
-        "FROM PACKAGE_READINESS")}
+    pk = {r[0]: dict(st=r[1], sc=r[2], recv=r[3], loc=r[4], mdr=r[5], open=r[6], act=r[7], lg=r[8]) for r in c.execute(
+        "SELECT package_id, readiness_status, readiness_score, receiving_date, site_location, mdr_state, open_issue_count, next_action, "
+        "site_location_group FROM PACKAGE_READINESS")}
+    locs = dict(c.execute("SELECT COALESCE(site_location_group, 'Not on site'), COUNT(*) FROM PACKAGE_READINESS GROUP BY 1"))
     items = dict(c.execute("SELECT detail_package_id, COUNT(*) FROM PACKAGE_DETAIL GROUP BY 1"))
     split = dict(c.execute("SELECT package_id, COUNT(*) n FROM DETAIL_PACKAGES WHERE package_id IS NOT NULL GROUP BY 1 HAVING n > 1 ORDER BY n DESC LIMIT 1"))
     grp = c.execute("SELECT package_group FROM PACKAGE_MASTER WHERE package_group IS NOT NULL ORDER BY batch_id, category, source_row LIMIT 1").fetchone()
@@ -39,7 +40,7 @@ def reference(db):
     combos = c.execute("SELECT COUNT(DISTINCT batch_id || category) FROM PACKAGE_MASTER").fetchone()[0]
     pend = c.execute("SELECT COUNT(*) FROM PACKAGE_READINESS WHERE readiness_status = 'INSPECTED_MDR_PENDING'").fetchone()[0]
     dd = c.execute("SELECT substr(started_at, 1, 10) FROM IMPORT_HISTORY WHERE status = 'SUCCESS' ORDER BY started_at DESC LIMIT 1").fetchone()[0]
-    return dict(pk=pk, items=items, itemsTotal=sum(items.values()), splitBlocks=split, combos=combos, pending=pend, dataDate=dd,
+    return dict(pk=pk, items=items, itemsTotal=sum(items.values()), splitBlocks=split, combos=combos, pending=pend, dataDate=dd, locs=locs,
                 searches=[s for s in (grp and grp[0], dwg and dwg[0]) if s])
 
 
@@ -87,11 +88,15 @@ def main():
         o, P, n = R["offline"], R["pages"], len(ref["pk"])
         chk("embed under 1 MB", rpt["bytes"] < B.LIMIT, f"{rpt['bytes']:,} bytes · {rpt['layout']}")
         chk("all packages loaded", o["packages"] == n, f"{o['packages']} / {n}")
-        chk("readiness = ETL for every package (status, score, receiving date, MDR, location, action, issues)",
+        chk("readiness = ETL for every package (status, score, receiving date, MDR, location, location group, action, issues)",
             not any(o["diff"].values()) and o["mism"] == 0, f"{o['diff']} {o['examples']}")
         chk("data date = ETL run date", o["dataDate"] == ref["dataDate"], o["dataDate"])
         chk("overview panels / insights / checks", P["overviewPanels"] == 2 and P["insights"] > 0 and P["checks"] > 0,
             (P["overviewPanels"], P["insights"], P["checks"]))
+        chk("overview: one row per site location (laydown summary)", P["locRows"] == len(ref["locs"]), (P["locRows"], ref["locs"]))
+        chk("location row opens the packing list with exactly its packages", P["locOpen"]["rows"] == ref["locs"].get(P["locOpen"]["loc"]),
+            (P["locOpen"], ref["locs"].get(P["locOpen"]["loc"])))
+        chk("location buttons on the packing list", P["locButtons"] == len(ref["locs"]) + 1, P["locButtons"])
         chk("receiving: one row per batch·category + chart", P["receivingGroups"] == ref["combos"] and P["chartSvg"] == 1, (P["receivingGroups"], P["chartSvg"]))
         chk("receiving drill-down to packages", P["receivingDrillPackages"] > 0, P["receivingDrillPackages"])
         chk("packing list rows (first 300)", P["packingRows"] == min(300, n), P["packingRows"])

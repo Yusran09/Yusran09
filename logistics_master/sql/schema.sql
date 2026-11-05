@@ -396,6 +396,7 @@ CREATE TABLE IF NOT EXISTS PACKAGE_READINESS (
     on_site INTEGER NOT NULL,
     on_site_evidence TEXT,
     site_location TEXT,
+    site_location_group TEXT,
     receiving_date DATE,
     inspection_dates TEXT,
     open_issue_count INTEGER NOT NULL,
@@ -556,6 +557,8 @@ CREATE INDEX IF NOT EXISTS ix_package_readiness_batch_id_category ON PACKAGE_REA
 CREATE INDEX IF NOT EXISTS ix_package_readiness_readiness_status ON PACKAGE_READINESS (readiness_status);
 
 CREATE INDEX IF NOT EXISTS ix_package_readiness_system_group ON PACKAGE_READINESS (system_group);
+
+CREATE INDEX IF NOT EXISTS ix_package_readiness_site_location_group ON PACKAGE_READINESS (site_location_group);
 
 CREATE INDEX IF NOT EXISTS ix_package_readiness_receiving_date ON PACKAGE_READINESS (receiving_date);
 
@@ -727,6 +730,16 @@ SELECT r.system_group, COUNT(*) AS packages, ROUND(SUM(r.gross_weight_kg) / 1000
        ROUND(SUM(r.readiness_score * r.gross_weight_kg) / NULLIF(SUM(r.gross_weight_kg), 0), 2) AS readiness_index_tonnage
 FROM PACKAGE_READINESS r
 GROUP BY r.system_group;
+
+CREATE VIEW IF NOT EXISTS v_readiness_by_location AS
+SELECT r.batch_id, r.category, COALESCE(r.site_location_group, 'Not on site') AS site_location_group,
+       r.on_site, COUNT(*) AS packages, ROUND(SUM(r.gross_weight_kg) / 1000.0, 3) AS gross_weight_t,
+       SUM(CASE WHEN r.readiness_status = 'READY_FOR_CONSTRUCTION' THEN 1 ELSE 0 END) AS ready,
+       SUM(CASE WHEN r.readiness_status = 'INSPECTED_MDR_PENDING' THEN 1 ELSE 0 END) AS inspected_mdr_pending,
+       SUM(CASE WHEN r.readiness_status = 'ON_SITE_AWAITING_INSPECTION' THEN 1 ELSE 0 END) AS on_site_no_rfs,
+       SUM(CASE WHEN r.on_site = 0 THEN 1 ELSE 0 END) AS not_on_site
+FROM PACKAGE_READINESS r
+GROUP BY r.batch_id, r.category, COALESCE(r.site_location_group, 'Not on site'), r.on_site;
 
 CREATE VIEW IF NOT EXISTS v_readiness_status_distribution AS
 SELECT r.batch_id, r.category, r.readiness_status, s.label, s.sort_order, COUNT(*) AS packages,

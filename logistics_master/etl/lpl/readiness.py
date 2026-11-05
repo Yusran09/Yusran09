@@ -38,6 +38,23 @@ def _match(text, patterns):
     return next((p for p in patterns if p in t), None)
 
 
+def location_group(text, patterns):
+    """Site location named in a Remark / site tag: the location keyword plus its number or code.
+
+    'Laydown 5' -> 'Laydown 5', 'Askara' -> 'Askara', 'Mechanical part at Camp HHI' -> 'Camp HHI'.
+    Same keyword order as _match (config 'location_patterns'); None when no keyword is present.
+    """
+    t = text or ""
+    low = t.lower()
+    for p in patterns:
+        i = low.find(p)
+        if i < 0:
+            continue
+        m = re.match(r"[\s\-:#.]*(\d+[A-Za-z]?|[A-Z0-9]{1,4})(?![A-Za-z0-9])", t[i + len(p):])
+        return p[:1].upper() + p[1:] + (" " + m.group(1) if m else "")
+    return None
+
+
 def evaluate(ctx, rules, today=None):
     today = today or dt.date.today()
     W = {g["id"]: g["weight"] for g in rules["gates"]}
@@ -94,6 +111,9 @@ def evaluate(ctx, rules, today=None):
         loc_remark = p.get("remark") if _match(p.get("remark"), rules["location_patterns"]) else None
         loc_tag = next((t for t in tag_txt if _match(t, rules["location_patterns"])), None)
         location = loc_remark or loc_tag or ("On site (location not stated)" if (onsite_tag or inspected) else None)
+        # location group for the laydown summary: Remark column (U in B4-P5 / B5-P3, T elsewhere) first, then site tags
+        location_grp = location_group(loc_remark or loc_tag, rules["location_patterns"]) or \
+            ("Location not stated" if (onsite_tag or inspected) else None)
         if inspected:
             evidence = "INSPECTION_RECORD"
         elif onsite_tag:
@@ -136,7 +156,7 @@ def evaluate(ctx, rules, today=None):
             pl_verified=pl_ok, linked_detail_packages=linked.get(pid, 0), split_sub_packages=split.get(pid, 0),
             mdr_state=mdr_state, mdr_state_label=mdr_label, mdr_credit=mdr_credit,
             rfs_raised=1 if rfs else 0, inspected=inspected, on_site=on_site, on_site_evidence=evidence,
-            site_location=location, receiving_date=receiving_date,
+            site_location=location, site_location_group=location_grp, receiving_date=receiving_date,
             inspection_dates=", ".join(dates) or None,
             open_issue_count=len([i for i in iss if i["severity"] != "INFO"]), blocking_issue_count=len(blocking),
             max_open_severity=max_sev,

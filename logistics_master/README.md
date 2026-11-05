@@ -23,7 +23,7 @@ workbooks into one relational, traceable and validated master dataset. The drill
 **Exceptions:** 706 logged (49 HIGH · 366 MEDIUM · 270 LOW · 21 INFO). See `MAPPING_ISSUES`.
 
 **Validation:** 129 checks, 0 FAIL. Independent QA verified every item against its source cell, as well as
-package-number sets, totals, Excel/CSV row counts and source-file hashes. All 33 web-app queries pass, and the readiness dashboard end-to-end test passes.
+package-number sets, totals, Excel/CSV row counts and source-file hashes. All 34 web-app queries pass, and the readiness dashboard end-to-end test passes.
 
 ## Logistics Readiness module (web dashboard)
 
@@ -51,8 +51,10 @@ readiness with the ETL rules; any difference with the ETL is flagged.
 
 * `python3 pmis_embed/build_pmis_embed.py` writes `output/pmis/LOGISTICS-PMIS-KODE.txt` (paste into the website),
   a local preview and `LOGISTICS-PMIS-SHEET.xlsx` (the four tabs for Google Sheets). Current size: ±865 KB.
-* `python3 pmis_embed/tests/run_pmis_tests.py` runs 19 browser checks (all 1,153 packages equal to
+* `python3 pmis_embed/tests/run_pmis_tests.py` runs 22 browser checks (all 1,153 packages equal to
   `PACKAGE_READINESS`, all pages, the live-sheet path, phone layout, no JavaScript errors).
+* Material on site per location (Laydown 4 / Laydown 5 / Askara …, from the Summary Remark column U or T and the
+  site tags in V / W): overview section, location buttons on the Packing List page and a location marker per package.
 * How-to (Indonesian): [pmis_embed/README.md](pmis_embed/README.md).
 
 ## Folder structure
@@ -78,7 +80,7 @@ logistics_master/
 │   └── LOGISTICS_SOURCE_AUDIT_REPORT.md      (generated)
 ├── sql/
 │   ├── schema.sql               # DDL + views (generated; PostgreSQL-compatible types)
-│   └── app_queries.sql          # 33 reference queries for the web app (Q27-Q33 readiness)
+│   └── app_queries.sql          # 34 reference queries for the web app (Q27-Q34 readiness, Q34 = on site by location)
 ├── pmis_embed/                  # Logistics Readiness as a PMIS embed (DS v8): builder, framework, src, tests
 ├── source/                      # the four original workbooks - NOT committed (confidential)
 └── output/                      # generated deliverables - NOT committed (confidential)

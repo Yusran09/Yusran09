@@ -206,3 +206,10 @@ ORDER BY packages DESC;
 SELECT r.*, s.label AS status_label, s.color AS status_color
 FROM PACKAGE_READINESS r JOIN REFERENCE_READINESS_STATUS s ON s.status_code = r.readiness_status
 WHERE r.package_id = :package_id;
+
+-- Q34  Material on site per location (laydown / Askara / camp): Summary Remark column (U / T) + site tags (V / W)
+SELECT site_location_group, SUM(packages) AS packages, ROUND(SUM(gross_weight_t), 3) AS gross_weight_t, SUM(ready) AS ready,
+       SUM(inspected_mdr_pending) AS inspected_mdr_pending, SUM(on_site_no_rfs) AS on_site_no_rfs
+FROM v_readiness_by_location
+GROUP BY site_location_group
+ORDER BY MIN(1 - on_site), packages DESC;

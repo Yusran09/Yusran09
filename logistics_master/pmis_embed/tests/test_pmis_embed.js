@@ -38,12 +38,13 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
   await p.waitForTimeout(800);
   OUT.offline = await f.evaluate((REF) => {
     const R = window.__pmLogistics.model(), ETL = { READY: 'READY_FOR_CONSTRUCTION', PEND: 'INSPECTED_MDR_PENDING', SITE: 'ON_SITE_AWAITING_INSPECTION', AWAIT: 'AWAITING_RECEIVING', BLOCK: 'BLOCKED' };
-    const iso = (t) => (t == null ? null : new Date(t).toISOString().slice(0, 10)), d = { st: 0, sc: 0, recv: 0, mdr: 0, loc: 0, act: 0, open: 0, missing: 0 }, ex = [];
+    const iso = (t) => (t == null ? null : new Date(t).toISOString().slice(0, 10)), d = { st: 0, sc: 0, recv: 0, mdr: 0, loc: 0, lg: 0, act: 0, open: 0, missing: 0 }, ex = [];
     R.pk.forEach((p) => {
       const r = REF.pk[p.id]; if (!r) { d.missing++; return; }
       const bad = [];
       if (ETL[p.st] !== r.st) bad.push('st'); if (Math.abs(p.score - r.sc) > 0.01) bad.push('sc'); if (iso(p.recv) !== r.recv) bad.push('recv');
-      if (p.mdr !== r.mdr) bad.push('mdr'); if ((p.loc || null) !== (r.loc || null)) bad.push('loc'); if (p.act !== r.act) bad.push('act'); if (p.openN !== r.open) bad.push('open');
+      if (p.mdr !== r.mdr) bad.push('mdr'); if ((p.loc || null) !== (r.loc || null)) bad.push('loc'); if ((p.lg || null) !== (r.lg || null)) bad.push('lg');
+      if (p.act !== r.act) bad.push('act'); if (p.openN !== r.open) bad.push('open');
       bad.forEach((k) => d[k]++); if (bad.length && ex.length < 5) ex.push(p.no + ': ' + bad.join(','));
     });
     return { packages: R.pk.length, expected: Object.keys(REF.pk).length, issues: R.iss.length, mism: R.mism, dataDate: iso(R.dd), diff: d, examples: ex };
@@ -52,6 +53,13 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
   await f.click('.wel-go'); await p.waitForTimeout(1200); await shot(p, '02_overview', true);
   const P = {};
   P.overviewPanels = await rows(f, '#o-st .stp'); P.insights = await rows(f, '#o-ins .insr'); P.checks = await rows(f, '#o-chk .chkr');
+  P.locRows = await rows(f, '#o-loc .lr');
+  const locName = await f.$eval('#o-loc .lr .tx', (e) => e.firstChild.textContent);
+  await f.click('#o-loc .lr'); await p.waitForTimeout(1200); await shot(p, '02b_location_list', true);
+  P.locOpen = { loc: locName, page: await f.evaluate(() => window.__pmLogistics.state.page), rows: await f.evaluate(() => document.querySelectorAll('#p-tbl tbody tr.go').length + 0) };
+  P.locButtons = await rows(f, '#p-loc button');
+  await f.click('#p-loc [data-v="ALL"]'); await p.waitForTimeout(500);
+  await f.click('#pg3 .nav [data-go="1"]'); await p.waitForTimeout(800);
   await f.click('#pg1 .nav [data-go="2"]'); await p.waitForTimeout(1200); await shot(p, '03_receiving', true);
   P.receivingGroups = await rows(f, '#r-tbl tbody tr.go');
   P.chartSvg = await rows(f, '#r-chart svg');

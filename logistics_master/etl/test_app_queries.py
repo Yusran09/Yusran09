@@ -80,6 +80,9 @@ def main(db=None):
     check(sum(r["packages_received"] for r in results["Q29"]) == one("SELECT COUNT(*) c FROM PACKAGE_READINESS WHERE receiving_date IS NOT NULL")["c"],
           "Q29 receiving curve adds up to dated inspected packages")
     check(len(results["Q33"]) == 1, "Q33 readiness card for one package")
+    check(sum(r["packages"] for r in results["Q34"]) == k["total_packages"], "Q34 location summary covers every package")
+    check(sum(r["packages"] for r in results["Q34"] if r["site_location_group"] != "Not on site")
+          == one("SELECT COUNT(*) c FROM PACKAGE_READINESS WHERE on_site = 1")["c"], "Q34 on-site locations = on-site packages")
     orphan = one("SELECT COUNT(*) c FROM PACKAGE_DETAIL it LEFT JOIN DETAIL_PACKAGES dp "
                  "ON dp.detail_package_id = it.detail_package_id WHERE dp.detail_package_id IS NULL")["c"]
     check(orphan == 0, "no orphan material items")

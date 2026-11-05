@@ -181,6 +181,16 @@ SELECT r.system_group, COUNT(*) AS packages, ROUND(SUM(r.gross_weight_kg) / 1000
 FROM PACKAGE_READINESS r
 GROUP BY r.system_group
 """,
+    "v_readiness_by_location": """
+SELECT r.batch_id, r.category, COALESCE(r.site_location_group, 'Not on site') AS site_location_group,
+       r.on_site, COUNT(*) AS packages, ROUND(SUM(r.gross_weight_kg) / 1000.0, 3) AS gross_weight_t,
+       SUM(CASE WHEN r.readiness_status = 'READY_FOR_CONSTRUCTION' THEN 1 ELSE 0 END) AS ready,
+       SUM(CASE WHEN r.readiness_status = 'INSPECTED_MDR_PENDING' THEN 1 ELSE 0 END) AS inspected_mdr_pending,
+       SUM(CASE WHEN r.readiness_status = 'ON_SITE_AWAITING_INSPECTION' THEN 1 ELSE 0 END) AS on_site_no_rfs,
+       SUM(CASE WHEN r.on_site = 0 THEN 1 ELSE 0 END) AS not_on_site
+FROM PACKAGE_READINESS r
+GROUP BY r.batch_id, r.category, COALESCE(r.site_location_group, 'Not on site'), r.on_site
+""",
     "v_readiness_status_distribution": """
 SELECT r.batch_id, r.category, r.readiness_status, s.label, s.sort_order, COUNT(*) AS packages,
        ROUND(SUM(r.gross_weight_kg) / 1000.0, 3) AS gross_weight_t
@@ -403,6 +413,7 @@ def write_markdown(ctx, db_path, docs_dir):
     L += ["", "## Views (web-app query layer)", "", "| View | Purpose |", "|---|---|"]
     purposes = dict(v_readiness_summary="Logistics readiness KPIs per Batch x Category (count & tonnage weighted).",
                     v_readiness_by_system="Readiness per system / commodity group.",
+                    v_readiness_by_location="Material on site per location (laydown / Askara / camp) and batch x category, with status split.",
                     v_readiness_status_distribution="Readiness status distribution (donut / stacked bars).",
                     v_receiving_curve="Site receiving S-curve: packages and tonnage inspected per date, cumulative.",
                     v_dashboard_kpi="Level 1 dashboard KPI tiles (single row).",

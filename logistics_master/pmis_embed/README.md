@@ -17,8 +17,8 @@ tindakan berikutnya?* Satu package **Ready for Construction** bila lolos empat g
 | Site | 15 | Ada bukti di site: catatan inspeksi, tag "onsite", atau remark lokasi (laydown, camp, …) |
 | Inspection | 35 | No. RFS Material Receiving **dan** tanggal inspeksi (RFS saja = kredit 0,5) |
 
-Status: **Ready** · **MDR pending** (sudah diinspeksi, MDR belum approved) · **On site** (ada di site, belum RFS) ·
-**Awaiting** (belum ada catatan site) · **Blocked** (masalah packing list). Aturannya sama dengan ETL
+Status: **Ready** · **MDR pending** (sudah diinspeksi, MDR belum approved) · **On site, no RFS** (ada di site, belum RFS /
+inspeksi) · **Not on site** (belum ada catatan di site) · **Blocked** (masalah packing list). Aturannya sama dengan ETL
 (`config/readiness_rules.json`); dashboard menghitung ulang dari kolom mentah dan memberi tanda **Data check**
 bila hasilnya berbeda dari kolom "Readiness Status (ETL)" (misalnya sheet sudah diedit setelah ETL dijalankan).
 
@@ -26,13 +26,32 @@ bila hasilnya berbeda dari kolom "Readiness Status (ETL)" (misalnya sheet sudah 
 
 | Halaman | Isi | KPI utama |
 |---|---|---|
-| 01 Overview | Panel *Site receiving* dan *Documentation · MDR*, Key insights, Readiness checks | Received & inspected, Ready, weekly pace, MDR approved %, MDR pending + umur, pre-arrival MDR risk, Readiness Index |
+| 01 Overview | Panel *Site receiving* dan *Documentation · MDR*, **Material on site by location** (Laydown 4 / Laydown 5 / Askara …, klik baris → daftar package-nya), Key insights, Readiness checks | Received & inspected, On site, Ready, weekly pace, MDR approved %, MDR pending + umur, pre-arrival MDR risk, Readiness Index |
 | 02 Receiving | Grafik mingguan / kumulatif (ISO week, per tanggal inspeksi), drill-down Batch › Category › System › Package | Received %, Ready %, On site tanpa RFS, Readiness Index per grup |
-| 03 Packing List | Summary › Detail › Items: cari package/MDR/RFS/drawing, filter status, gate strip per package, blok split, baris material | Packages, detail blocks, material lines, open issues |
+| 03 Packing List | Summary › Detail › Items: cari package/MDR/RFS/drawing, filter status, **tombol lokasi** (All · Laydown 5 · Laydown 4 · Askara · Not stated · Not on site), penanda lokasi di tiap baris, gate strip per package, blok split, baris material | Packages, detail blocks, material lines, open issues |
 | 04 Exceptions | Register isu dari ETL (R01–R18) per tipe & severity, klik untuk membuka package | Open issues, HIGH, packages affected |
 
 Basis **Packages / Tonnage** bisa diganti di setiap halaman. Tema terang/gelap, cetak laporan, umur data
 ("Batas Umur Data") dan tanda kritikal berasal dari lapisan viewer PMIS yang sama.
+
+### Dari kolom mana "on site" dan lokasi dibaca
+
+Semua dari sheet **Summary Packing List**. Kolom Remark tidak sama posisinya di tiap workbook:
+
+| Workbook | RFS | Inspection Date | Remark = lokasi | Tag di kanan tabel |
+|---|---|---|---|---|
+| B4-P3 | R | S | T (tidak ada lokasi) | – |
+| B4-P5 | R | S | **U**: Laydown 5 (258), Laydown 4 (70), Askara (7) | W–X = pivot "Delivery at Site" (tidak dibaca sebagai data) |
+| B5-P3 | R | S | **U**: Laydown 4 (10) | **V**: `onsite` (19) · **W**: `Mechanical part at Camp HHI` (6) |
+| B5-P5 | R | S | T (kosong) | – |
+
+* **On site** = sudah RFS + tanggal inspeksi (R + S), **atau** ada lokasi di kolom Remark (U / T), **atau** ada tag `onsite`
+  di baris yang sama (V / W). Kata kunci bisa diubah di pengaturan (`Lokasi`, `Tag Site`).
+* **Lokasi** = kata kunci + nomornya dari kolom Remark (lalu dari tag): `Laydown 4`, `Laydown 5`, `Askara`, `Camp HHI`.
+  On site tanpa lokasi = **Location not stated** (sekarang 16: B4-P3 6 sudah diinspeksi, B5-P3 10 bertag `onsite`).
+* Status **On site, no RFS** hanya bagian yang belum RFS / inspeksi. Total material di site = Ready + MDR pending +
+  On site, no RFS = **361 package** (Laydown 5: 258 · Laydown 4: 80 · Askara: 7 · tanpa lokasi: 16). Angka B4-P5 sama
+  dengan pivot "Delivery at Site" di file aslinya (Askara 7 · Laydown 4 70 · Laydown 5 258 · blank 251).
 
 ## 3. Arsitektur
 
@@ -81,9 +100,10 @@ Opsi: `--sheet-id <ID>` (menulis Sheet ID ke pengaturan), `--image https://…` 
 3. Share: "Siapa saja yang memiliki link: **Pelihat**" (jangan Editor — Sheet ID terlihat di kode halaman).
 4. Isi `Sheet ID :` di pengaturan (teks di antara `/d/` dan `/edit` pada link). Dashboard tampil dulu dengan data
    cadangan, lalu memuat sheet dan memperbarui otomatis tiap `Auto Refresh` menit (tombol ↻ untuk segera).
-5. Yang biasa diedit di site: kolom **RFS Material Receiving**, **Inspection Date**, **MDR Status**, **Remark**,
-   **Site Note** (tag seperti `onsite`) dan **Data Date** (tanggal status, kolom terakhir). Status dihitung ulang
-   langsung; kolom "(ETL)" sengaja tidak ikut berubah sehingga perbedaan terlihat di Data check.
+5. Yang biasa diedit di site: kolom **RFS Material Receiving**, **Inspection Date**, **MDR Status**, **Remark**
+   (lokasi, tulis seperti di kolom U: `Laydown 4`, `Laydown 5`, `Askara`), **Site Note** (tag seperti `onsite`) dan
+   **Data Date** (tanggal status, kolom terakhir). Status dan ringkasan lokasi dihitung ulang langsung; kolom "(ETL)"
+   sengaja tidak ikut berubah sehingga perbedaan terlihat di Data check.
 
 ## 7. Alur update rutin (mingguan)
 
@@ -129,6 +149,6 @@ pmis_embed/
 │   ├── logistics.css.html     # gaya tambahan kecil (token DS v8)
 │   └── welcome.json           # teks halaman Welcome
 └── tests/
-    ├── run_pmis_tests.py      # build sementara + referensi ETL + uji browser (19 cek)
+    ├── run_pmis_tests.py      # build sementara + referensi ETL + uji browser (22 cek)
     └── test_pmis_embed.js     # skenario Playwright: offline, 4 halaman, live sheet, HP
 ```
