@@ -7,6 +7,10 @@ this phase.
 Every query referenced as `Qnn` is in [`sql/app_queries.sql`](../sql/app_queries.sql). Each one is executed against the
 generated database by `etl/test_app_queries.py`, and all of them currently pass.
 
+> **Implemented:** the *Logistics Readiness* dashboard (`logistics-readiness.html` in the repository root) is the
+> first working module built on this foundation. It runs without a server. See
+> [LOGISTICS_READINESS_GUIDE.md](LOGISTICS_READINESS_GUIDE.md).
+
 ---
 
 ## 1. Business objective

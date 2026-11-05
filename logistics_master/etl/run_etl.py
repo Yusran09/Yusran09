@@ -42,7 +42,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))  # allows running with `python -I`
 
 from lpl import __version__ as ETL_VERSION  # noqa: E402
-from lpl import controls, export, parse, schema  # noqa: E402
+from lpl import controls, export, parse, readiness, schema  # noqa: E402
 from lpl.mapping import STATUS_REF, run_mapping  # noqa: E402
 from lpl.normalize import ChangeLog, h, is_meaningful, label  # noqa: E402
 
@@ -233,6 +233,14 @@ def build(source_dir, config_dir, started):
                                   scope="ALL", expected_value="0", actual_value=str(len(unused)), status="WARN",
                                   note="; ".join(f"{a}:{b}" for a, b in unused)))
     ctx["invoices"] = _invoice_register(ctx)
+    # ---- logistics readiness (rules in config/readiness_rules.json)
+    rules = readiness.load_rules(config_dir / "readiness_rules.json")
+    ctx["readiness_rules"] = rules
+    ctx["readiness"] = readiness.evaluate(ctx, rules, today=started.date())
+    ctx["checks"].extend(readiness.checks(ctx, ctx["readiness"]))
+    audit("READINESS_EVALUATED", "PACKAGE_READINESS",
+          f"rules v{rules['version']}: " + ", ".join(f"{k}={v}" for k, v in sorted(
+              Counter(r["readiness_status"] for r in ctx["readiness"]).items())))
     ctx["recount"] = recount
     ctx["fingerprint"] = hashlib.sha256("".join(sorted(d["file_sha256"] for d in ctx["docs"].values())).encode()).hexdigest()
     ctx["reference"] = dict(
@@ -240,6 +248,7 @@ def build(source_dir, config_dir, started):
         REFERENCE_CATEGORY=manifest["categories"],
         REFERENCE_MAPPING_STATUS=[dict(status_code=s, is_linked=l, sort_order=o, description=d) for s, l, o, d in STATUS_REF],
         REFERENCE_MDR_STATUS=_mdr_ref(ctx["packages"]),
+        REFERENCE_READINESS_STATUS=readiness.reference_rows(rules),
     )
     return ctx
 
@@ -416,6 +425,8 @@ def main(argv=None):
         export.write_csvs(ctx, db_path, a.output_dir / "csv")
         export.write_markdown(ctx, db_path, a.docs_dir)
         export.write_schema_sql(PROJECT / "sql" / "schema.sql")
+        from lpl import webapp
+        webapp.write_webapp_data(ctx, db_path, a.output_dir / "webapp")
         if not a.skip_excel:
             from lpl import excel
             excel.write_master(ctx, db_path, a.output_dir / "MASTER_LOGISTICS_PACKING_LIST_CLEAN.xlsx")

@@ -101,10 +101,12 @@ for did, (fname, sha) in docs.items():
 # 5 Excel master
 counts = {t: con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0] for t in
           ("PACKAGE_MASTER", "DETAIL_PACKAGES", "PACKAGE_DETAIL", "PACKAGE_MAPPING", "MAPPING_ISSUES", "INVOICE_REGISTER", "CHANGE_LOG")}
+counts["LOGISTICS_READINESS"] = con.execute("SELECT COUNT(*) FROM PACKAGE_READINESS").fetchone()[0]
 wb = openpyxl.load_workbook(OUT / "MASTER_LOGISTICS_PACKING_LIST_CLEAN.xlsx", read_only=True, data_only=True)
 expected_sheets = ["README", "DATA_DICTIONARY", "SOURCE_REGISTER", "PACKAGE_MASTER", "DETAIL_PACKAGES", "PACKAGE_DETAIL",
-                   "PACKAGE_MAPPING", "MAPPING_ISSUES", "INVOICE_REGISTER", "BATCH_SUMMARY", "DATA_QUALITY_REPORT", "CHANGE_LOG"]
-ok(wb.sheetnames == expected_sheets, f"Excel master has the 12 required sheets in order")
+                   "PACKAGE_MAPPING", "MAPPING_ISSUES", "INVOICE_REGISTER", "BATCH_SUMMARY", "DATA_QUALITY_REPORT", "CHANGE_LOG",
+                   "LOGISTICS_READINESS"]
+ok(wb.sheetnames == expected_sheets, f"Excel master has the 12 required sheets in order (+ LOGISTICS_READINESS)")
 for t, n in counts.items():
     got = sum(1 for r in wb[t].iter_rows(min_row=2, values_only=True) if any(v is not None for v in r))
     ok(got == n, f"Excel {t}: {got} data rows == DB {n}")

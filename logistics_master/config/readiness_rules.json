@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "description": "Logistics Readiness rules. A package is READY FOR CONSTRUCTION when its packing list is verified, its MDR is approved (or not required) and it has been received and inspected at site (RFS + inspection date). Weights produce the Readiness Index (0-100). Edit this file and re-run the ETL to change the logic; the web app, Excel and SQL views all use the computed PACKAGE_READINESS table.",
+  "gates": [
+    {"id": "PL", "label": "Packing List Verified", "weight": 15,
+     "rule": "At least one Detail block linked to the Summary package and no open blocking (identity) issue."},
+    {"id": "MDR", "label": "MDR Approved", "weight": 35,
+     "rule": "Credit by MDR state (see mdr_credit). 'MDR not required' in MDR No./Remark counts as approved."},
+    {"id": "SITE", "label": "Arrived on Site", "weight": 15,
+     "rule": "Inspection record, site tag ('onsite') or a laydown/location remark."},
+    {"id": "INSP", "label": "Received & Inspected (RFS)", "weight": 35,
+     "rule": "RFS Material Receiving number AND inspection date present (RFS only = half credit)."}
+  ],
+  "mdr_credit": {
+    "APV": 1.0,
+    "NOT_REQUIRED": 1.0,
+    "RES": 0.5,
+    "NOT_SUBMITTED_YET": 0.0,
+    "NO_MDR": 0.0,
+    "BLANK": 0.0
+  },
+  "mdr_state_labels": {
+    "APV": "Approved",
+    "NOT_REQUIRED": "Not required",
+    "RES": "Resubmit",
+    "NOT_SUBMITTED_YET": "Not submitted yet",
+    "NO_MDR": "No MDR submitted",
+    "BLANK": "No MDR status"
+  },
+  "mdr_not_required_patterns": ["mdr not required", "mdr is not required", "no mdr required"],
+  "onsite_tag_patterns": ["onsite", "on site", "on-site", "arrived"],
+  "location_patterns": ["laydown", "askara", "camp", "warehouse", "yard", "store"],
+  "inspection_rfs_only_credit": 0.5,
+  "blocking_issue_types": [
+    "PACKAGE_NUMBER_MISMATCH",
+    "SUMMARY_WITHOUT_DETAIL",
+    "DETAIL_WITHOUT_SUMMARY",
+    "DUPLICATE_PACKAGE_NUMBER",
+    "MISSING_PACKAGE_NUMBER"
+  ],
+  "statuses": [
+    {"code": "READY_FOR_CONSTRUCTION", "label": "Ready for Construction", "short": "Ready", "color": "#27ae60", "sort": 1,
+     "rule": "PL verified AND MDR credit = 1 AND received & inspected.",
+     "action": "Available for issue to construction."},
+    {"code": "INSPECTED_MDR_PENDING", "label": "Inspected - MDR Pending", "short": "MDR pending", "color": "#f39c12", "sort": 2,
+     "rule": "Received & inspected but MDR not approved.",
+     "action": "Expedite MDR approval with vendor / QA-QC before issue to construction."},
+    {"code": "ON_SITE_AWAITING_INSPECTION", "label": "On Site - Awaiting Inspection", "short": "On site", "color": "#3498db", "sort": 3,
+     "rule": "Site evidence (tag or location) but no RFS / inspection date.",
+     "action": "Raise RFS and perform receiving inspection."},
+    {"code": "AWAITING_RECEIVING", "label": "Shipped - Awaiting Site Receiving", "short": "Awaiting", "color": "#5d6d7e", "sort": 4,
+     "rule": "Listed in the final packing list; no site record yet.",
+     "action": "Track delivery; prepare MDR so the package is ready on arrival."},
+    {"code": "BLOCKED", "label": "Blocked - Packing List Issue", "short": "Blocked", "color": "#e74c3c", "sort": 5,
+     "rule": "Packing list not verified or an open blocking identity issue.",
+     "action": "Resolve the packing-list identity issue (see MAPPING_ISSUES)."}
+  ]
+}

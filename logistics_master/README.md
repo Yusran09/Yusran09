@@ -22,8 +22,24 @@ workbooks into one relational, traceable and validated master dataset. The drill
 
 **Exceptions:** 706 logged (49 HIGH · 366 MEDIUM · 270 LOW · 21 INFO). See `MAPPING_ISSUES`.
 
-**Validation:** 116 checks, 0 FAIL. Independent QA verified every item against its source cell, as well as
-package-number sets, totals, Excel/CSV row counts and source-file hashes. All 26 web-app queries pass.
+**Validation:** 129 checks, 0 FAIL. Independent QA verified every item against its source cell, as well as
+package-number sets, totals, Excel/CSV row counts and source-file hashes. All 33 web-app queries pass, and the readiness dashboard end-to-end test passes.
+
+## Logistics Readiness module (web dashboard)
+
+`../logistics-readiness.html` is a dashboard in the same style as the portfolio page `index.html`. It shows, per
+package, whether material is **Ready for Construction**: packing list verified, MDR approved, and received and
+inspected at site (RFS).
+
+* Readiness is computed by the ETL: `etl/lpl/readiness.py`, with rules in `config/readiness_rules.json`, stored in
+  `PACKAGE_READINESS`.
+* The ETL writes `output/webapp/logistics_readiness_data.js` / `.json`. These are git-ignored because they contain
+  confidential data. The page loads them automatically, or you can drag the JSON onto the page.
+* **Current result:** 341 packages (1,693 t) are ready, 10 are inspected but MDR-pending, 10 are on site awaiting
+  inspection, 791 are awaiting site receiving and 1 is blocked. Readiness Index is 55.5 % by count and 52.5 % by
+  tonnage.
+* Details are in [docs/LOGISTICS_READINESS_GUIDE.md](docs/LOGISTICS_READINESS_GUIDE.md). The end-to-end test is
+  `node etl/test_webapp_readiness.js`.
 
 ## Folder structure
 
@@ -33,25 +49,29 @@ logistics_master/
 │   ├── run_etl.py               # entry point - reusable, re-runnable ETL
 │   ├── lpl/                     # package: schema, normalize, parse, mapping, controls, export, excel
 │   ├── test_app_queries.py      # runs every query in sql/app_queries.sql + drill-down assertions
-│   └── qa_verify_outputs.py     # independent QA (pandas / raw cells), not reusing the parser
+│   ├── qa_verify_outputs.py     # independent QA (pandas / raw cells), not reusing the parser
+│   └── test_webapp_readiness.js # Playwright end-to-end test of logistics-readiness.html
 ├── config/
 │   ├── source_manifest.json     # the 4 workbooks: batch, category, file-name matching tokens
+│   ├── readiness_rules.json     # logistics readiness gates, weights, MDR credits, statuses
 │   └── mapping_overrides.csv    # manual review decisions (CONFIRMED_ALIAS / REJECTED) - empty on delivery
 ├── docs/
 │   ├── LOGISTICS_DATA_MODEL.md
 │   ├── LOGISTICS_DATA_DICTIONARY.md          (generated)
 │   ├── LOGISTICS_MAPPING_RULES.md
 │   ├── LOGISTICS_WEBAPP_IMPLEMENTATION_GUIDE.md
+│   ├── LOGISTICS_READINESS_GUIDE.md
 │   └── LOGISTICS_SOURCE_AUDIT_REPORT.md      (generated)
 ├── sql/
 │   ├── schema.sql               # DDL + views (generated; PostgreSQL-compatible types)
-│   └── app_queries.sql          # 26 reference queries for the web app
+│   └── app_queries.sql          # 33 reference queries for the web app (Q27-Q33 readiness)
 ├── source/                      # the four original workbooks - NOT committed (confidential)
 └── output/                      # generated deliverables - NOT committed (confidential)
     ├── MASTER_LOGISTICS_DATABASE.sqlite
     ├── MASTER_LOGISTICS_PACKING_LIST_CLEAN.xlsx
     ├── LOGISTICS_DATA_RECONCILIATION_REPORT.xlsx
-    └── csv/<TABLE>.csv          # 22 tables, UTF-8
+    ├── csv/<TABLE>.csv          # 24 tables, UTF-8
+    └── webapp/logistics_readiness_data.js|.json   # data for logistics-readiness.html
 ```
 
 ## Run
@@ -61,6 +81,7 @@ pip install -r etl/requirements.txt          # openpyxl, pandas (pandas only for
 # put the four workbooks in logistics_master/source/  (any file names; matched by tokens in the manifest)
 python3 -I etl/run_etl.py                    # ~30 s; exit code 0 = no failed checks, 2 = failed checks
 python3 -I etl/test_app_queries.py           # query layer smoke test
+node etl/test_webapp_readiness.js            # web dashboard end-to-end test (Playwright)
 python3 -I etl/qa_verify_outputs.py          # independent QA
 ```
 

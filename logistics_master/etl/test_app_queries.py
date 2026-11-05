@@ -76,6 +76,10 @@ def main(db=None):
     check(len(results["Q18"]) > 0, "Q18 detail block traced to raw rows")
     check(len(results["Q20"]) == one("SELECT COUNT(*) c FROM DETAIL_PACKAGES WHERE is_split_child = 1")["c"],
           "Q20 lists every split sub-package")
+    check(sum(r["packages"] for r in results["Q27"]) == k["total_packages"], "Q27 readiness summary covers every package")
+    check(sum(r["packages_received"] for r in results["Q29"]) == one("SELECT COUNT(*) c FROM PACKAGE_READINESS WHERE receiving_date IS NOT NULL")["c"],
+          "Q29 receiving curve adds up to dated inspected packages")
+    check(len(results["Q33"]) == 1, "Q33 readiness card for one package")
     orphan = one("SELECT COUNT(*) c FROM PACKAGE_DETAIL it LEFT JOIN DETAIL_PACKAGES dp "
                  "ON dp.detail_package_id = it.detail_package_id WHERE dp.detail_package_id IS NULL")["c"]
     check(orphan == 0, "no orphan material items")

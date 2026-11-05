@@ -155,6 +155,45 @@ SELECT 'ITEM', it.item_id, it.package_id, it.detail_package_id, it.batch_id, it.
              COALESCE(it.masterlist_sub_item_no, '') || ' ' || COALESCE(it.remark, ''))
 FROM PACKAGE_DETAIL it
 """,
+    # ------------------------------------------------------------------ logistics readiness
+    "v_readiness_summary": """
+SELECT r.batch_id, r.category,
+       COUNT(*)                                                            AS packages,
+       ROUND(SUM(r.gross_weight_kg) / 1000.0, 3)                          AS gross_weight_t,
+       SUM(CASE WHEN r.readiness_status = 'READY_FOR_CONSTRUCTION' THEN 1 ELSE 0 END) AS ready_packages,
+       ROUND(SUM(CASE WHEN r.readiness_status = 'READY_FOR_CONSTRUCTION' THEN r.gross_weight_kg ELSE 0 END) / 1000.0, 3) AS ready_t,
+       SUM(r.pl_verified)                                                  AS pl_verified,
+       SUM(CASE WHEN r.mdr_credit >= 1 THEN 1 ELSE 0 END)                  AS mdr_ok,
+       SUM(r.on_site)                                                      AS on_site,
+       SUM(r.inspected)                                                    AS inspected,
+       SUM(CASE WHEN r.readiness_status = 'BLOCKED' THEN 1 ELSE 0 END)     AS blocked,
+       ROUND(AVG(r.readiness_score), 2)                                    AS readiness_index_count,
+       ROUND(SUM(r.readiness_score * r.gross_weight_kg) / NULLIF(SUM(r.gross_weight_kg), 0), 2) AS readiness_index_tonnage
+FROM PACKAGE_READINESS r
+GROUP BY r.batch_id, r.category
+""",
+    "v_readiness_by_system": """
+SELECT r.system_group, COUNT(*) AS packages, ROUND(SUM(r.gross_weight_kg) / 1000.0, 3) AS gross_weight_t,
+       SUM(CASE WHEN r.readiness_status = 'READY_FOR_CONSTRUCTION' THEN 1 ELSE 0 END) AS ready_packages,
+       SUM(CASE WHEN r.mdr_credit >= 1 THEN 1 ELSE 0 END) AS mdr_ok, SUM(r.inspected) AS inspected,
+       ROUND(AVG(r.readiness_score), 2) AS readiness_index_count,
+       ROUND(SUM(r.readiness_score * r.gross_weight_kg) / NULLIF(SUM(r.gross_weight_kg), 0), 2) AS readiness_index_tonnage
+FROM PACKAGE_READINESS r
+GROUP BY r.system_group
+""",
+    "v_readiness_status_distribution": """
+SELECT r.batch_id, r.category, r.readiness_status, s.label, s.sort_order, COUNT(*) AS packages,
+       ROUND(SUM(r.gross_weight_kg) / 1000.0, 3) AS gross_weight_t
+FROM PACKAGE_READINESS r JOIN REFERENCE_READINESS_STATUS s ON s.status_code = r.readiness_status
+GROUP BY r.batch_id, r.category, r.readiness_status, s.label, s.sort_order
+""",
+    "v_receiving_curve": """
+SELECT d.receiving_date, d.packages_received, d.tonnage_received_t,
+       SUM(d.packages_received) OVER (ORDER BY d.receiving_date)  AS cumulative_packages,
+       ROUND(SUM(d.tonnage_received_t) OVER (ORDER BY d.receiving_date), 3) AS cumulative_tonnage_t
+FROM (SELECT receiving_date, COUNT(*) AS packages_received, ROUND(SUM(gross_weight_kg) / 1000.0, 3) AS tonnage_received_t
+      FROM PACKAGE_READINESS WHERE receiving_date IS NOT NULL GROUP BY receiving_date) d
+""",
 }
 
 
@@ -192,7 +231,8 @@ def table_rows(ctx, history_row, audit_rows):
         IMPORT_HISTORY=[history_row], SOURCE_DOCUMENTS=docs, SOURCE_SHEETS=ctx["sheets"],
         PACKAGE_MASTER=ctx["packages"], PACKAGE_MDR=mdr, DETAIL_PACKAGES=ctx["blocks"], PACKAGE_DETAIL=ctx["items"],
         STG_SUMMARY_ROWS=ctx["summary_stg"], STG_DETAIL_ROWS=ctx["detail_stg"], SOURCE_ANNOTATIONS=ann,
-        PACKAGE_MAPPING=ctx["mappings"], MAPPING_ISSUES=ctx["issues"], INVOICE_REGISTER=ctx["invoices"],
+        PACKAGE_MAPPING=ctx["mappings"], MAPPING_ISSUES=ctx["issues"], PACKAGE_READINESS=ctx["readiness"],
+        INVOICE_REGISTER=ctx["invoices"],
         SERIES_REGISTER=ctx["series"], DATA_QUALITY_CHECKS=ctx["checks"], CHANGE_LOG=ctx["changelog_rows"],
         DATA_DICTIONARY=schema.dictionary_rows(), AUDIT_LOG=audit_rows)
     return out
@@ -352,6 +392,7 @@ def write_markdown(ctx, db_path, docs_dir):
          "Types are portable between SQLite and PostgreSQL (`TEXT`, `INTEGER`, `DOUBLE PRECISION`, `DATE`, `TIMESTAMP`). "
          "Dates are ISO-8601 text in SQLite. Flags are `INTEGER` 0/1.", "",
          "Layers: **REFERENCE** (lookups) · **LINEAGE** (source register) · **RAW** (unmodified staging rows) · "
+         "**ANALYTICS** (logistics readiness) · "
          "**CORE** (normalised master data) · **CONTROL** (mapping exceptions, checks, change log, history).", "",
          "## Tables", "", "| Table | Layer | Rows (this run) | Description |", "|---|---|---:|---|"]
     con = sqlite3.connect(db_path)
@@ -360,7 +401,11 @@ def write_markdown(ctx, db_path, docs_dir):
     for t in schema.LOAD_ORDER:
         L.append(f"| [{t}](#{t.lower()}) | {schema.T[t]['layer']} | {counts[t]:,} | {_md_escape(schema.T[t]['description'])} |")
     L += ["", "## Views (web-app query layer)", "", "| View | Purpose |", "|---|---|"]
-    purposes = dict(v_dashboard_kpi="Level 1 dashboard KPI tiles (single row).",
+    purposes = dict(v_readiness_summary="Logistics readiness KPIs per Batch x Category (count & tonnage weighted).",
+                    v_readiness_by_system="Readiness per system / commodity group.",
+                    v_readiness_status_distribution="Readiness status distribution (donut / stacked bars).",
+                    v_receiving_curve="Site receiving S-curve: packages and tonnage inspected per date, cumulative.",
+                    v_dashboard_kpi="Level 1 dashboard KPI tiles (single row).",
                     v_batch_category_summary="Level 1-3: statistics per Batch x Category.",
                     v_mdr_status_distribution="MDR status distribution chart.",
                     v_mapping_status_distribution="Mapping status distribution chart.",

@@ -59,6 +59,7 @@ flowchart LR
 | LINEAGE | Register of source files and worksheets | SOURCE_DOCUMENTS, SOURCE_SHEETS |
 | RAW | Every non-blank source row, unmodified (JSON of cell values) plus its row classification | STG_SUMMARY_ROWS, STG_DETAIL_ROWS, SOURCE_ANNOTATIONS |
 | CORE | Normalised master data and relationships | PACKAGE_MASTER, PACKAGE_MDR, DETAIL_PACKAGES, PACKAGE_DETAIL, PACKAGE_MAPPING, INVOICE_REGISTER |
+| ANALYTICS | Logistics readiness per package (gates, Readiness Index, status, next action) | PACKAGE_READINESS, REFERENCE_READINESS_STATUS (see [LOGISTICS_READINESS_GUIDE.md](LOGISTICS_READINESS_GUIDE.md)) |
 | CONTROL | Exceptions, validation, transformation log, run history | MAPPING_ISSUES, DATA_QUALITY_CHECKS, SERIES_REGISTER, CHANGE_LOG, DATA_DICTIONARY, IMPORT_HISTORY, AUDIT_LOG |
 
 The raw and normalised data are kept separate on purpose. Each core record points back to its raw row, so any value
@@ -206,6 +207,7 @@ four source files. Deterministic ids make this equivalent to an idempotent upser
 | `v_package_relationships` | 5 | All mapping rows including unlinked proposals |
 | `v_open_issues` | Review | Open exceptions with severity rank |
 | `v_search_index` | Search | Union of package / detail / item search text |
+| `v_readiness_summary`, `v_readiness_by_system`, `v_readiness_status_distribution`, `v_receiving_curve` | Readiness | Logistics readiness KPIs, status split and site receiving S-curve |
 
 The view SQL avoids engine-specific functions (no GROUP_CONCAT / STRING_AGG), so it runs unchanged on PostgreSQL.
 

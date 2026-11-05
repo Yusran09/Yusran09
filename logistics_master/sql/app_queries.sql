@@ -171,3 +171,38 @@ ORDER BY check_group, status;
 SELECT import_id, started_at, finished_at, etl_version, status, packages_loaded, detail_packages_loaded,
        items_loaded, issues_logged, checks_failed
 FROM IMPORT_HISTORY ORDER BY started_at DESC LIMIT 20;
+
+-- =====================================================================================
+-- Logistics Readiness module (PACKAGE_READINESS, rules in config/readiness_rules.json)
+-- =====================================================================================
+
+-- Q27  Readiness KPIs per Batch x Category (count- and tonnage-weighted Readiness Index)
+SELECT * FROM v_readiness_summary ORDER BY batch_id, category;
+
+-- Q28  Readiness per system / commodity group
+SELECT * FROM v_readiness_by_system ORDER BY gross_weight_t DESC;
+
+-- Q29  Site receiving S-curve (packages and tonnage inspected per date, cumulative)
+SELECT * FROM v_receiving_curve ORDER BY receiving_date;
+
+-- Q30  Readiness status distribution (donut / stacked bars)
+SELECT * FROM v_readiness_status_distribution ORDER BY batch_id, category, sort_order;
+
+-- Q31  Action list: material at site that cannot be issued yet (MDR pending / awaiting inspection)
+SELECT r.readiness_status, r.package_number_original, r.batch_id, r.category, r.system_group, r.mdr_state_label,
+       r.site_location, r.receiving_date, r.gross_weight_kg, r.next_action
+FROM PACKAGE_READINESS r
+WHERE r.readiness_status IN ('BLOCKED', 'INSPECTED_MDR_PENDING', 'ON_SITE_AWAITING_INSPECTION')
+ORDER BY CASE r.readiness_status WHEN 'BLOCKED' THEN 1 WHEN 'INSPECTED_MDR_PENDING' THEN 2 ELSE 3 END, r.package_number_original;
+
+-- Q32  Pre-arrival MDR risk: not yet received AND MDR not approved, by batch / category / MDR state
+SELECT r.batch_id, r.category, r.mdr_state_label, COUNT(*) AS packages, ROUND(SUM(r.gross_weight_kg) / 1000.0, 3) AS gross_weight_t
+FROM PACKAGE_READINESS r
+WHERE r.readiness_status = 'AWAITING_RECEIVING' AND r.mdr_credit < 1
+GROUP BY r.batch_id, r.category, r.mdr_state_label
+ORDER BY packages DESC;
+
+-- Q33  Readiness card for one package (drawer header)
+SELECT r.*, s.label AS status_label, s.color AS status_color
+FROM PACKAGE_READINESS r JOIN REFERENCE_READINESS_STATUS s ON s.status_code = r.readiness_status
+WHERE r.package_id = :package_id;

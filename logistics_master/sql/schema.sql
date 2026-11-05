@@ -34,6 +34,17 @@ CREATE TABLE IF NOT EXISTS REFERENCE_MDR_STATUS (
     PRIMARY KEY (mdr_status_code)
 );
 
+CREATE TABLE IF NOT EXISTS REFERENCE_READINESS_STATUS (
+    status_code TEXT NOT NULL,
+    label TEXT NOT NULL,
+    short_label TEXT NOT NULL,
+    color TEXT NOT NULL,
+    sort_order INTEGER NOT NULL,
+    rule TEXT NOT NULL,
+    action TEXT NOT NULL,
+    PRIMARY KEY (status_code)
+);
+
 CREATE TABLE IF NOT EXISTS IMPORT_HISTORY (
     import_id TEXT NOT NULL,
     started_at TIMESTAMP NOT NULL,
@@ -364,6 +375,47 @@ CREATE TABLE IF NOT EXISTS MAPPING_ISSUES (
     FOREIGN KEY (source_document_id) REFERENCES SOURCE_DOCUMENTS(source_document_id)
 );
 
+CREATE TABLE IF NOT EXISTS PACKAGE_READINESS (
+    package_id TEXT NOT NULL,
+    batch_id TEXT NOT NULL,
+    category TEXT NOT NULL,
+    package_number_original TEXT NOT NULL,
+    system_group TEXT NOT NULL,
+    equipment_number TEXT,
+    package_group TEXT,
+    gross_weight_kg DOUBLE PRECISION,
+    volume_m3 DOUBLE PRECISION,
+    pl_verified INTEGER NOT NULL,
+    linked_detail_packages INTEGER NOT NULL,
+    split_sub_packages INTEGER NOT NULL,
+    mdr_state TEXT NOT NULL,
+    mdr_state_label TEXT NOT NULL,
+    mdr_credit DOUBLE PRECISION NOT NULL,
+    rfs_raised INTEGER NOT NULL,
+    inspected INTEGER NOT NULL,
+    on_site INTEGER NOT NULL,
+    on_site_evidence TEXT,
+    site_location TEXT,
+    receiving_date DATE,
+    inspection_dates TEXT,
+    open_issue_count INTEGER NOT NULL,
+    blocking_issue_count INTEGER NOT NULL,
+    max_open_severity TEXT,
+    gate_pl_score DOUBLE PRECISION NOT NULL,
+    gate_mdr_score DOUBLE PRECISION NOT NULL,
+    gate_site_score DOUBLE PRECISION NOT NULL,
+    gate_inspection_score DOUBLE PRECISION NOT NULL,
+    readiness_score DOUBLE PRECISION NOT NULL,
+    readiness_status TEXT NOT NULL,
+    next_action TEXT NOT NULL,
+    rules_version TEXT NOT NULL,
+    PRIMARY KEY (package_id),
+    FOREIGN KEY (package_id) REFERENCES PACKAGE_MASTER(package_id),
+    FOREIGN KEY (batch_id) REFERENCES REFERENCE_BATCH(batch_id),
+    FOREIGN KEY (category) REFERENCES REFERENCE_CATEGORY(category_id),
+    FOREIGN KEY (readiness_status) REFERENCES REFERENCE_READINESS_STATUS(status_code)
+);
+
 CREATE TABLE IF NOT EXISTS INVOICE_REGISTER (
     invoice_register_id TEXT NOT NULL,
     source_document_id TEXT NOT NULL,
@@ -498,6 +550,14 @@ CREATE INDEX IF NOT EXISTS ix_mapping_issues_package_id ON MAPPING_ISSUES (packa
 CREATE INDEX IF NOT EXISTS ix_mapping_issues_detail_package_id ON MAPPING_ISSUES (detail_package_id);
 
 CREATE INDEX IF NOT EXISTS ix_mapping_issues_issue_type_severity ON MAPPING_ISSUES (issue_type, severity);
+
+CREATE INDEX IF NOT EXISTS ix_package_readiness_batch_id_category ON PACKAGE_READINESS (batch_id, category);
+
+CREATE INDEX IF NOT EXISTS ix_package_readiness_readiness_status ON PACKAGE_READINESS (readiness_status);
+
+CREATE INDEX IF NOT EXISTS ix_package_readiness_system_group ON PACKAGE_READINESS (system_group);
+
+CREATE INDEX IF NOT EXISTS ix_package_readiness_receiving_date ON PACKAGE_READINESS (receiving_date);
 
 CREATE INDEX IF NOT EXISTS ix_stg_detail_rows_detail_package_id ON STG_DETAIL_ROWS (detail_package_id);
 
@@ -642,3 +702,41 @@ SELECT 'ITEM', it.item_id, it.package_id, it.detail_package_id, it.batch_id, it.
              COALESCE(it.drawing_number, '') || ' ' || COALESCE(it.equipment_number, '') || ' ' ||
              COALESCE(it.masterlist_sub_item_no, '') || ' ' || COALESCE(it.remark, ''))
 FROM PACKAGE_DETAIL it;
+
+CREATE VIEW IF NOT EXISTS v_readiness_summary AS
+SELECT r.batch_id, r.category,
+       COUNT(*)                                                            AS packages,
+       ROUND(SUM(r.gross_weight_kg) / 1000.0, 3)                          AS gross_weight_t,
+       SUM(CASE WHEN r.readiness_status = 'READY_FOR_CONSTRUCTION' THEN 1 ELSE 0 END) AS ready_packages,
+       ROUND(SUM(CASE WHEN r.readiness_status = 'READY_FOR_CONSTRUCTION' THEN r.gross_weight_kg ELSE 0 END) / 1000.0, 3) AS ready_t,
+       SUM(r.pl_verified)                                                  AS pl_verified,
+       SUM(CASE WHEN r.mdr_credit >= 1 THEN 1 ELSE 0 END)                  AS mdr_ok,
+       SUM(r.on_site)                                                      AS on_site,
+       SUM(r.inspected)                                                    AS inspected,
+       SUM(CASE WHEN r.readiness_status = 'BLOCKED' THEN 1 ELSE 0 END)     AS blocked,
+       ROUND(AVG(r.readiness_score), 2)                                    AS readiness_index_count,
+       ROUND(SUM(r.readiness_score * r.gross_weight_kg) / NULLIF(SUM(r.gross_weight_kg), 0), 2) AS readiness_index_tonnage
+FROM PACKAGE_READINESS r
+GROUP BY r.batch_id, r.category;
+
+CREATE VIEW IF NOT EXISTS v_readiness_by_system AS
+SELECT r.system_group, COUNT(*) AS packages, ROUND(SUM(r.gross_weight_kg) / 1000.0, 3) AS gross_weight_t,
+       SUM(CASE WHEN r.readiness_status = 'READY_FOR_CONSTRUCTION' THEN 1 ELSE 0 END) AS ready_packages,
+       SUM(CASE WHEN r.mdr_credit >= 1 THEN 1 ELSE 0 END) AS mdr_ok, SUM(r.inspected) AS inspected,
+       ROUND(AVG(r.readiness_score), 2) AS readiness_index_count,
+       ROUND(SUM(r.readiness_score * r.gross_weight_kg) / NULLIF(SUM(r.gross_weight_kg), 0), 2) AS readiness_index_tonnage
+FROM PACKAGE_READINESS r
+GROUP BY r.system_group;
+
+CREATE VIEW IF NOT EXISTS v_readiness_status_distribution AS
+SELECT r.batch_id, r.category, r.readiness_status, s.label, s.sort_order, COUNT(*) AS packages,
+       ROUND(SUM(r.gross_weight_kg) / 1000.0, 3) AS gross_weight_t
+FROM PACKAGE_READINESS r JOIN REFERENCE_READINESS_STATUS s ON s.status_code = r.readiness_status
+GROUP BY r.batch_id, r.category, r.readiness_status, s.label, s.sort_order;
+
+CREATE VIEW IF NOT EXISTS v_receiving_curve AS
+SELECT d.receiving_date, d.packages_received, d.tonnage_received_t,
+       SUM(d.packages_received) OVER (ORDER BY d.receiving_date)  AS cumulative_packages,
+       ROUND(SUM(d.tonnage_received_t) OVER (ORDER BY d.receiving_date), 3) AS cumulative_tonnage_t
+FROM (SELECT receiving_date, COUNT(*) AS packages_received, ROUND(SUM(gross_weight_kg) / 1000.0, 3) AS tonnage_received_t
+      FROM PACKAGE_READINESS WHERE receiving_date IS NOT NULL GROUP BY receiving_date) d;
