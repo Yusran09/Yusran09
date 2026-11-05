@@ -1,0 +1,225 @@
+<style id="pm-ds">
+  /* =====================================================================
+     PMIS DESIGN SYSTEM v8 · Clean Enterprise (light default, dark alternative)
+     One semantic token set for every module. The dashboards keep their own
+     variable names; this layer maps them onto the tokens and re-dresses the
+     shared components (cards, controls, tables, KPI, charts, tooltips).
+     Logic, numbers and data sources are untouched.
+     ===================================================================== */
+  #pmis,#pmis[data-theme="light"]{
+    --ds-bg:#F5F6F3; --ds-surface:#FFFFFF; --ds-primary:#263D33; --ds-secondary:#496454; --ds-accent:#849B7C;
+    --ds-text:#29352E; --ds-text2:#77827B; --ds-border:#E5E9E4; --ds-subtle:#EDF1EC; --ds-hover:#F0F3EF;
+    --ds-on-primary:#FFFFFF; --ds-border-strong:#D3D9D2; --ds-ink2:#4A564F;
+    --ds-ok:#27815A; --ds-warn:#C18A32; --ds-crit:#C64D4D; --ds-info:#477DA8; --ds-neutral:#89938C;
+    --ds-planned:#6685A3; --ds-actual:#43866B; --ds-forecast:#C18A32; --ds-baseline:#A1A9A3; --ds-variance:#C64D4D; --ds-recovery:#849B7C;
+    --ds-grid:#EDF0EC; --ds-axis:#C6CEC5; --ds-sel:rgba(38,61,51,.07); --ds-focus:rgba(38,61,51,.28);
+    --ds-shadow-1:0 1px 2px rgba(41,53,46,.05); --ds-shadow-2:0 6px 20px rgba(41,53,46,.12),0 1px 3px rgba(41,53,46,.08);
+    color-scheme:light;
+  }
+  #pmis[data-theme="dark"]{
+    --ds-bg:#111A16; --ds-surface:#1B2821; --ds-primary:#A8BE99; --ds-secondary:#829B79; --ds-accent:#A3B69A;
+    --ds-text:#E9EEE9; --ds-text2:#A0ADA4; --ds-border:#304037; --ds-subtle:#202E26; --ds-hover:#26372D;
+    --ds-on-primary:#111A16; --ds-border-strong:#3D4F44; --ds-ink2:#C9D2CB;
+    --ds-ok:#65B98A; --ds-warn:#E0B45E; --ds-crit:#E47B78; --ds-info:#7EADD5; --ds-neutral:#A0AAA3;
+    --ds-planned:#6685A3; --ds-actual:#43866B; --ds-forecast:#C18A32; --ds-baseline:#A1A9A3; --ds-variance:#C64D4D; --ds-recovery:#849B7C;
+    --ds-grid:#253229; --ds-axis:#4A5B50; --ds-sel:rgba(168,190,153,.10); --ds-focus:rgba(168,190,153,.35);
+    --ds-shadow-1:0 1px 2px rgba(0,0,0,.25); --ds-shadow-2:0 8px 24px rgba(0,0,0,.40),0 1px 3px rgba(0,0,0,.30);
+    color-scheme:dark;
+  }
+  /* the dashboards' own variables follow the tokens (both themes) */
+  #pmis,#pmis[data-theme="light"],#pmis[data-theme="dark"]{
+    --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif; --mono:var(--sans); --serif:var(--sans); --disp:var(--sans); --font:var(--sans);
+    --r:10px; --r-s:6px; --ease:cubic-bezier(.2,0,0,1); --tint:1;
+    --glass-top:var(--ds-surface); --glass-bot:var(--ds-surface); --edge:var(--ds-border); --grain:0;
+    --ink:var(--ds-text); --ink2:var(--ds-ink2); --muted:var(--ds-text2); --faint:var(--ds-neutral); --datum:var(--ds-primary);
+    --line:var(--ds-border); --line-strong:var(--ds-border-strong); --grid:var(--ds-grid); --axis:var(--ds-axis); --track:var(--ds-subtle);
+    --chip:var(--ds-subtle); --seg-on:var(--ds-surface); --hover:var(--ds-hover); --sel:var(--ds-sel); --now:color-mix(in srgb,var(--ds-info) 12%,transparent);
+    --tip:var(--ds-surface); --th:var(--ds-surface); --tip-shadow:var(--ds-shadow-2); --shadow:none; --txt-shadow:none;
+    --actual:var(--ds-actual); --actual-2:color-mix(in srgb,var(--ds-actual) 55%,var(--ds-surface)); --plan:var(--ds-planned);
+    --gap:color-mix(in srgb,var(--ds-variance) 11%,transparent); --gap-key:color-mix(in srgb,var(--ds-variance) 45%,transparent);
+    --good:var(--ds-ok); --warn:var(--ds-warn); --crit:var(--ds-crit); --info:var(--ds-info); --calm:var(--ds-info); --idle:var(--ds-neutral);
+    --good-bg:color-mix(in srgb,var(--ds-ok) 12%,transparent); --warn-bg:color-mix(in srgb,var(--ds-warn) 14%,transparent); --crit-bg:color-mix(in srgb,var(--ds-crit) 12%,transparent);
+    --lime:var(--ds-primary); --lime-ink:var(--ds-on-primary); --fx-ovl:none; --fx-canvas:var(--ds-bg); --fx-frame:transparent; --fx-glow:transparent;
+    --panel:var(--ds-surface); --panel-2:var(--ds-surface);
+    --spring:var(--ease); --rise:0px; --sheet-top:var(--ds-surface);
+  }
+  #pmis,#pmis[data-theme="light"]{--glass-rgb:255,255,255; --lime-rgb:38,61,51; --hl-rgb:38,61,51}
+  #pmis[data-theme="dark"]{--glass-rgb:27,40,33; --lime-rgb:168,190,153; --hl-rgb:168,190,153}
+
+  /* ---------- the sheet: solid background, no photo, no frame ---------- */
+  #pmis,#pmis.fx,#pmis.cv-bg,#pmis.fx.cv-bg,#pmis.fx.cv-bg[data-theme="light"]{background:var(--ds-bg)!important;border-radius:0!important;color:var(--ds-text);
+    font-family:var(--sans);font-size:13.5px;line-height:1.5;font-variant-numeric:tabular-nums;font-feature-settings:"cv11","ss01";letter-spacing:0}
+  #pmis.fx{padding:52px 22px 24px}
+  #pmis.fx::before,#pmis.fx::after{display:none!important}
+  #pmis .pm-more{display:none!important}
+  #pmis,#pmis button,#pmis input,#pmis select,#pmis textarea{font-family:var(--sans)!important}
+  #pmis ::selection{background:color-mix(in srgb,var(--ds-primary) 22%,transparent)}
+
+  /* ---------- surfaces: solid cards, 1px border, 10px radius, no glass ---------- */
+  #pmis .glass,#pmis .sec.glass,#pmis section.glass,#pmis .kpi.glass,#pmis .glass.kpi{background:var(--ds-surface)!important;border:1px solid var(--ds-border)!important;
+    border-radius:var(--r)!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #pmis .glass::after{display:none!important}
+  #pmis .sec-h{border-bottom-color:var(--ds-border)!important}
+  #pmis .sec-h h3::before,#pmis .ch h3::before{display:none!important}
+  #pmis .foot{background:var(--ds-subtle)!important;color:var(--ds-text2);border-top:1px solid var(--ds-border)}
+
+  /* ---------- type: Inter, clear hierarchy ---------- */
+  #pmis .ttl,#pmis h1,#pmis h2.ttl{font-family:var(--sans)!important;font-weight:600!important;font-size:26px!important;line-height:1.2!important;letter-spacing:-.015em!important;font-style:normal!important;color:var(--ds-text)}
+  #pmis .sec-h h3,#pmis .ch h3,#pmis .dlg h3,#pmis .pm-help h3,#pmis h3{font-family:var(--sans)!important;font-weight:600!important;font-size:16px!important;letter-spacing:-.005em!important;color:var(--ds-text)}
+  #pmis .sec-h h3 .h3s,#pmis .ch h3 small,#pmis h3 .h3s{font-weight:400!important;font-size:12.5px!important;color:var(--ds-text2)!important;letter-spacing:0!important}
+  #pmis .eyebrow,#pmis .cap .ch,#pmis .fl{font-family:var(--sans)!important;font-weight:500!important;font-size:11.5px!important;letter-spacing:.04em!important;color:var(--ds-text2)!important}
+  #pmis .eyebrow .pn{color:var(--ds-primary)!important}
+  #pmis .cut,#pmis .meta,#pmis .sub,#pmis small,#pmis .h3s{font-family:var(--sans)!important;letter-spacing:0}
+  #pmis .msg b{font-family:var(--sans)!important;font-weight:600!important}
+
+  /* ---------- KPI: strong number, short label, no decoration ---------- */
+  #pmis .kpi,#pmis .stat{transition:none!important;transform:none!important}
+  #pmis .kpi:hover{transform:none!important;border-color:var(--ds-border)!important}
+  #pmis .kpi::before{display:none!important}
+  #pmis .kpi .lbl,#pmis .kpi .l,#pmis .stat .lbl{font-family:var(--sans)!important;font-weight:500!important;font-size:11.5px!important;letter-spacing:.04em!important;
+    text-transform:uppercase;color:var(--ds-text2)!important}
+  #pmis .kpi .lbl svg,#pmis .kpi .l svg,#pmis .stat .lbl svg{display:none}
+  #pmis .kpi .v,#pmis .stat .v,#pmis .stp-big .v,#pmis .bign,#pmis [id="h-ov"],#pmis .ring b{font-family:var(--sans)!important;font-weight:600!important;
+    letter-spacing:-.02em!important;font-variant-numeric:tabular-nums;color:var(--ds-text)}
+  #pmis .kpi .v,#pmis .stat .v{font-size:28px!important;line-height:1.15!important}
+  #pmis .kpi .v small,#pmis .stat .v small{font-size:13px!important;font-weight:500!important;letter-spacing:0!important;color:var(--ds-text2)!important}
+  #pmis .kpi .mb,#pmis .pb,#pmis .gbar{border-radius:3px!important;background:var(--ds-subtle)}
+  #pmis .kpi .mb i,#pmis .pb i,#pmis .gbar .fill{border-radius:3px!important}
+
+  /* ---------- controls ---------- */
+  #pmis .seg{border-radius:8px!important;padding:3px!important;border:1px solid var(--ds-border)!important;background:var(--ds-subtle)!important;box-shadow:none!important}
+  #pmis .seg button{border-radius:6px!important;font-size:13px;font-weight:500;color:var(--ds-text2)}
+  #pmis .seg button:hover{color:var(--ds-text)}
+  #pmis .seg:not(.nav) button[aria-pressed="true"]{background:var(--ds-surface)!important;color:var(--ds-text)!important;box-shadow:0 0 0 1px var(--ds-border),var(--ds-shadow-1)!important}
+  #pmis .sv-thumb{border-radius:6px!important;background:var(--ds-surface)!important;box-shadow:0 0 0 1px var(--ds-border),var(--ds-shadow-1)!important}
+  #pmis .seg.nav{border:0!important;background:transparent!important;padding:0!important;border-radius:0!important;border-bottom:1px solid var(--ds-border)!important}
+  #pmis .seg.nav button{border-radius:0!important;color:var(--ds-text2);font-size:13.5px;font-weight:500}
+  #pmis .seg.nav button:hover{color:var(--ds-text);background:transparent}
+  #pmis .seg.nav button[aria-pressed="true"]{color:var(--ds-text)!important;background:transparent!important;box-shadow:inset 0 -2px 0 var(--ds-primary)!important}
+  #pmis .seg.nav .n,#pmis .seg.nav button[aria-pressed="true"] .n,#pmis .seg.nav button[aria-pressed="true"] .n .icn{color:inherit!important;animation:none!important}
+  #pmis .seg.nav .n{color:var(--ds-text2)!important}
+  #pmis .seg.nav button[aria-pressed="true"] .n{color:var(--ds-primary)!important}
+  #pmis .sel,#pmis .srch{border-radius:8px!important;border:1px solid var(--ds-border)!important;background:var(--ds-surface)!important;box-shadow:none!important}
+  #pmis input[type="text"],#pmis input[type="search"],#pmis input[type="number"],#pmis input[type="date"],#pmis input[type="email"],#pmis input[type="tel"],
+  #pmis input:not([type]),#pmis select,#pmis textarea{border-radius:8px;border-color:var(--ds-border);background-color:var(--ds-surface);color:var(--ds-text)}
+  #pmis input:focus,#pmis select:focus,#pmis textarea:focus{outline:2px solid var(--ds-focus);outline-offset:0;border-color:var(--ds-primary)}
+  #pmis .hact > *,#pmis .fresh .rf{border-radius:8px!important;border:1px solid var(--ds-border)!important;background:var(--ds-surface)!important;box-shadow:none!important;color:var(--ds-text)}
+  #pmis .hact > *:hover,#pmis .fresh .rf:hover{background:var(--ds-hover)!important}
+  #pmis .badge,#pmis .ck{border-radius:6px!important;padding-left:8px!important;padding-right:8px!important;font-family:var(--sans)!important;font-weight:600!important;letter-spacing:.02em!important;
+    background:color-mix(in srgb,var(--c,var(--ds-neutral)) 12%,transparent)!important;box-shadow:none!important;border:0!important}
+  #pmis .badge i{border-radius:50%}
+  #pmis :focus-visible{outline:2px solid var(--ds-focus);outline-offset:2px}
+
+  /* ---------- tables ---------- */
+  #pmis .dt-wrap,#pmis .tbl{border-radius:8px!important}
+  #pmis table th,#pmis th{font-family:var(--sans)!important;font-weight:600!important;font-size:11.5px!important;letter-spacing:.02em!important;
+    color:var(--ds-text2)!important;background:var(--ds-subtle)!important;border-bottom:1px solid var(--ds-border)!important}
+  #pmis table td{border-bottom-color:var(--ds-border)}
+  #pmis tbody tr{transition:none!important}
+  #pmis tbody tr:hover > td{background:var(--ds-hover)}
+
+  /* ---------- tooltips ---------- */
+  #pmis .tip,#pmis #tip{border-radius:8px!important;border:1px solid var(--ds-border)!important;background:var(--ds-surface)!important;color:var(--ds-text)!important;
+    box-shadow:var(--ds-shadow-2)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;font-family:var(--sans)!important}
+
+  /* ---------- help sheet, toasts, dialogs ---------- */
+  #pmis .pm-sheet,#pmis .pm-toast{background:var(--ds-surface)!important;border:1px solid var(--ds-border)!important;color:var(--ds-text)!important;
+    box-shadow:var(--ds-shadow-2)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #pmis .pm-sheet{border-radius:12px!important}
+  #pmis .pm-toast{border-radius:8px!important}
+  #pmis .pm-scrim{background:rgba(17,26,22,.45)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #pmis .dlg .scrim{background:rgba(17,26,22,.40)!important;animation:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+  #pmis .dlg h3{font-style:normal!important;font-size:20px!important}
+  #pmis .dlg .x{border-radius:8px!important;background:var(--ds-surface)!important;border-color:var(--ds-border)!important}
+  #pmis .dlg .sheet{box-shadow:var(--ds-shadow-2)!important}
+
+  /* ---------- icons: Lucide outline, one weight ---------- */
+  #pmis svg.icn,#pmis svg.ic,#pmis .ichip svg{stroke-width:1.75}
+  #pmis .ichip{border-radius:8px!important;background:var(--ds-subtle)!important;color:var(--ds-secondary)!important;box-shadow:none!important;border:0!important}
+
+  /* ---------- motion: only what explains a change ---------- */
+  #pmis.fx-enter .page:not(.off) *,#pmis.fx-enter #tia-app *{animation:none!important}
+  #pmis .anim .bar-sv,#pmis .anim .draw,#pmis .anim .fade{animation:none!important;stroke-dasharray:none!important;stroke-dashoffset:0!important}
+  #pmis .seg.nav button .icn,#pmis .subnav button .icn{animation:none!important;transform:none!important;transition:none!important}
+  #pmis .wel-bg,#pmis .wel-live i{animation:none!important}
+
+  /* ---------- the module intro (welcome page of each dashboard): clean, solid ---------- */
+  #pmis .wel,#pmis[data-theme="light"] .wel,#pmis[data-theme="dark"] .wel{background:var(--ds-surface);border:1px solid var(--ds-border);border-radius:12px;color:var(--ds-text);min-height:0;
+    --w-ink:var(--ds-text);--w-ink2:var(--ds-ink2);--w-muted:var(--ds-text2);--w-line:var(--ds-border);--w-glass:var(--ds-surface)}
+  #pmis .wel-bg,#pmis .wel::before,#pmis .wel::after{display:none!important}
+  #pmis .wel-nav{margin:0!important;border-radius:12px 12px 0 0!important;border:0!important;border-bottom:1px solid var(--ds-border)!important;background:var(--ds-surface)!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:12px 20px!important}
+  #pmis .wel-logo i{border-radius:8px!important;background:var(--ds-primary)!important;color:var(--ds-on-primary)!important}
+  #pmis .wel-logo small{font-family:var(--sans)!important;letter-spacing:.04em!important}
+  #pmis .wel-menu button{border-radius:6px!important;color:var(--ds-text2)!important}
+  #pmis .wel-menu button:hover{background:var(--ds-hover)!important;color:var(--ds-text)!important}
+  #pmis .wel-cta,#pmis .wel-go{border-radius:8px!important;background:var(--ds-primary)!important;color:var(--ds-on-primary)!important;box-shadow:none!important;transform:none!important;height:38px!important}
+  #pmis .wel-go{padding:0 16px!important}
+  #pmis .wel-go b{background:transparent!important;color:inherit!important;width:auto!important;transform:none!important}
+  #pmis .wel-cta:hover,#pmis .wel-go:hover{background:var(--ds-secondary)!important}
+  #pmis .wel-body{padding:40px 40px 32px!important}
+  #pmis .wel-kick{color:var(--ds-secondary)!important;font-family:var(--sans)!important;letter-spacing:.06em!important}
+  #pmis .wel-kick::before{display:none}
+  #pmis .wel-title{font-family:var(--sans)!important;font-weight:600!important;font-size:40px!important;line-height:1.12!important;letter-spacing:-.02em!important;color:var(--ds-text)!important}
+  #pmis .wel-title em{color:var(--ds-primary)!important}
+  #pmis .wel-lead{color:var(--ds-ink2)!important;font-size:15px!important}
+  #pmis .wel-live{font-family:var(--sans)!important;color:var(--ds-text2)!important}
+  #pmis .wel-live i{background:var(--ds-ok)!important;box-shadow:none!important}
+  #pmis .wel-live.off i{background:var(--ds-warn)!important}
+  #pmis .wel-stats{border-top-color:var(--ds-border)!important}
+  #pmis .wel-stat b{font-family:var(--sans)!important;font-weight:600!important;font-size:30px!important;letter-spacing:-.02em!important;color:var(--ds-text)!important}
+  #pmis .wel-stat b small,#pmis .wel-stat span{color:var(--ds-text2)!important}
+  #pmis .wel-card{background:var(--ds-subtle)!important;color:var(--ds-text)!important;border:1px solid var(--ds-border)!important;border-radius:10px!important;height:150px!important;
+    box-shadow:none!important;transform:none!important;transition:border-color .15s ease,background-color .15s ease!important}
+  #pmis .wel-card.on{height:150px!important}
+  #pmis .wel-card::before{display:none!important}
+  #pmis .wel-card .wn{color:var(--ds-text2)!important;font-family:var(--sans)!important}
+  #pmis .wel-card .wt b{font-family:var(--sans)!important;font-weight:600!important;color:var(--ds-text)!important}
+  #pmis .wel-card .wt span{color:var(--ds-text2)!important}
+  #pmis .wel-card .wa{background:var(--ds-surface)!important;color:var(--ds-secondary)!important;border:1px solid var(--ds-border);border-radius:8px!important;transform:none!important}
+  #pmis .wel-card:hover,#pmis .wel-card.on{border-color:var(--ds-primary)!important;background:var(--ds-surface)!important}
+  #pmis .wel-card:hover .wa,#pmis .wel-card.on .wa{background:var(--ds-primary)!important;color:var(--ds-on-primary)!important;transform:none!important}
+  #pmis .wel-slide button{border-radius:8px!important;border:1px solid var(--ds-border)!important;color:var(--ds-text)!important;background:var(--ds-surface)!important}
+  #pmis .wel-slide button:hover{background:var(--ds-hover)!important;color:var(--ds-text)!important}
+  #pmis .wel-slide .rail{background:var(--ds-border)!important}
+  #pmis .wel-slide .rail i{background:var(--ds-primary)!important}
+  #pmis .wel-slide .num{font-family:var(--sans)!important;font-weight:600!important;font-size:28px!important;color:var(--ds-text)!important}
+  #pmis .wel-slide .num small{font-family:var(--sans)!important}
+  #pmis .wel-sec{color:var(--ds-ink2)!important}
+  #pmis.fx-wel .wel .fx-a,#pmis .wel.out{animation:none!important}
+
+  /* ---------- drawing-sheet ornaments go: header rule + tick, eyebrow dash, heading dashes, card tabs ---------- */
+  #pmis .hd::before,#pmis .hd::after{display:none!important}
+  #pmis .hd{padding-left:0!important}
+  #pmis .eyebrow .pn::after{content:"·"!important;width:auto!important;height:auto!important;background:none!important;margin:0 8px!important;vertical-align:baseline!important;color:var(--ds-text2)}
+  #pmis .cap .ch::before,#pmis .ch h3::before,#pmis .dlg h4::before,#pmis .hero-h h2::before,#pmis .mlg b::before,#pmis .sec-h h3::before,#pmis .dt-h > h3::before,
+  #pmis .dt-h .crumbs h3::before,#pmis .drv h3::before,#pmis .sect::before,#pmis .sth h4::before{display:none!important}
+  #pmis .card::before,#pmis .pk::before,#pmis .stp::before,#pmis .pkc::before{display:none!important}
+
+  /* ---------- the "home" tab of the frame → a quiet text button ---------- */
+  #pmis .fx-home{top:16px!important;left:22px!important;transform:none!important;height:24px!important;border:1px solid var(--ds-border)!important;border-radius:6px!important;
+    background:var(--ds-surface)!important;color:var(--ds-text2)!important;font-family:var(--sans)!important;font-weight:500!important;letter-spacing:.02em!important;text-transform:none!important;font-size:12px!important}
+  #pmis .fx-home:hover{background:var(--ds-hover)!important;color:var(--ds-text)!important}
+
+  @media screen and (max-width:640px){
+    #pmis.fx{padding:42px 10px 14px}
+    #pmis .fx-home{top:10px!important;left:10px!important}
+    #pmis .ttl,#pmis h2.ttl{font-size:22px!important}
+    #pmis .kpi .v,#pmis .stat .v{font-size:24px!important}
+    #pmis .wel-title{font-size:30px!important}
+    #pmis .wel-body{padding:22px 18px!important}
+    #pmis .wel-card,#pmis .wel-card.on{height:120px!important}
+  }
+  /* ---------- type floor: labels / metadata / chips never under 11px (the compositions keep their layout) ---------- */
+  #pmis .badge,#pmis .pill,#pmis .gchip,#pmis .hchip,#pmis .tag,#pmis .hc.age i,#pmis td small,#pmis td .sub,#pmis .lbl,#pmis dl dt,#pmis div > dt,
+  #pmis .legend > span,#pmis .lg > span,#pmis .ct,#pmis .ct > b,#pmis .ct > em,#pmis .cnum,#pmis .cnt,#pmis .ctr > span,
+  #pmis .mc > span,#pmis .tl > .p,#pmis .mx > .ch,#pmis .mx > .rh,#pmis .n > small,#pmis .cap > span{font-size:11px!important}
+  #pmis .cap > span{font-size:11.5px!important}
+  @media print{
+    #pmis,#pmis.fx,#pmis.cv-bg{background:#fff!important}
+  }
+  /* Resources · type scale: KPI values ≤ 32px, labels ≥ 11px */
+  #pmis .stp-big .v > span{font-size:32px!important}
+  #pmis .step > .k{font-size:11px!important}
+  #pmis .insr > div > small{font-size:11.5px!important}
+</style>

@@ -1,0 +1,33 @@
+<script type="text/plain" id="pmhub-link">
+/* PMIS hub link (DS v8) — runs inside each dashboard frame of a combined embed.
+   1 · A link to another page of this embed ("#epc", "#tia" …, e.g. the "Go to Dashboard" button) opens that page in the navigator.
+   2 · When the host sandboxes the embed so the hub cannot look into its frames, the frame reports its height and theme by message. */
+(function () {
+  'use strict';
+  var r = document.getElementById('pmis') || document.getElementById('pml'), up = window.parent;
+  if (!r || !up || up === window) return;
+  function send(o) { o.pmhub = 1; try { up.postMessage(o, '*'); } catch (e) {} }
+  var slugs = (document.documentElement.getAttribute('data-pmhub-slugs') || '').split(/\s+/).filter(Boolean);
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('[data-link],a[href^="#"]') : null; if (!a) return;
+    var l = (a.getAttribute('data-link') || a.getAttribute('href') || '').trim();
+    if (l.charAt(0) !== '#' || slugs.indexOf(l.slice(1)) < 0) return;
+    e.preventDefault(); e.stopImmediatePropagation(); send({ go: l.slice(1) });
+  }, true);
+  var btnSel = r.id === 'pml' ? '.th' : '.hb-theme';
+  function theme() { return r.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
+  var lastH = 0;
+  function height() { var h = Math.ceil(r.getBoundingClientRect().height); if (h > 40 && h !== lastH) { lastH = h; send({ h: h }); } }
+  function told() { send({ theme: theme(), btn: !!r.querySelector(btnSel), report: r.classList.contains('pm-report') }); }
+  if (window.ResizeObserver) new ResizeObserver(height).observe(r);
+  window.addEventListener('resize', height);
+  if (window.MutationObserver) new MutationObserver(told).observe(r, { attributes: true, attributeFilter: ['data-theme'] });
+  window.addEventListener('message', function (e) {
+    var d = e.data; if (e.source !== up || !d || d.pmhub !== 1 || !d.setTheme) return;
+    var b = r.querySelector(btnSel); if (b && theme() !== d.setTheme) b.click();
+  });
+  height(); told();
+  var n = 0;
+  (function look() { if (r.querySelector(btnSel)) told(); else if (n++ < 60) setTimeout(look, 250); })();
+})();
+</script>

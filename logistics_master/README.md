@@ -41,6 +41,20 @@ inspected at site (RFS).
 * Details are in [docs/LOGISTICS_READINESS_GUIDE.md](docs/LOGISTICS_READINESS_GUIDE.md). The end-to-end test is
   `node etl/test_webapp_readiness.js`.
 
+## Logistics Readiness · PMIS embed (DS v8)
+
+`pmis_embed/` builds the same readiness dashboard as a **PMIS embed** in the Clean Enterprise UI (DS v8) of the
+PMIS hub (Resources · TIA · Schedule): navigator bar, welcome page, settings and data blocks as text, engine stored
+compressed so the code stays under 1 MB. Four pages: Overview, Receiving, Packing List (Summary › Detail › Items)
+and Exceptions. It reads embedded data or a Google Sheet (tabs Packages / Detail / Items / Issues) and recomputes
+readiness with the ETL rules; any difference with the ETL is flagged.
+
+* `python3 pmis_embed/build_pmis_embed.py` writes `output/pmis/LOGISTICS-PMIS-KODE.txt` (paste into the website),
+  a local preview and `LOGISTICS-PMIS-SHEET.xlsx` (the four tabs for Google Sheets). Current size: ±865 KB.
+* `python3 pmis_embed/tests/run_pmis_tests.py` runs 19 browser checks (all 1,153 packages equal to
+  `PACKAGE_READINESS`, all pages, the live-sheet path, phone layout, no JavaScript errors).
+* How-to (Indonesian): [pmis_embed/README.md](pmis_embed/README.md).
+
 ## Folder structure
 
 ```
@@ -65,13 +79,15 @@ logistics_master/
 ├── sql/
 │   ├── schema.sql               # DDL + views (generated; PostgreSQL-compatible types)
 │   └── app_queries.sql          # 33 reference queries for the web app (Q27-Q33 readiness)
+├── pmis_embed/                  # Logistics Readiness as a PMIS embed (DS v8): builder, framework, src, tests
 ├── source/                      # the four original workbooks - NOT committed (confidential)
 └── output/                      # generated deliverables - NOT committed (confidential)
     ├── MASTER_LOGISTICS_DATABASE.sqlite
     ├── MASTER_LOGISTICS_PACKING_LIST_CLEAN.xlsx
     ├── LOGISTICS_DATA_RECONCILIATION_REPORT.xlsx
     ├── csv/<TABLE>.csv          # 24 tables, UTF-8
-    └── webapp/logistics_readiness_data.js|.json   # data for logistics-readiness.html
+    ├── webapp/logistics_readiness_data.js|.json   # data for logistics-readiness.html
+    └── pmis/LOGISTICS-PMIS-KODE.txt|PREVIEW.html|SHEET.xlsx   # PMIS embed + Google Sheet tabs
 ```
 
 ## Run
@@ -83,6 +99,8 @@ python3 -I etl/run_etl.py                    # ~30 s; exit code 0 = no failed ch
 python3 -I etl/test_app_queries.py           # query layer smoke test
 node etl/test_webapp_readiness.js            # web dashboard end-to-end test (Playwright)
 python3 -I etl/qa_verify_outputs.py          # independent QA
+python3 pmis_embed/build_pmis_embed.py       # PMIS embed (output/pmis/)
+python3 pmis_embed/tests/run_pmis_tests.py   # PMIS embed browser test (Node + Playwright)
 ```
 
 Options: `--source-dir`, `--output-dir`, `--config-dir`, `--docs-dir`, `--skip-excel`.

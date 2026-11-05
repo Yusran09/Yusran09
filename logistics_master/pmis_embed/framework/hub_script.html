@@ -1,0 +1,279 @@
+<script>
+/* =====================================================================
+   PMIS HUB · page navigator + frames (Clean Enterprise UI, DS v8).
+   Every dashboard below runs unchanged in its own frame, built from its
+   <template> the first time it is opened and kept alive afterwards
+   (filters, tabs and charts stay as you left them). The engine of each
+   dashboard is stored compressed (lossless) to keep the embed under 1 MB;
+   its settings and data blocks are plain text. Each frame is exactly as
+   tall as the page it shows. One light / dark choice for every dashboard.
+   ===================================================================== */
+(function () {
+  'use strict';
+  var hub = document.getElementById('pmhub');
+  if (!hub || hub.getAttribute('data-on') === '1') return;
+  hub.setAttribute('data-on', '1');
+  var de = document.documentElement;
+  var cfgEl = document.getElementById('hub-config'), txt = cfgEl ? cfgEl.textContent : '';
+  function opt(k) { var m = new RegExp('^[ \\t]*' + k + '[ \\t]*:[ \\t]*(.*)$', 'im').exec(txt); return m ? m[1].trim() : ''; }
+  var framed = true; try { framed = window.self !== window.top; } catch (e) {}
+  if (framed) de.classList.add('hb-framed');
+
+  var bar = hub.querySelector('.hb-in'), nav = hub.querySelector('.hb-nav'), stage = hub.querySelector('.hb-stage');
+  var ld = hub.querySelector('.hb-ld'), ldt = ld.querySelector('span'), more = hub.querySelector('.hb-more'), tg = hub.querySelector('.hb-tg');
+  var btns = Array.prototype.slice.call(nav.querySelectorAll('button[data-d]'));
+  var N = btns.length, frames = {}, ready = {}, pend = {}, cur = 0, SLUG = {}, SLUGS = [];
+  btns.forEach(function (b) { var s = b.getAttribute('data-slug'); SLUG[s] = +b.getAttribute('data-d'); SLUGS.push(s); });
+
+  /* ---- names from the settings block ---- */
+  var t1 = opt('Judul'), t2 = opt('Subjudul');
+  if (t1) hub.querySelector('.hb-eb').textContent = t1;
+  if (t2) hub.querySelector('.hb-tt').textContent = t2;
+  btns.forEach(function (b) {
+    var d = b.getAttribute('data-d'), l = opt('Halaman ' + d), s = opt('Singkat ' + d);
+    if (l) b.querySelector('.lf').textContent = l;
+    if (s) b.querySelector('.sh').textContent = s;
+    b.title = b.querySelector('.lf').textContent;
+  });
+
+  /* ---- per-viewer memory (this browser only): the page open last, the theme ---- */
+  var store = null; try { localStorage.setItem('__pmh8', '1'); localStorage.removeItem('__pmh8'); store = localStorage; } catch (e) {}
+  var KEY = 'pmis8:hub:' + SLUGS.join('+') + ':' + (t1 || '').slice(0, 60);
+  function sget() { if (!store) return {}; try { return JSON.parse(store.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function sset(o) { if (store) try { store.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+
+  /* ---- the bar follows the sheets below: the same 1240 px design width, the same scale ---- */
+  function layout() {
+    var w = de.clientWidth || window.innerWidth, s = w > 640 ? Math.min(1, w / 1240) : 1;
+    hub.style.setProperty('--hb-s', s.toFixed(4));
+    hub.classList.remove('hb-short');
+    if (w > 640 && nav.offsetWidth + 60 > bar.clientWidth - 200) hub.classList.add('hb-short');   /* full names whenever they fit beside the title */
+  }
+
+  /* ---- the engine of a dashboard: base64 → zlib → text (DecompressionStream, or the small decoder below) ---- */
+  function bytes(s) { var b = atob(s.replace(/\s+/g, '')), n = b.length, u = new Uint8Array(n); for (var i = 0; i < n; i++) u[i] = b.charCodeAt(i); return u; }
+  function text(u) {
+    if (window.TextDecoder) return new TextDecoder('utf-8').decode(u);
+    var s = '', i, C = 8192; for (i = 0; i < u.length; i += C) s += String.fromCharCode.apply(null, u.subarray(i, i + C));
+    return decodeURIComponent(escape(s));
+  }
+  function inflate(d) {                      /* raw DEFLATE (RFC 1951), after zlib's puff.c — used only without DecompressionStream */
+    var p = 0, bb = 0, bc = 0, o = 0, out = new Uint8Array(Math.max(4096, d.length * 5));
+    function bits(n) { var v = bb; while (bc < n) { if (p >= d.length) throw new Error('inflate: data ended'); v |= d[p++] << bc; bc += 8; } bb = v >>> n; bc -= n; return v & ((1 << n) - 1); }
+    function room(n) { if (o + n > out.length) { var t = new Uint8Array(Math.max(out.length * 2, o + n)); t.set(out); out = t; } }
+    function huff(l, a, n) {
+      var c = new Uint16Array(16), f = new Uint16Array(16), s = new Uint16Array(n), i;
+      for (i = 0; i < n; i++) c[l[a + i]]++;
+      for (i = 1; i < 15; i++) f[i + 1] = f[i] + c[i];
+      for (i = 0; i < n; i++) if (l[a + i]) s[f[l[a + i]]++] = i;
+      return { c: c, s: s };
+    }
+    function dec(h) {
+      var code = 0, first = 0, index = 0, len, cnt;
+      for (len = 1; len < 16; len++) { code |= bits(1); cnt = h.c[len]; if (code - cnt < first) return h.s[index + (code - first)]; index += cnt; first = (first + cnt) << 1; code <<= 1; }
+      throw new Error('inflate: bad code');
+    }
+    var LB = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258],
+      LE = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0],
+      DB = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577],
+      DE = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13],
+      ORD = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15], FL = null, FD = null;
+    function codes(lc, dc) {
+      for (;;) {
+        var s = dec(lc);
+        if (s < 256) { room(1); out[o++] = s; continue; }
+        if (s === 256) return;
+        s -= 257; if (s >= 29) throw new Error('inflate: bad length');
+        var n = LB[s] + bits(LE[s]), x = dec(dc); if (x >= 30) throw new Error('inflate: bad distance');
+        var dist = DB[x] + bits(DE[x]); if (dist > o) throw new Error('inflate: distance too far');
+        room(n); for (var k = 0; k < n; k++, o++) out[o] = out[o - dist];
+      }
+    }
+    var last, type, i;
+    do {
+      last = bits(1); type = bits(2);
+      if (type === 0) {
+        bb = 0; bc = 0; if (p + 4 > d.length) throw new Error('inflate: data ended');
+        var n0 = d[p] | d[p + 1] << 8, n1 = d[p + 2] | d[p + 3] << 8; p += 4;
+        if (n0 !== (~n1 & 0xffff) || p + n0 > d.length) throw new Error('inflate: bad stored block');
+        room(n0); out.set(d.subarray(p, p + n0), o); o += n0; p += n0;
+      } else if (type === 1) {
+        if (!FL) { var l = new Uint8Array(288), dl = new Uint8Array(30); for (i = 0; i < 288; i++) l[i] = i < 144 ? 8 : i < 256 ? 9 : i < 280 ? 7 : 8; for (i = 0; i < 30; i++) dl[i] = 5; FL = huff(l, 0, 288); FD = huff(dl, 0, 30); }
+        codes(FL, FD);
+      } else if (type === 2) {
+        var nl = bits(5) + 257, nd = bits(5) + 1, nc = bits(4) + 4, cl = new Uint8Array(19);
+        for (i = 0; i < nc; i++) cl[ORD[i]] = bits(3);
+        var ch = huff(cl, 0, 19), L = new Uint8Array(nl + nd), k = 0;
+        while (k < nl + nd) {
+          var s = dec(ch), rep, v = 0;
+          if (s < 16) { L[k++] = s; continue; }
+          if (s === 16) { if (!k) throw new Error('inflate: bad repeat'); v = L[k - 1]; rep = 3 + bits(2); } else if (s === 17) rep = 3 + bits(3); else rep = 11 + bits(7);
+          if (k + rep > nl + nd) throw new Error('inflate: bad lengths');
+          while (rep--) L[k++] = v;
+        }
+        codes(huff(L, 0, nl), huff(L, nl, nd));
+      } else throw new Error('inflate: bad block');
+    } while (!last);
+    return out.subarray(0, o);
+  }
+  function unzip(u) {                        /* zlib stream (2-byte header + deflate + adler32) → bytes */
+    var slow = function () { return inflate(u.subarray(2)); };
+    if (window.DecompressionStream && window.Response && window.Blob) {
+      try {
+        var st = new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate'));
+        return new Response(st).arrayBuffer().then(function (b) { return new Uint8Array(b); }, slow);
+      } catch (e) {}
+    }
+    return Promise.resolve().then(slow);
+  }
+
+  /* ---- a dashboard as pasted on the website: settings + data in plain text, its engine unpacked ---- */
+  var ZM = '<!--pmhub:z-->', KM = '<!--pmhub:k-->', KP = '<!--pmhub:keep-->';
+  var LINK = (document.getElementById('pmhub-link') || {}).textContent || '', SO = '<scr' + 'ipt>', SC = '<\/scr' + 'ipt>';   /* in pieces: this script is inline */
+  function compose(i) {
+    var tpl = document.getElementById('pmhub-d' + i); if (!tpl) return Promise.reject(new Error('no template ' + i));
+    var s = tpl.innerHTML, a = s.indexOf(ZM);
+    if (a < 0) return Promise.resolve(s);
+    var pre = s.slice(0, a), keep = s.slice(a + ZM.length).split(KM), z = tpl.content.querySelector('script.pmhub-z');
+    return unzip(bytes(z ? z.textContent : '')).then(function (u) {
+      var e = text(u).split(KP);
+      if (e.length !== keep.length) throw new Error('pmhub: blocks do not match (' + (e.length - 1) + ' / ' + (keep.length - 1) + ')');
+      var out = pre + e[0]; for (var j = 1; j < e.length; j++) out += keep[j] + e[j];
+      return out;
+    });
+  }
+
+  /* ---- frames ---- */
+  function build(i) {
+    if (frames[i] || pend[i]) return;
+    pend[i] = true;
+    compose(i).then(function (code) {
+      var f = document.createElement('iframe');
+      f.className = 'hb-frame' + (i === cur ? '' : ' off'); f.title = btns[i - 1] ? btns[i - 1].title : 'Dashboard ' + i;
+      f.setAttribute('scrolling', 'no');
+      f.setAttribute('allow', 'camera *; geolocation *; clipboard-write *');       /* in-page camera + GPS for site photos (OLC-2, Askara) */
+      f.addEventListener('load', function () { hook(i, f); });
+      f.srcdoc = '<!doctype html><html class="pm-hub" lang="en" data-pmhub-slugs="' + SLUGS.join(' ') + '"><head><meta charset="utf-8">' +
+        '<meta name="viewport" content="width=device-width,initial-scale=1"><base target="_blank"></head><body>' + code + SO + LINK + SC + '</body></html>';
+      stage.appendChild(f); frames[i] = f; pend[i] = false;
+      if (i === cur) cueMore();
+    }).catch(function (e) {
+      pend[i] = false;
+      if (i === cur) { ld.hidden = false; ld.classList.add('err'); ldt.textContent = 'This dashboard could not be unpacked in this browser (' + (e && e.message || e) + '). Please update the browser or open the stand-alone code.'; }
+    });
+  }
+  function rootOf(doc) { return doc.getElementById('pmis') || doc.getElementById('pml'); }
+  function size(i) {
+    var f = frames[i], r = f && f._root; if (!r) return;
+    var h = Math.ceil(r.getBoundingClientRect().height);
+    if (h > 40 && Math.abs((parseFloat(f.style.height) || 0) - h) > 1) f.style.height = h + 'px';
+    if (i === cur) cueMore();
+  }
+  function hook(i, f) {
+    var doc = null, win = null; try { doc = f.contentDocument; win = f.contentWindow; } catch (e) {}
+    if (!doc || !win || f._hooked) return;
+    var tries = 0;
+    (function wait() {
+      var r = rootOf(doc);
+      if (!r) { if (tries++ < 150) setTimeout(wait, 100); return; }
+      f._root = r; f._hooked = true;
+      var fit = function () { size(i); };
+      if (win.ResizeObserver) new win.ResizeObserver(fit).observe(r);
+      win.addEventListener('resize', fit);
+      if (win.MutationObserver) new win.MutationObserver(function () { themeChanged(i); }).observe(r, { attributes: true, attributeFilter: ['data-theme'] });
+      ready[i] = true; size(i);
+      if (i === cur) ld.hidden = true;
+      var n = 0; (function look() { if (themeBtn(i)) matchTheme(i); else if (n++ < 80) setTimeout(look, 250); })();   /* the theme button appears once the data is drawn */
+    })();
+  }
+
+  /* ---- a host that sandboxes the embed (no access into the frames): each frame reports by message ---- */
+  function reach(f) { try { return !!f.contentDocument; } catch (e) { return false; } }
+  window.addEventListener('message', function (e) {
+    var d = e.data, i = 0, k; if (!d || d.pmhub !== 1) return;
+    for (k in frames) if (frames[k].contentWindow === e.source) i = +k;
+    if (!i) return;
+    if (d.go && SLUG[d.go]) { show(SLUG[d.go]); return; }                  /* a "#page" link inside a dashboard (e.g. "Go to Dashboard") */
+    var f = frames[i]; if (reach(f)) return;                               /* frames the hub can read are followed directly */
+    f._xo = true;
+    if (d.theme) {
+      var was = f._xt, had = f._xb; f._xt = d.theme; f._xb = !!d.btn; f._xr = !!d.report;
+      if (ready[i]) { if (was && was !== d.theme) themeChanged(i); else if (f._xb && !had) matchTheme(i); }
+    }
+    if (d.h) {
+      if (Math.abs((parseFloat(f.style.height) || 0) - d.h) > 1) f.style.height = d.h + 'px';
+      if (!ready[i]) { ready[i] = true; setTimeout(function () { matchTheme(i); }, 60); if (i === cur) ld.hidden = true; }
+      if (i === cur) cueMore();
+    }
+  });
+
+  /* ---- one light / dark choice for every dashboard (light unless the viewer chose dark) ---- */
+  var hubTheme = sget().theme || (/^(gelap|dark)/i.test(opt('Tema')) ? 'dark' : 'light');
+  function rootTheme(i) {
+    var f = frames[i]; if (f && f._xo) return f._xt === 'dark' ? 'dark' : 'light';
+    var r = f && f._root; return r && r.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function themeBtn(i) { var r = frames[i] && frames[i]._root; return r ? r.querySelector(r.id === 'pml' ? '.th' : '.hb-theme') : null; }
+  function hasTheme(i) { var f = frames[i]; return !!f && (f._xo ? !!f._xb : !!themeBtn(i)); }
+  function printing(i) { var f = frames[i], r = f && f._root; return f && f._xo ? !!f._xr : !!r && r.classList.contains('pm-report'); }
+  var SUN = tg ? tg.getAttribute('data-sun') : '', MOON = tg ? tg.getAttribute('data-moon') : '';
+  function barTheme() {
+    hub.setAttribute('data-theme', hubTheme);
+    if (tg) {
+      tg.innerHTML = '<svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (hubTheme === 'light' ? MOON : SUN) + '"/></svg>';
+      tg.title = hubTheme === 'light' ? 'Dark theme (all dashboards)' : 'Light theme (all dashboards)'; tg.setAttribute('aria-label', tg.title);
+    }
+  }
+  function matchTheme(i) {
+    if (!hasTheme(i) || printing(i) || rootTheme(i) === hubTheme) return;
+    var f = frames[i];
+    if (f._xo) { try { f.contentWindow.postMessage({ pmhub: 1, setTheme: hubTheme }, '*'); } catch (e) {} }
+    else themeBtn(i).click();
+  }
+  function setHub(t) {
+    if (t === hubTheme) return;
+    hubTheme = t; var st = sget(); st.theme = t; sset(st); barTheme();
+    for (var k in frames) if (ready[k]) matchTheme(+k);
+  }
+  function themeChanged(i) {
+    if (!ready[i] || printing(i) || !hasTheme(i)) return;
+    var t = rootTheme(i); if (t !== hubTheme) setHub(t);                      /* switched inside one dashboard: the others follow */
+  }
+  if (tg) tg.addEventListener('click', function () { setHub(hubTheme === 'light' ? 'dark' : 'light'); });
+
+  /* ---- the navigator ---- */
+  function show(i, quiet) {
+    i = Math.max(1, Math.min(N, i | 0));
+    if (i === cur) return;
+    cur = i;
+    btns.forEach(function (b) { var on = +b.getAttribute('data-d') === i; b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; });
+    for (var k in frames) frames[k].classList.toggle('off', +k !== i);
+    ld.classList.remove('err'); ldt.textContent = 'Loading dashboard…'; ld.hidden = !!ready[i];
+    if (!frames[i]) build(i);
+    (document.scrollingElement || de).scrollTop = 0;
+    if (!quiet) { var st = sget(); st.d = i; sset(st); }
+    try { var slug = SLUGS[i - 1]; if (history.replaceState && location.hash.slice(1) !== slug && !/^about:/.test(location.href)) history.replaceState(null, '', '#' + slug); } catch (e) {}
+    size(i); cueMore();
+  }
+  nav.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('button[data-d]'); if (b) show(+b.getAttribute('data-d')); });
+  nav.addEventListener('keydown', function (e) {
+    var k = e.key, i = cur;
+    if (k === 'ArrowRight') i = cur % N + 1; else if (k === 'ArrowLeft') i = (cur + N - 2) % N + 1; else if (k === 'Home') i = 1; else if (k === 'End') i = N; else return;
+    e.preventDefault(); show(i); btns[i - 1].focus();
+  });
+  window.addEventListener('hashchange', function () { var d = SLUG[location.hash.slice(1)]; if (d) show(d); });
+
+  /* ---- the box scrolls without a scrollbar: a quiet arrow at the bottom while there is more below ---- */
+  function cueMore() {
+    var sc = document.scrollingElement || de, on = framed && sc.scrollHeight - sc.clientHeight - sc.scrollTop > 24;
+    if (more.classList.contains('on') !== on) more.classList.toggle('on', on);
+  }
+  window.addEventListener('scroll', cueMore, { passive: true });
+  window.addEventListener('resize', function () { layout(); for (var k in frames) size(+k); cueMore(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+
+  barTheme(); layout();
+  var start = SLUG[location.hash.slice(1)] || +sget().d || parseInt(opt('Halaman Awal'), 10) || 1;
+  show(start, true);
+})();
+</script>

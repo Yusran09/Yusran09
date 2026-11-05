@@ -1,0 +1,108 @@
+<!-- =====================================================================
+  PMIS · LOGISTICS READINESS · PENGATURAN (ubah teks setelah tanda ":")
+  Judul / Subjudul : teks di kiri bar navigator.
+  Halaman 1        : nama dashboard di navigator (kanan atas).  Singkat 1 : nama pendek bila kotak sempit / HP.
+  Tema             : terang | gelap — tema awal. Tombol matahari/bulan di bar (atau di dashboard) mengganti tema,
+                     dan diingat oleh browser.
+  Link langsung    : tambahkan #logistics di akhir alamat halaman untuk membuka dashboard ini langsung.
+  Dashboard punya blok pengaturannya sendiri di bawah (Sheet ID, nama tab, bobot readiness, dll.):
+  cari "1 · LOGISTICS READINESS".
+  Mesin (engine) dashboard disimpan terkompresi agar kode ini tetap di bawah 1 MB; pengaturan dan data
+  Summary / Detail / Issues tetap teks biasa dan bisa diubah seperti biasa. Jangan ubah blok "pmhub-z"
+  dan blok "lg-data-itm" (teks acak panjang = baris material yang dikompresi).
+  Dibuat oleh: logistics_master/pmis_embed/build_pmis_embed.py  ·  {{BUILD_INFO}}
+  ===================================================================== -->
+<script type="text/plain" id="hub-config">
+Judul        : {{HUB_TITLE}}
+Subjudul     : Project Controls · Logistics Readiness
+Halaman 1    : Logistics Readiness
+Singkat 1    : Logistics
+Halaman Awal : 1
+Tema         : terang
+</script>
+{{HUB_HEAD}}<header class="hb-bar"><div class="hb-in">
+  <div class="hb-brand"><div class="hb-eb">{{HUB_TITLE_HTML}}</div><div class="hb-tt">Project Controls · Logistics Readiness</div></div>
+  <div class="hb-act"><nav class="hb-nav" role="tablist" aria-label="Dashboards"><button type="button" role="tab" data-d="1" data-slug="logistics" aria-selected="false" tabindex="-1"><svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6h11v9.5h-11zM13.5 9h4.3l3.2 3.6v2.9h-7.5M7.6 17.6a1.9 1.9 0 1 1-3.8 0a1.9 1.9 0 1 1 3.8 0zM19.1 17.6a1.9 1.9 0 1 1-3.8 0a1.9 1.9 0 1 1 3.8 0z"/></svg><span class="lf">Logistics Readiness</span><span class="sh">Logistics</span></button></nav><button type="button" class="hb-tg" data-sun="M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" data-moon="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"></button></div>
+</div></header>
+{{HUB_STAGE}}
+{{HUB_LINK}}
+
+<!-- ===================== 1 · LOGISTICS READINESS · kode dashboard seperti di website (pengaturannya di awal blok ini) ===================== -->
+<template id="pmhub-d1"><!-- =====================================================================
+  ✏️  PENGATURAN — Dashboard Logistics Readiness (Final Packing List → Site)
+  Judul        : judul dashboard (tampil di halaman Overview).
+  Sheet ID     : ID Google Sheet (teks di antara /d/ dan /edit pada link Bagikan). Kosong = hanya data cadangan di bawah.
+                 Akses umum sheet = "Siapa saja yang memiliki link: Pelihat" (JANGAN Editor — ID ini terlihat di kode halaman).
+  Sumber       : (cadangan) link "Publish to web" seluruh dokumen (…/pub?output=csv). Boleh dibiarkan kosong.
+  Tab Package  : nama tab Summary Packing List (1 baris = 1 package).           Default: Packages
+  Tab Detail   : nama tab Detail Packing List (1 baris = 1 blok detail).        Default: Detail
+  Tab Item     : nama tab baris material (1 baris = 1 item).                    Default: Items
+  Tab Issue    : nama tab exception register dari ETL.                          Default: Issues
+                 Isi keempat tab = file LOGISTICS-PMIS-SHEET.xlsx dari builder (format teks, judul kolom di baris 1).
+  Data Date    : tanggal status data (contoh 5 Nov 2026). Kosong = kolom "Data Date" di tab Packages.
+  Bobot Gate   : bobot Readiness Index: Packing List / MDR / Site / Inspection (jumlah 100). Default 15 / 35 / 15 / 35.
+  Kredit RES   : kredit MDR berstatus Resubmit (0–1). Default 0.5. Approved / tidak perlu MDR = 1.
+  MDR Tidak Perlu : kata di Remark / MDR No. yang berarti MDR tidak diperlukan (pisahkan dengan koma).
+  Lokasi       : kata di Remark / catatan site yang berarti barang sudah di lokasi (laydown, camp, warehouse, …).
+  Tag Site     : kata di catatan site yang berarti barang sudah tiba (onsite, arrived, …).
+  Batas MDR    : hari setelah inspeksi sebelum "MDR pending" menjadi kuning / merah. Default 7 / 14.
+  Basis        : package | tonase — satuan awal grafik & tabel (bisa diganti dengan tombol di dashboard).
+  Cek Data     : tampil | sembunyi — tanda "Data check" + panel "Readiness checks" (sembunyikan untuk publik).
+  Auto Refresh : menit antar pembaruan otomatis dari Google Sheet (120 = setiap 2 jam, 0 = mati).
+  Tema         : terang | gelap | auto      Kepekatan : 0–100 (default 62)
+  Skala        : lebar | penuh               Latar     : auto | transparan | abyss | tide | reef | dusk | kabut | pasir
+  Batas Umur Data : hari setelah data date sebelum data ditandai "lama" (default 10).
+  Gambar Latar : link foto (https://…) untuk halaman Welcome. Welcome : tampil | sembunyi
+  Aturan Ready : Packing list terverifikasi + MDR Approved (atau tidak perlu) + diterima & diinspeksi (RFS + tanggal inspeksi)
+                 — sama dengan aturan ETL (config/readiness_rules.json). Bila hasil di sini berbeda dengan kolom
+                 "Readiness Status (ETL)", dashboard memberi tanda di "Data check".
+====================================================================== -->
+<script type="text/plain" id="lg-config">
+Judul        : {{DASH_TITLE}}
+Sheet ID     : {{SHEET_ID}}
+Sumber       :
+Tab Package  : Packages
+Tab Detail   : Detail
+Tab Item     : Items
+Tab Issue    : Issues
+Data Date    :
+Bobot Gate   : 15 / 35 / 15 / 35
+Kredit RES   : 0.5
+MDR Tidak Perlu : mdr not required, mdr is not required, no mdr required
+Lokasi       : laydown, askara, camp, warehouse, yard, store
+Tag Site     : onsite, on site, on-site, arrived
+Batas MDR    : 7 / 14
+Basis        : package
+Cek Data     : tampil
+Auto Refresh : 120
+Tema         : terang
+Kepekatan    : 62
+Skala        : lebar
+Latar        : auto
+Batas Umur Data : 10
+Gambar Latar : {{IMAGE}}
+Welcome      : tampil
+</script>
+<!-- WELCOME PAGE · teks & section (boleh diubah; "Welcome Judul" / "Welcome Narasi" di pengaturan juga bisa) -->
+<script type="application/json" id="pm-welcome">{{WELCOME_JSON}}</script>
+
+<!-- =====================================================================
+  ✏️  DATA CADANGAN (dipakai bila Google Sheet tidak bisa dimuat / Sheet ID kosong)
+  Buka tab "Packages" di Google Sheet / Excel → Ctrl+A → Ctrl+C → paste menggantikan isi tag "lg-data-pkg".
+  Lakukan hal yang sama untuk tab "Detail" (lg-data-blk) dan "Issues" (lg-data-iss).
+  Baris material (lg-data-itm) dikompresi — buat ulang dengan build_pmis_embed.py, jangan diketik manual.
+  Sumber: {{DATA_INFO}}
+====================================================================== -->
+{{DATA_BLOCKS}}
+<!-- ================= Di bawah ini tidak perlu diubah ================= -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+
+<div id="pmis" data-theme="light" class="fx fx-wel">
+<!--pmhub:z--><script type="text/plain" class="pmhub-z">
+{{ENGINE_Z}}
+</script></template>
+
+{{HUB_SCRIPT}}

@@ -1,0 +1,172 @@
+<script>
+/* =====================================================================
+   PMIS · finish v7 — welcome page, drone canvas, frame tab, entrance motion
+   Settings (in the settings block above):
+     Gambar Latar   : https://…  (drone photo for the canvas and the welcome page)
+     Welcome        : tampil | sembunyi      (show the welcome page when the page opens)
+     Welcome Judul  : optional headline       Welcome Narasi : optional paragraph
+   Texts and sections: <script id="pm-welcome"> (JSON) next to the settings.
+   Nothing here reads or changes the data: it only shows the dashboard's own numbers.
+   ===================================================================== */
+(function () {
+  'use strict';
+  var root = document.getElementById('pmis');
+  if (!root || root.getAttribute('data-fx') === 'on') return;
+  root.setAttribute('data-fx', 'on');
+  var cfgEl = document.querySelector('script[type="text/plain"][id$="-config"]'), txt = cfgEl ? cfgEl.textContent : '';
+  function opt(k) { var m = new RegExp('^[ \\t]*' + k + '[ \\t]*:[ \\t]*(.*)$', 'im').exec(txt); return m ? m[1].trim() : ''; }
+  var W = {}; try { W = JSON.parse(document.getElementById('pm-welcome').textContent) || {}; } catch (e) {}
+  function q(s, c) { return Array.prototype.slice.call((c || root).querySelectorAll(s)); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var ICO = {
+    arrow: 'M7 7h10v10M7 17 17 7', left: 'M15 18l-6-6 6-6', right: 'M9 18l6-6-6-6', home: 'M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'
+  };
+  function ic(d, w) { return '<svg width="' + (w || 16) + '" height="' + (w || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + d + '"/></svg>'; }
+
+  /* ---- the canvas photo ---- */
+  var img = opt('Gambar Latar') || W.img || '';
+  if (/^https:\/\//i.test(img)) root.style.setProperty('--fx-img', 'url("' + img.replace(/["\\\s]/g, '') + '")');
+  root.classList.add('fx');
+  var showWel = !/^(sembunyi|hide|tidak|no|off)/i.test(opt('Welcome'));
+
+  /* ---- sections = the dashboard's own page tabs ---- */
+  function navBtns() {
+    var pg = root.querySelector('.page:not(.off)') || root, b = q('.nav [data-go]', pg);
+    if (!b.length) b = q('#nav [data-go], #nav button');
+    return b;
+  }
+  function label(b) { var lf = b.querySelector('.lf'); return (lf ? lf.textContent : b.textContent).replace(/^\s*\d+\s*/, '').replace(/\s+/g, ' ').trim(); }
+  var SEC = navBtns().map(function (b, i) { var d = (W.sections || [])[i] || {}; return { n: +(b.getAttribute('data-go') || i + 1), name: d.name || label(b), text: d.text || '' }; });
+  if (!SEC.length) SEC = [{ n: 1, name: 'Dashboard', text: '' }];
+
+  /* ---- markup ---- */
+  var wel = document.createElement('section'); wel.className = 'wel'; wel.setAttribute('aria-label', 'Welcome');
+  var title = opt('Welcome Judul') || W.title || 'Project Controls Dashboard', lead = opt('Welcome Narasi') || W.lead || '';
+  var CROP = [['18%', '30%', '250%'], ['72%', '62%', '290%'], ['42%', '82%', '260%'], ['88%', '24%', '320%'], ['8%', '72%', '280%'], ['56%', '44%', '340%'], ['30%', '12%', '300%']];
+  wel.innerHTML =
+    '<div class="wel-bg" aria-hidden="true"></div>' +
+    '<header class="wel-nav fx-a">' +
+      '<div class="wel-logo"><i>' + ic(W.icon || ICO.home, 18) + '</i><div>' + esc(W.brand || 'PMIS') + '<small>' + esc(W.sub || 'Project Controls') + '</small></div></div>' +
+      '<nav class="wel-menu" aria-label="Sections">' + SEC.map(function (s, i) { return '<button type="button" data-fxgo="' + i + '">' + esc(s.name) + '</button>'; }).join('') + '</nav>' +
+      '<button type="button" class="wel-cta" data-fxgo="0">Open Dashboard</button>' +
+    '</header>' +
+    '<div class="wel-body">' +
+      '<div class="wel-main">' +
+        '<div class="wel-kick fx-a d1">' + esc(W.kick || 'Project Controls') + '</div>' +
+        '<h1 class="wel-title fx-a d2">' + (W.titleHtml && !opt('Welcome Judul') ? W.titleHtml : esc(title)) + '</h1>' +
+        '<p class="wel-lead fx-a d3">' + esc(lead) + '</p>' +
+        '<div class="wel-acts fx-a d4"><button type="button" class="wel-go" data-fxgo="0">Get Started<b>' + ic(ICO.arrow, 15) + '</b></button>' +
+          '<span class="wel-live"><i></i><span data-fx="live">Connecting to the live sheet…</span></span></div>' +
+        '<div class="wel-stats fx-a d5" data-fx="stats"></div>' +
+      '</div>' +
+      '<div class="wel-side fx-a d6">' +
+        '<div class="wel-cards" data-fx="cards"></div>' +
+        '<div class="wel-slide"><button type="button" data-fx="prev" aria-label="Previous section">' + ic(ICO.left) + '</button><button type="button" data-fx="next" aria-label="Next section">' + ic(ICO.right) + '</button>' +
+          '<span class="rail"><i data-fx="rail"></i></span><span class="num" data-fx="num">01</span></div>' +
+        '<div class="wel-sec" data-fx="sec"></div>' +
+      '</div>' +
+    '</div>';
+  root.insertBefore(wel, root.firstChild);
+  function part(k) { return wel.querySelector('[data-fx="' + k + '"]'); }
+
+  var home = document.createElement('button'); home.type = 'button'; home.className = 'fx-home'; home.setAttribute('aria-label', 'Back to the welcome page');
+  home.innerHTML = ic(ICO.home, 12) + '<span>' + esc(W.tab || 'Home') + '</span>';
+  root.appendChild(home);
+
+  /* ---- section carousel ---- */
+  var cur = 0;
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function drawCards() {
+    var box = part('cards'), k = Math.min(3, SEC.length), h = '';
+    for (var j = 0; j < k; j++) {
+      var i = (cur + j) % SEC.length, s = SEC[i], c = CROP[i % CROP.length];
+      h += '<button type="button" class="wel-card' + (j === 0 ? ' on' : '') + '" data-fxgo="' + i + '" style="--cx:' + c[0] + ';--cy:' + c[1] + ';--cz:' + c[2] + '" aria-label="Open ' + esc(s.name) + '">' +
+        '<span class="wn">' + pad(i + 1) + '</span><span class="wa">' + ic(ICO.arrow, 14) + '</span><span class="wt"><b>' + esc(s.name) + '</b>' + (s.text ? '<span>' + esc(s.text) + '</span>' : '') + '</span></button>';
+    }
+    box.innerHTML = h;
+    part('num').innerHTML = pad(cur + 1) + '<small>/' + pad(SEC.length) + '</small>';
+    part('rail').style.width = ((cur + 1) / SEC.length * 100) + '%';
+    var s0 = SEC[cur]; part('sec').innerHTML = '<b>' + esc(s0.name) + '</b>' + (s0.text ? ' — ' + esc(s0.text) : '');
+  }
+  function step(d) { cur = (cur + d + SEC.length) % SEC.length; drawCards(); }
+  part('prev').addEventListener('click', function () { step(-1); });
+  part('next').addEventListener('click', function () { step(1); });
+  drawCards();
+
+  /* ---- live numbers: the dashboard's own headline figures ---- */
+  function valOf(el) {
+    if (!el) return null;
+    var c = el.cloneNode(true), sm = c.querySelector('small'), u = sm ? sm.textContent.trim() : ''; if (sm) sm.parentNode.removeChild(sm);
+    var v = c.textContent.replace(/\s+/g, ' ').trim(); if (!v || v === '—') return null;
+    return { v: v, u: u };
+  }
+  function stats() {
+    var out = [];
+    (W.stats || []).forEach(function (s) {
+      if (out.length >= 3) return;
+      if (s.list) {
+        q(s.list).forEach(function (it, idx) {
+          if (out.length >= 3 || (s.n && out.length >= s.n) || (s.pick && s.pick.indexOf(idx) < 0)) return;
+          var x = valOf(it.querySelector(s.val || '.v')), l = it.querySelector(s.lab || '.lbl, .l');
+          if (x) out.push({ v: x.v, u: x.u, l: l ? l.textContent.replace(/\s+/g, ' ').trim() : '' });
+        });
+      } else {
+        var x2 = valOf(root.querySelector(s.sel));
+        if (x2) out.push({ v: x2.v + (s.suffix || ''), u: s.unit || x2.u, l: s.lab || '' });
+      }
+    });
+    var box = part('stats'), h = out.map(function (s) { return '<div class="wel-stat"><b>' + esc(s.v) + (s.u ? '<small>' + esc(s.u) + '</small>' : '') + '</b><span>' + esc(s.l) + '</span></div>'; }).join('');
+    if (box.innerHTML !== h) box.innerHTML = h;
+    var ft = root.querySelector('.page:not(.off) .fresh .ft, .fresh .ft, #h-fresh .ft'), dd = null;
+    (W.dd || ['.page:not(.off) .ddt', '#h-cut', '#cr-date', '.page:not(.off) .cut', '.asof']).some(function (s) { var e = root.querySelector(s); if (e && e.textContent.trim()) { dd = e.textContent.replace(/\s+/g, ' ').trim(); return true; } return false; });
+    var st = ft ? ft.textContent.trim() : (W.state || ''), bad = /snapshot|fail|offline|not loaded|error|not reachable/i.test(st), live = part('live');
+    var t = (st ? st : 'Loading') + (dd ? ' · ' + dd : '');
+    if (live.textContent !== t) live.textContent = t;
+    live.parentNode.classList.toggle('off', bad || !st);
+  }
+  var tmr = 0;
+  function later() { if (!tmr) tmr = setTimeout(function () { tmr = 0; if (root.classList.contains('fx-wel')) stats(); }, 350); }
+  if (window.MutationObserver) new MutationObserver(function (recs) { for (var i = 0; i < recs.length; i++) if (!wel.contains(recs[i].target)) { later(); return; } }).observe(root, { subtree: true, childList: true, characterData: true });
+  stats();
+
+  /* ---- in / out ---- */
+  var busy = false;
+  function settle() { try { window.dispatchEvent(new Event('resize')); } catch (e) {} }
+  function leave(then) {
+    if (!root.classList.contains('fx-wel') || busy) { if (then) then(); return; }
+    busy = true; wel.classList.add('out');
+    setTimeout(function () {
+      root.classList.remove('fx-wel'); wel.classList.remove('out'); busy = false;
+      root.classList.add('fx-enter'); setTimeout(function () { root.classList.remove('fx-enter'); }, 1300);
+      if (then) then(); settle();
+      try { if (root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: 'start' }); } catch (e) {}
+    }, 380);
+  }
+  function go(i) {
+    var s = SEC[i] || SEC[0];
+    leave(function () {
+      var b = root.querySelector('.page:not(.off) .nav [data-go="' + s.n + '"]') || root.querySelector('#nav [data-go="' + s.n + '"]') || navBtns()[i];
+      if (b && b.getAttribute('aria-pressed') !== 'true' && b.getAttribute('aria-selected') !== 'true') b.click();
+    });
+  }
+  function enter() {
+    if (root.classList.contains('fx-wel')) return;
+    stats(); root.classList.add('fx-wel');
+    q('.fx-a', wel).forEach(function (e) { e.style.animation = 'none'; void e.offsetWidth; e.style.animation = ''; });
+    settle();
+    try { if (root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: 'start' }); } catch (e) {}
+  }
+  wel.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-fxgo]'); if (b) go(+b.getAttribute('data-fxgo')); });
+  home.addEventListener('click', enter);
+  /* a page tab used while the welcome page is up (keys 1–9 from the viewer layer, or a real click) leaves it */
+  root.addEventListener('click', function (e) { if (!e.isTrusted || !root.classList.contains('fx-wel')) return; var b = e.target.closest && e.target.closest('[data-go]'); if (b && !wel.contains(b)) leave(); }, true);
+  document.addEventListener('keydown', function (e) {
+    if (!root.classList.contains('fx-wel') || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target, tag = t && t.tagName; if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (/^[1-9]$/.test(e.key) && +e.key <= SEC.length) { e.preventDefault(); e.stopPropagation(); go(+e.key - 1); }
+    else if (e.key === 'Enter' && !(t && t.closest && t.closest('button'))) { e.preventDefault(); go(cur); }
+    else if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1);
+  }, true);
+  if (showWel) root.classList.add('fx-wel'); else root.classList.remove('fx-wel');
+})();
+</script>

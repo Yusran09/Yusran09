@@ -1,0 +1,21 @@
+{
+  "brand": "Logistics Readiness",
+  "sub": "Project Controls · Logistics",
+  "tab": "Logistics Home",
+  "icon": "M2.5 6h11v9.5h-11zM13.5 9h4.3l3.2 3.6v2.9h-7.5M7.6 17.6a1.9 1.9 0 1 1-3.8 0a1.9 1.9 0 1 1 3.8 0zM19.1 17.6a1.9 1.9 0 1 1-3.8 0a1.9 1.9 0 1 1 3.8 0z",
+  "kick": "Logistics Readiness · Final Packing List",
+  "titleHtml": "Every Package, <em>Tracked</em> From Packing List To Site",
+  "lead": "Each package of the final packing lists followed through four gates — packing list verified, MDR approved, arrived on site, received and inspected — so construction knows what it can use today and what still blocks it.",
+  "sections": [
+    {"text": "Receiving and MDR readiness at a glance"},
+    {"text": "Site receiving per week, batch and system"},
+    {"text": "Summary › detail › material lines of every package"},
+    {"text": "Packing-list exceptions found by the ETL"}
+  ],
+  "stats": [
+    {"list": "#o-st .stp", "lab": ".stp-name", "val": ".stp-big .v"},
+    {"sel": "#o-st .kq .v", "lab": "Ready for construction"}
+  ],
+  "state": "ETL snapshot",
+  "img": ""
+}

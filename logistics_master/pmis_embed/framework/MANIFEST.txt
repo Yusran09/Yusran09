@@ -1,0 +1,18 @@
+# PMIS framework (DS v8), extracted verbatim from "PMIS-Resources-TIA-Schedule-KODE.txt"
+# Do not edit: the logistics dashboard reuses these parts unchanged (style, hub, viewer, welcome).
+# engine_utils.js = shared utilities of the Resources engine (script 2, line ranges in its header);
+#   build_pmis_embed.py applies the documented PATCHES (chart labels from the spec, 0-100 % bar).
+# hub_bar_reference.html = the original 3-dashboard navigator, kept for reference only.
+# file  sha256(16)  bytes
+engine_canvas.js.html  36d4d37b692cc0f3  9,920
+engine_pm_ds.css.html  a1f802f62d60ee2a  20,696
+engine_pm_finish.css.html  f221b6617eb57b2c  20,051
+engine_style_main.css.html  0b569f36c60f2021  86,609
+engine_utils.js  75d84580435fbbe2  30,744
+engine_viewer.js.html  ba014120e09bbac3  25,626
+engine_welcome.js.html  8b9f7ab07a81eba1  11,841
+hub_bar_reference.html  19e23cea71a76e89  1,937
+hub_head.html  26bd72820aee52fa  5,976
+hub_link.html  b5187f90731b2bf6  2,203
+hub_script.html  1e6793ae1bdba1a7  17,166
+hub_stage.html  931265e531e69c1f  365

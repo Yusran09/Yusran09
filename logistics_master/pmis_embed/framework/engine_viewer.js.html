@@ -1,0 +1,383 @@
+<script>
+/* =====================================================================
+   PMIS · viewer layer v6 — critical focus, data age, shortcuts,
+   remembered tabs, light/dark toggle and print report (canvas aware).
+   Runs after the dashboard script and only presses the dashboard's own
+   buttons; it never reads or changes the data. Optional setting:
+     Batas Umur Data : 10      days after the data date before it is flagged
+   ===================================================================== */
+(function () {
+  'use strict';
+  var root = document.getElementById('pmis');
+  if (!root || root.getAttribute('data-ux') === 'on') return;
+  root.setAttribute('data-ux', 'on');
+  var cfgEl = document.querySelector('script[type="text/plain"][id$="-config"]'), txt = cfgEl ? cfgEl.textContent : '';
+  function opt(k) { var m = new RegExp('^[ \\t]*' + k + '[ \\t]*:[ \\t]*(.*)$', 'im').exec(txt); return m ? m[1].trim() : ''; }
+  var KIND = cfgEl ? cfgEl.id.replace(/-config$/, '') : 'pmis', TIA = KIND === 'tia';
+  var AGE_LIM = parseFloat(String(opt('Batas Umur Data')).replace(',', '.'));
+  if (!(AGE_LIM > 0)) AGE_LIM = { epc: 10, rs: 45, sch: 10, tia: 10 }[KIND] || 10;
+  root.classList.add('pm-k-' + KIND);
+
+  var IC = {
+    print: 'M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6M7 14h10a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1z',
+    sun: 'M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
+    moon: 'M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401',
+    help: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01',
+    alert: 'M21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4M12 17h.01',
+    clock: 'M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0M12 6v6l4 2',
+    x: 'M18 6 6 18M6 6l12 12'
+  };
+  function icon(n, s) { s = s || 14; return '<svg class="icn" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + IC[n] + '"/></svg>'; }
+  function q(s, c) { try { return Array.prototype.slice.call((c || root).querySelectorAll(s)); } catch (e) { return []; } }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function activePage() { return root.querySelector(TIA ? '#tia-app > .page.on' : '.pages > .page:not(.off)'); }
+  function pageNo(p) { return p ? (+String(p.id).replace(/\D/g, '') || 1) : 1; }
+  function visible(el) { return !!el && el.offsetParent !== null && getComputedStyle(el).visibility !== 'hidden'; }
+  /* canvas scale: rectangles are measured on screen, layout and scroll offsets are in sheet units */
+  function cvs() { return root.classList.contains('cv') ? (parseFloat(root.style.getPropertyValue('--cv-s')) || 1) : 1; }
+
+  /* ---------- per-viewer memory (this browser only) ---------- */
+  var store = null; try { localStorage.setItem('__pm5', '1'); localStorage.removeItem('__pm5'); store = localStorage; } catch (e) {}
+  var SKEY = 'pmis6:' + KIND + ':' + (opt('Judul') || '').slice(0, 80);
+  function sget() { if (!store) return {}; try { return JSON.parse(store.getItem(SKEY) || '{}') || {}; } catch (e) { return {}; } }
+  function sset(o) { if (store) try { store.setItem(SKEY, JSON.stringify(o)); } catch (e) {} }
+
+  /* ---------- header action group: critical · data age · live · print · theme · help ---------- */
+  function groups() {
+    if (TIA) {
+      var nav = root.querySelector('#tia-app > #nav'); if (!nav) return [];
+      var g = nav.nextElementSibling && nav.nextElementSibling.classList.contains('hact') ? nav.nextElementSibling : null;
+      if (!g) { g = document.createElement('div'); g.className = 'hact navside'; nav.parentNode.insertBefore(g, nav.nextSibling); }
+      return [g];
+    }
+    return q('.hact');
+  }
+  function placeNavside(g) {
+    /* TIA: ride in the free right end of the tab bar when it fits there, otherwise take a row under the tabs */
+    var nav = g && root.querySelector('#tia-app > #nav'), bs = nav ? nav.querySelectorAll('button') : [], last = bs[bs.length - 1];
+    if (!last || !g.firstChild) return;
+    var k = cvs(), room = (nav.getBoundingClientRect().right - last.getBoundingClientRect().right) / k - 24;   /* sheet units: the same answer at any scale */
+    g.classList.toggle('inbar', window.innerWidth > 640 && room >= g.getBoundingClientRect().width / k + 14);
+  }
+  function fill(g) {
+    if (g._pm) return; g._pm = true;
+    var fresh = g.querySelector('.fresh');
+    var crit = document.createElement('button'); crit.type = 'button'; crit.className = 'hc crit'; crit.hidden = true; crit.setAttribute('data-act', 'crit');
+    var age = document.createElement('span'); age.className = 'hc age'; age.hidden = true;
+    g.insertBefore(age, fresh || null); g.insertBefore(crit, age);
+    [['print', 'print', 'Print / PDF report of this page (P)'], TIA ? null : ['theme', 'sun', 'Light / dark theme (T)'], ['help', 'help', 'Shortcuts and help (?)']].forEach(function (a) {
+      if (!a) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'hb hb-' + a[0]; b.setAttribute('data-act', a[0]);
+      b.setAttribute('aria-label', a[2]); b.title = a[2]; b.innerHTML = icon(a[1], 14); g.appendChild(b);
+    });
+  }
+  root.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-act]'); if (!b || !root.contains(b)) return;
+    var a = b.getAttribute('data-act');
+    if (a === 'crit') nextCrit(); else if (a === 'print') printReport(); else if (a === 'theme') toggleTheme(); else if (a === 'help') toggleHelp();
+  });
+
+  /* ---------- data age: days since the data date in the header ---------- */
+  var MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, mei: 4, jun: 5, jul: 6, aug: 7, agu: 7, agt: 7, sep: 8, oct: 9, okt: 9, nov: 10, dec: 11, des: 11 };
+  var MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function dataDate() {
+    var pg = activePage(), el = TIA ? root.querySelector('#h-dd') : (pg && (pg.querySelector('.cut') || pg.querySelector('.ddt')));
+    var t = el ? el.textContent : '', m, mo;
+    m = /(\d{1,2})\s+([A-Za-z]{3})[A-Za-z]*\.?\s+(\d{4})/.exec(t);
+    if (m && (mo = MON[m[2].toLowerCase()]) != null) return { d: new Date(+m[3], mo, +m[1]), month: false };
+    m = /\b([A-Za-z]{3})-(\d{2})\b/.exec(t);
+    if (m && (mo = MON[m[1].toLowerCase()]) != null) return { d: new Date(2000 + +m[2], mo + 1, 0), month: true };
+    return null;
+  }
+  function paintAge(gs) {
+    var dd = dataDate(), t = new Date(); t.setHours(0, 0, 0, 0);
+    gs.forEach(function (g) {
+      var a = g.querySelector('.age'); if (!a) return;
+      if (!dd) { a.hidden = true; return; }
+      var days = Math.max(0, Math.round((t - dd.d) / 864e5)), stale = days > AGE_LIM;
+      var key = days + '|' + stale; if (a._k === key && !a.hidden) return; a._k = key; a.hidden = false;
+      a.classList.toggle('stale', stale);
+      a.innerHTML = icon('clock', 13) + '<b>' + days + '</b>&nbsp;d' + (stale ? '<i>stale</i>' : '');
+      var ds = dd.d.getDate() + ' ' + MS[dd.d.getMonth()] + ' ' + dd.d.getFullYear();
+      var tip = (dd.month ? 'Data month ends ' : 'Data date ') + ds + ' — ' + days + ' day' + (days === 1 ? '' : 's') + ' old.\n' +
+        (stale ? 'Older than ' + AGE_LIM + ' days: ask for the next update before using these numbers.' : 'Flagged after ' + AGE_LIM + ' days (Batas Umur Data).');
+      a.setAttribute('data-tip', TIA ? esc(tip) : tip);
+      a.setAttribute('aria-label', 'Data is ' + days + ' days old' + (stale ? ', stale' : ''));
+    });
+  }
+
+  /* ---------- critical focus: count what is critical on this view, step through it ---------- */
+  var CRIT = TIA ? '.st[style*="d15d4d"], .bc[style*="d15d4d"], .kpi:has(.v[style*="d15d4d"])' : '.badge.crit';
+  var CRIT_FALLBACK = TIA ? '.st[style*="d15d4d"], .bc[style*="d15d4d"]' : '.badge.crit';
+  var critIdx = -1, critSig = '';
+  function critList() {
+    var pg = activePage(); if (!pg) return [];
+    var l = q(CRIT, pg); if (!l.length) l = q(CRIT_FALLBACK, pg);
+    return l.filter(visible);
+  }
+  function paintCrit(gs) {
+    var l = critList(), pg = activePage(), sig = pageNo(pg) + ':' + l.length + ':' + (pg && (pg.querySelector('.svnav [aria-pressed="true"], .subnav button[aria-pressed="true"]') || {}).textContent);
+    if (sig !== critSig) { critSig = sig; critIdx = -1; }
+    gs.forEach(function (g) {
+      var c = g.querySelector('.crit'); if (!c) return;
+      if (!l.length) { c.hidden = true; return; }
+      var key = l.length + '|' + critIdx; if (c._k === key && !c.hidden) return; c._k = key; c.hidden = false;
+      c.innerHTML = icon('alert', 13) + (critIdx >= 0 ? '<b>' + (critIdx + 1) + '</b>/' + l.length : '<b>' + l.length + '</b>') + '&nbsp;critical';
+      c.setAttribute('aria-label', l.length + ' critical items on this view. Jump to the next one (C).');
+      c.setAttribute('data-tip', 'Jump to the next critical item on this view · C');
+    });
+  }
+  function reveal(el) {
+    var s = cvs();
+    for (var n = el.parentElement; n && n !== root; n = n.parentElement) {
+      var cs = getComputedStyle(n), r = el.getBoundingClientRect(), c = n.getBoundingClientRect();
+      if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && n.scrollHeight > n.clientHeight + 1 && (r.top < c.top + 48 * s || r.bottom > c.bottom - 8 * s))
+        n.scrollTop += ((r.top - c.top) - Math.max(48 * s, (c.height - r.height) / 2)) / s;
+      if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && n.scrollWidth > n.clientWidth + 1 && (r.left < c.left || r.right > c.right))
+        n.scrollLeft += (r.left - c.left - 12 * s) / s;
+    }
+  }
+  function nextCrit() {
+    var l = critList(); if (!l.length) { toast('Nothing critical on this view'); return; }
+    critIdx = (critIdx + 1) % l.length;
+    var el = l[critIdx], tgt = el.closest('tr, .card, .pk, .stp, .tile, .kpi, .stat, .pkc, .sec, .glass') || el;
+    reveal(tgt);
+    q('.pm-hit').forEach(function (x) { x.classList.remove('pm-hit'); });
+    void tgt.offsetWidth; tgt.classList.add('pm-hit'); clearTimeout(nextCrit.t); nextCrit.t = setTimeout(function () { tgt.classList.remove('pm-hit'); }, 1800);
+    paintCrit(groups());
+  }
+
+  /* ---------- light / dark, remembered per viewer ---------- */
+  function curTheme() { return root.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
+  function nudge() { root.classList.add('pm-nudge'); clearTimeout(nudge.t); nudge.t = setTimeout(function () { root.classList.remove('pm-nudge'); }, 300); }
+  function setTheme(t, persist) {
+    if (TIA) return;
+    if (curTheme() !== t) { root.setAttribute('data-theme', t); nudge(); }
+    if (persist) { var st = sget(); st.theme = t; sset(st); }
+    paintTheme();
+  }
+  function toggleTheme() { if (!TIA) { setTheme(curTheme() === 'light' ? 'dark' : 'light', true); toast(curTheme() === 'light' ? 'Light theme' : 'Dark theme'); } }
+  function paintTheme() {
+    if (TIA) return;
+    var light = curTheme() === 'light';
+    q('.hb-theme').forEach(function (b) {
+      var k = light ? 'moon' : 'sun'; if (b._k === k) return; b._k = k;
+      b.innerHTML = icon(k, 14); var l = light ? 'Dark theme (T)' : 'Light theme (T)'; b.title = l; b.setAttribute('aria-label', 'Switch to ' + l.toLowerCase());
+    });
+  }
+
+  /* ---------- remembered page + section ---------- */
+  var restored = false, t0 = Date.now();
+  function navBtn(n) { return TIA ? root.querySelector('#nav button[data-go="' + n + '"]') : (activePage() || root).querySelector('.nav [data-go="' + n + '"]'); }
+  function subBtns(pg) { return pg ? q('.svnav [data-sv], .subnav button[data-v]', pg).filter(function (b) { return b.offsetParent !== null; }) : []; }
+  function subKey(b) { return b.getAttribute('data-sv') || b.getAttribute('data-v'); }
+  function activeSub(pg) { var b = pg && pg.querySelector('.svnav [aria-pressed="true"], .subnav button[aria-pressed="true"]'); return b ? subKey(b) : null; }
+  function ready() {
+    if (TIA) return !!root.querySelector('#nav button');
+    return !!root.querySelector('#p-cards .card, #o-st .stp, #o-kpi .stat');
+  }
+  function applySub(st) {
+    var pg = activePage(), k = st.sub && st.sub[pageNo(pg)];
+    if (!pg || !k || activeSub(pg) === k) return;
+    var b = pg.querySelector('.svnav [data-sv="' + k + '"], .subnav button[data-v="' + k + '"]'); if (b) b.click();
+  }
+  function restore() {
+    var st = sget();
+    if (st.theme) setTheme(st.theme, false);
+    if (st.page && st.page !== pageNo(activePage())) { var b = navBtn(st.page); if (b) b.click(); }
+    applySub(st);
+    restored = true;
+  }
+  function save() {
+    if (!restored) return;
+    var pg = activePage(); if (!pg) return;
+    var st = sget(), n = pageNo(pg), k = activeSub(pg), ch = false;
+    if (st.page !== n) { st.page = n; ch = true; }
+    st.sub = st.sub || {};
+    if (k && st.sub[n] !== k) { st.sub[n] = k; ch = true; }
+    if (ch) sset(st);
+  }
+  function laterSave() { clearTimeout(laterSave.t); laterSave.t = setTimeout(save, 80); }
+  root.addEventListener('click', laterSave, true);
+  root.addEventListener('keydown', laterSave, true);
+
+  /* ---------- keyboard ---------- */
+  function stepSub(d) {
+    var bs = subBtns(activePage()); if (bs.length < 2) return;
+    var i = 0; bs.forEach(function (b, j) { if (b.getAttribute('aria-pressed') === 'true') i = j; });
+    bs[(i + d + bs.length) % bs.length].click();
+  }
+  function refresh() {
+    var pg = activePage(), rf = (TIA ? root.querySelector('#h-fresh .rf') : (pg && pg.querySelector('.fresh .rf'))) || root.querySelector('.fresh .rf');
+    if (rf && !rf.disabled && visible(rf)) { rf.click(); toast('Refreshing data…'); } else toast('Live refresh is not set up on this dashboard');
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target, tag = t && t.tagName, k = e.key;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+    if (k === 'Escape') { if (helpOpen()) { closeHelp(); e.preventDefault(); } return; }
+    if (/^[1-9]$/.test(k)) { var b = navBtn(+k); if (b) { b.click(); e.preventDefault(); } return; }
+    var act = { '[': function () { stepSub(-1); }, ']': function () { stepSub(1); }, r: refresh, t: toggleTheme, p: printReport, c: nextCrit, '?': toggleHelp }[k.length === 1 ? k.toLowerCase() : k];
+    if (act) { e.preventDefault(); act(); }
+  });
+
+  /* ---------- help sheet ---------- */
+  var help = null, helpFrom = null;
+  function helpOpen() { return !!help && !help.hidden; }
+  function buildHelp() {
+    help = document.createElement('div'); help.className = 'pm-help'; help.hidden = true;
+    var nP = Math.max(1, q(TIA ? '#nav button' : '.pages > .page').length);
+    var rows = [[['1', '–', String(nP)], 'Open a page'], [['[', ']'], 'Previous / next section'], [['C'], 'Jump to the next critical item'], [['R'], 'Refresh data now'],
+      TIA ? null : [['T'], 'Light / dark theme'], [['P'], 'Print / PDF report of this page'], [['?'], 'This sheet'], [['Esc'], 'Close this sheet']];
+    help.innerHTML = '<div class="pm-scrim" data-close></div><div class="pm-sheet glass" role="dialog" aria-modal="true" aria-labelledby="pm-help-t">' +
+      '<div class="hh"><div><div class="eyebrow">Viewer guide</div><h3 id="pm-help-t">Shortcuts &amp; tools</h3></div><button type="button" class="hb" data-close aria-label="Close">' + icon('x', 14) + '</button></div>' +
+      '<dl>' + rows.filter(Boolean).map(function (r) { return '<dt>' + r[0].map(function (x) { return x === '–' ? '<span>–</span>' : '<kbd>' + esc(x) + '</kbd>'; }).join('') + '</dt><dd>' + r[1] + '</dd>'; }).join('') + '</dl>' +
+      '<div class="hn"><p>' + icon('clock', 13) + '<span>The clock chip shows how old the data date is; it turns amber with <b>stale</b> after ' + AGE_LIM + ' days (setting <b>Batas Umur Data</b>).</span></p>' +
+      '<p>' + icon('alert', 13) + '<span>The critical chip counts critical items on the view you are looking at; press it (or C) to step through them.</span></p>' +
+      '<p>' + icon('print', 13) + '<span>Print lays every section of this page on A4 landscape' + (TIA ? '' : ' in the light sheet') + ' — save as PDF for the weekly report.</span></p>' +
+      '<p>' + icon('help', 13) + '<span>Your last page, section' + (TIA ? '' : ' and theme') + ' are remembered on this browser only.</span></p></div></div>';
+    root.appendChild(help);
+    help.addEventListener('click', function (e) { if (e.target.closest('[data-close]')) closeHelp(); });
+  }
+  function toggleHelp() { if (helpOpen()) closeHelp(); else openHelp(); }
+  function openHelp() {
+    if (!help) buildHelp();
+    helpFrom = document.activeElement; help.hidden = false;
+    var x = help.querySelector('.hh .hb'); if (x) x.focus();
+  }
+  function closeHelp() { if (!helpOpen()) return; help.hidden = true; if (helpFrom && helpFrom.focus) try { helpFrom.focus(); } catch (e) {} }
+
+  /* ---------- toast ---------- */
+  var toastEl = null;
+  function toast(msg) {
+    if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'pm-toast'; toastEl.setAttribute('role', 'status'); root.appendChild(toastEl); }
+    toastEl.textContent = msg; toastEl.classList.remove('on'); void toastEl.offsetWidth; toastEl.classList.add('on');
+    clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.classList.remove('on'); }, 2400);
+  }
+
+  /* ---------- print report ---------- */
+  var inReport = false, prevTheme = null, printed = false, busy = false, frozen = [];
+  var PAPER_W = 1122.5, PAPER_H = 793.7, SHEET_PAD = 38;   /* A4 landscape in CSS px · sheet margin (ux.css @media print) */
+  function freeze() {
+    /* charts are drawn for their on-screen box: keep every box as drawn, then zoom the whole sheet onto the paper */
+    var pg = TIA ? root : activePage(), s = cvs();
+    if (pg) q('.chart, .lc, .wkc, .bowc, .dbc, .mini, .hist', pg).forEach(function (el) {
+      var h = el.getBoundingClientRect().height / s; if (h > 0) hold(el, 'height', Math.round(h) + 'px');
+    });
+  }
+  function hold(el, prop, val) {
+    frozen.push([el, prop, el.style.getPropertyValue(prop), el.style.getPropertyPriority(prop)]);
+    el.style.setProperty(prop, val, 'important');
+  }
+  function fitTables() {
+    /* a table wider than its box scrolls on screen; on paper it gives up its min-width, then shrinks to the box */
+    q('table', activePage() || root).forEach(function (t) {
+      var box = t.parentElement; if (!box || t.offsetWidth <= box.clientWidth + 2) return;
+      hold(t, 'min-width', '0px');
+      if (t.offsetWidth > box.clientWidth + 2) hold(t, 'zoom', (box.clientWidth / t.offsetWidth).toFixed(4));
+    });
+  }
+  function fitZoom() {
+    /* the on-screen width lands exactly on the paper; up to 8% smaller when that keeps a section on one sheet */
+    var s = cvs(), host = root.querySelector('.pages, #tia-app') || root, w = host.clientWidth;   /* sheet width, unscaled */
+    if (!(w > 0)) return 1;
+    var zw = PAPER_W / (w + 2 * SHEET_PAD), pageH = PAPER_H / zw - 2 * SHEET_PAD, need = 0, pg = activePage();
+    var top = host.getBoundingClientRect().top, vs = q('.view[data-v], .view[data-view]', pg || root);
+    (vs.length ? vs : pg ? [pg] : []).forEach(function (v, i) {
+      var r = v.getBoundingClientRect(), h = (i === 0 ? r.bottom - top : r.height) / s;   /* sheet 1 also carries the header */
+      if (h > pageH && h < pageH * 1.1) need = Math.max(need, h);
+    });
+    var z = need ? Math.max(zw * .92, PAPER_H / (need + 2 * SHEET_PAD)) : zw;
+    return Math.max(.55, Math.min(1.1, z));
+  }
+  function thaw() {
+    frozen.reverse().forEach(function (f) { f[0].style.removeProperty(f[1]); if (f[2]) f[0].style.setProperty(f[1], f[2], f[3]); });
+    frozen = []; root.style.removeProperty('--pm-z');
+  }
+  function label(b) { var l = b.querySelector('.lf'); return ((l || b).textContent || '').replace(/\s+/g, ' ').trim(); }
+  function titles() {
+    var pg = activePage(); if (!pg) return;
+    var stamp = 'Printed ' + new Date().getDate() + ' ' + MS[new Date().getMonth()] + ' ' + new Date().getFullYear() + ' · ' + ('0' + new Date().getHours()).slice(-2) + ':' + ('0' + new Date().getMinutes()).slice(-2);
+    q('.view[data-v], .view[data-view], .vstack > *', pg).forEach(function (v, i) {
+      if (i === 0) v.setAttribute('data-first', ''); else v.removeAttribute('data-first');
+      var k = v.getAttribute('data-svk') || v.getAttribute('data-view') || v.getAttribute('data-v');
+      var b = k && pg.querySelector('.svnav [data-sv="' + k + '"], .subnav button[data-v="' + k + '"]');
+      v.setAttribute('data-print-title', b ? label(b) : '');
+    });
+    q('.tools-top, .hero-top, .hdr', TIA ? root : pg).forEach(function (h) { h.setAttribute('data-stamp', stamp); });
+  }
+  function enterReport() {
+    if (inReport) return; inReport = true; titles(); freeze();
+    root.classList.add('pm-report'); fitTables();
+    root.style.setProperty('--pm-z', fitZoom().toFixed(4));
+  }
+  function exitReport() {
+    if (!inReport) return; inReport = false; busy = false;
+    root.classList.remove('pm-report'); thaw();
+    q('.hb-print.busy').forEach(function (b) { b.classList.remove('busy'); });
+    if (!TIA && prevTheme && prevTheme !== curTheme()) { root.setAttribute('data-theme', prevTheme); nudge(); }
+    prevTheme = null; paintTheme();
+  }
+  window.addEventListener('beforeprint', function () { printed = true; enterReport(); });   /* Ctrl+P: the sheet as it is on screen */
+  window.addEventListener('afterprint', function () { setTimeout(exitReport, 50); });
+  function printReport() {
+    if (busy) return; busy = true; closeHelp();
+    q('.hb-print').forEach(function (b) { b.classList.add('busy'); });
+    toast('Preparing the report…');
+    var pg = activePage(), bs = subBtns(pg), cur = null, i = 0;
+    bs.forEach(function (b) { if (b.getAttribute('aria-pressed') === 'true') cur = b; });
+    (function step() {                       /* open each section once so every chart is drawn */
+      if (i < bs.length) { bs[i++].click(); setTimeout(step, 360); return; }
+      if (cur && cur.getAttribute('aria-pressed') !== 'true') cur.click();
+      /* light sheet first: the dashboard redraws its charts for it, then every chart box is frozen as drawn */
+      var wait = 360;
+      if (!TIA) { prevTheme = curTheme(); if (prevTheme !== 'light') { root.setAttribute('data-theme', 'light'); nudge(); wait = 760; } }
+      setTimeout(function () { enterReport(); setTimeout(doPrint, 200); }, wait);
+    })();
+  }
+  function doPrint() {
+    printed = false;
+    try { window.print(); } catch (e) {}
+    setTimeout(function () { if (!printed) { popupPrint(); exitReport(); } }, 400);
+  }
+  function popupPrint() {
+    /* the host blocked print() inside the embed: open the same report in its own window */
+    var w = null; try { w = window.open('', '_blank'); } catch (e) {}
+    if (!w) { toast('This host blocks printing — open the dashboard in its own tab, then press Ctrl+P'); return; }
+    var links = Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"]'), function (l) { return l.outerHTML; }).join('');
+    var clone = root.cloneNode(true);
+    q('.pm-help, .pm-toast, #tip, .pm-more', clone).forEach(function (n) { n.parentNode.removeChild(n); });
+    var ttl = (opt('Judul') || 'Dashboard') + ' · report';
+    w.document.open();
+    w.document.write('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(ttl) + '</title>' + links +
+      '<style>html,body{margin:0;background:' + (curTheme() === 'light' && !TIA ? '#ffffff' : '#0f1f1a') + '}@media screen{body{padding:14px}}</style></head><body>' + clone.outerHTML + '</body></html>');
+    w.document.close();
+    setTimeout(function () { try { w.focus(); w.print(); } catch (e) {} }, 900);
+  }
+
+  /* ---------- keep everything in step with the dashboard ---------- */
+  var raf = 0;
+  function sync() {
+    raf = 0;
+    var gs = groups(); gs.forEach(fill); if (TIA) placeNavside(gs[0]);
+    if (TIA) {                                 /* the TIA app is rebuilt on every data load: re-apply the section once per build */
+      var nav = root.querySelector('#nav');
+      if (nav && !nav._pmux && nav.querySelector('button')) { nav._pmux = true; if (restored) applySub(sget()); }
+    }
+    if (!restored && (ready() || Date.now() - t0 > 15000)) restore();
+    paintTheme(); paintAge(gs); paintCrit(gs);
+  }
+  function schedule() { if (!raf) raf = requestAnimationFrame(sync); }
+  if (window.MutationObserver) new MutationObserver(function (recs) {
+    for (var i = 0; i < recs.length; i++) {
+      var r = recs[i], n = r.target;
+      if (r.type === 'attributes' && r.attributeName === 'class' && !(n.classList && (n.classList.contains('page') || n.classList.contains('sv') || n.classList.contains('view')))) continue;
+      if (n.closest && n.closest('#tip, .pm-toast, .hact, svg')) continue;
+      schedule(); return;
+    }
+  }).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-pressed', 'class', 'data-theme'] });
+  setInterval(schedule, 60000);
+  window.addEventListener('resize', schedule);
+  schedule();
+})();
+</script>

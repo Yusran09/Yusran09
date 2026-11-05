@@ -1,0 +1,165 @@
+
+<div class="pages">
+  <!-- ============== PAGE 1 : LOGISTICS OVERVIEW ============== -->
+  <section class="page" id="pg1" aria-label="Logistics overview">
+    <div class="tools glass">
+      <div class="tools-top">
+        <div class="hd"><div class="hdt">
+          <div class="eyebrow"><span class="pn">01</span>Logistics readiness</div>
+          <h2 class="ttl" id="l-title">Logistics Readiness</h2>
+          <div class="cut"><svg class="ci" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></svg><span class="ddt"></span><span class="src"></span><span class="fresh"></span></div></div>
+        </div>
+        <div class="seg nav" role="tablist" aria-label="Pages">
+          <button type="button" data-go="1" aria-pressed="true"><span class="n"><i class="ic" data-i="box" data-s="13"></i></span>Overview</button>
+          <button type="button" data-go="2" aria-pressed="false"><span class="n"><i class="ic" data-i="truck" data-s="13"></i></span>Receiving</button>
+          <button type="button" data-go="3" aria-pressed="false"><span class="n"><i class="ic" data-i="list" data-s="13"></i></span><span class="lf">Packing List</span><span class="sh">Packages</span></button>
+          <button type="button" data-go="4" aria-pressed="false"><span class="n"><i class="ic" data-i="alert" data-s="13"></i></span>Exceptions</button>
+        </div>
+      </div>
+      <div class="tools-bot">
+        <div class="seg basisseg" role="group" aria-label="Basis"></div>
+        <span class="note pnote"></span>
+      </div>
+    </div>
+
+    <div class="st-grid" id="o-st"></div>
+
+    <div class="p1-row" id="o-row">
+      <section class="sec glass insl" id="o-ins"></section>
+      <section class="sec glass insl" id="o-chk"></section>
+    </div>
+  </section>
+
+  <!-- ============== PAGE 2 : SITE RECEIVING ============== -->
+  <section class="page off" id="pg2" aria-label="Site receiving" aria-hidden="true">
+    <div class="tools glass">
+      <div class="tools-top">
+        <div class="hd"><div class="hdt">
+          <div class="eyebrow"><span class="pn">02</span>Site receiving &amp; inspection</div>
+          <h2 class="ttl" id="r-title">All packages</h2>
+          <div class="cut"><svg class="ci" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></svg><span class="ddt"></span><span class="src"></span><span class="fresh"></span></div></div>
+        </div>
+        <div class="seg nav" role="tablist" aria-label="Pages">
+          <button type="button" data-go="1" aria-pressed="false"><span class="n"><i class="ic" data-i="box" data-s="13"></i></span>Overview</button>
+          <button type="button" data-go="2" aria-pressed="true"><span class="n"><i class="ic" data-i="truck" data-s="13"></i></span>Receiving</button>
+          <button type="button" data-go="3" aria-pressed="false"><span class="n"><i class="ic" data-i="list" data-s="13"></i></span><span class="lf">Packing List</span><span class="sh">Packages</span></button>
+          <button type="button" data-go="4" aria-pressed="false"><span class="n"><i class="ic" data-i="alert" data-s="13"></i></span>Exceptions</button>
+        </div>
+      </div>
+      <div class="tools-bot">
+        <div class="seg basisseg" role="group" aria-label="Basis"></div>
+        <div class="seg" id="r-view" role="group" aria-label="Chart view">
+          <button type="button" data-v="wk" aria-pressed="true">Weekly</button>
+          <button type="button" data-v="cum" aria-pressed="false"><span class="lf">Cumulative</span><span class="sh">Cum.</span></button>
+        </div>
+      </div>
+      <div class="tools-bot tools-drill">
+        <div class="steps" id="r-steps" role="group" aria-label="Drill-down: Batch, Category, System"></div>
+      </div>
+    </div>
+
+    <div class="ind" id="r-kpi"></div>
+
+    <section class="chartcard glass">
+      <div class="ch-top"><div class="legend" id="r-leg"></div><span class="note" id="r-note"></span></div>
+      <div class="lc" id="r-chart"></div>
+    </section>
+
+    <section class="dt glass">
+      <div class="dt-h">
+        <div class="crumbs" id="r-head"></div>
+        <div class="dt-ctl">
+          <div class="seg" id="r-sort" role="group" aria-label="Sort">
+            <button type="button" data-v="order" aria-pressed="true">Order</button>
+            <button type="button" data-v="ready" aria-pressed="false">Readiness</button>
+            <button type="button" data-v="await" aria-pressed="false"><span class="lf">Awaiting</span><span class="sh">Await</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="dt-wrap" id="r-tbl"></div>
+      <div class="legend dt-leg"><span class="muted" id="r-tip"></span></div>
+    </section>
+  </section>
+
+  <!-- ============== PAGE 3 : PACKING LIST ============== -->
+  <section class="page off" id="pg3" aria-label="Packing list" aria-hidden="true">
+    <div class="tools glass">
+      <div class="tools-top">
+        <div class="hd"><div class="hdt">
+          <div class="eyebrow"><span class="pn">03</span>Packing list · Summary › Detail › Items</div>
+          <h2 class="ttl" id="p-title">All packages</h2>
+          <div class="cut"><svg class="ci" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></svg><span class="ddt"></span><span class="src"></span><span class="fresh"></span></div></div>
+        </div>
+        <div class="seg nav" role="tablist" aria-label="Pages">
+          <button type="button" data-go="1" aria-pressed="false"><span class="n"><i class="ic" data-i="box" data-s="13"></i></span>Overview</button>
+          <button type="button" data-go="2" aria-pressed="false"><span class="n"><i class="ic" data-i="truck" data-s="13"></i></span>Receiving</button>
+          <button type="button" data-go="3" aria-pressed="true"><span class="n"><i class="ic" data-i="list" data-s="13"></i></span><span class="lf">Packing List</span><span class="sh">Packages</span></button>
+          <button type="button" data-go="4" aria-pressed="false"><span class="n"><i class="ic" data-i="alert" data-s="13"></i></span>Exceptions</button>
+        </div>
+      </div>
+      <div class="tools-bot">
+        <label class="srch" id="p-srch"><i class="ic" data-i="search" data-s="15"></i><input type="search" id="p-q" placeholder="Package no., equipment, MDR, RFS, drawing…" aria-label="Search packages"></label>
+        <div class="seg" id="p-status" role="group" aria-label="Readiness status"></div>
+      </div>
+      <div class="tools-bot tools-drill">
+        <div class="steps" id="p-steps" role="group" aria-label="Drill-down: Batch, Category, Package group"></div>
+      </div>
+    </div>
+
+    <div class="ind" id="p-kpi"></div>
+
+    <section class="dt glass">
+      <div class="dt-h">
+        <div class="crumbs" id="p-head"></div>
+        <div class="dt-ctl">
+          <div class="seg" id="p-sort" role="group" aria-label="Sort">
+            <button type="button" data-v="order" aria-pressed="true">Order</button>
+            <button type="button" data-v="score" aria-pressed="false">Readiness</button>
+            <button type="button" data-v="gw" aria-pressed="false"><span class="lf">Heaviest</span><span class="sh">G.W.</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="dt-wrap lg-tall" id="p-tbl"></div>
+      <div class="legend dt-leg"><span class="muted" id="p-tip"></span></div>
+    </section>
+  </section>
+
+  <!-- ============== PAGE 4 : EXCEPTIONS ============== -->
+  <section class="page off" id="pg4" aria-label="Exceptions" aria-hidden="true">
+    <div class="tools glass">
+      <div class="tools-top">
+        <div class="hd"><div class="hdt">
+          <div class="eyebrow"><span class="pn">04</span>Packing list exceptions</div>
+          <h2 class="ttl" id="x-title">All open issues</h2>
+          <div class="cut"><svg class="ci" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="2"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></svg><span class="ddt"></span><span class="src"></span><span class="fresh"></span></div></div>
+        </div>
+        <div class="seg nav" role="tablist" aria-label="Pages">
+          <button type="button" data-go="1" aria-pressed="false"><span class="n"><i class="ic" data-i="box" data-s="13"></i></span>Overview</button>
+          <button type="button" data-go="2" aria-pressed="false"><span class="n"><i class="ic" data-i="truck" data-s="13"></i></span>Receiving</button>
+          <button type="button" data-go="3" aria-pressed="false"><span class="n"><i class="ic" data-i="list" data-s="13"></i></span><span class="lf">Packing List</span><span class="sh">Packages</span></button>
+          <button type="button" data-go="4" aria-pressed="true"><span class="n"><i class="ic" data-i="alert" data-s="13"></i></span>Exceptions</button>
+        </div>
+      </div>
+      <div class="tools-bot">
+        <div class="seg" id="x-sev" role="group" aria-label="Severity"></div>
+        <span class="note" id="x-note">Detected by the Logistics ETL · nothing in the source is corrected</span>
+      </div>
+    </div>
+
+    <div class="ind" id="x-kpi"></div>
+
+    <section class="chartcard glass">
+      <div class="ch-top"><div class="legend" id="x-leg"></div><span class="note">Open issues by type · click a type to list them</span></div>
+      <div class="lg-hb" id="x-bars"></div>
+    </section>
+
+    <section class="dt glass">
+      <div class="dt-h"><div class="crumbs" id="x-head"></div></div>
+      <div class="dt-wrap lg-tall" id="x-tbl"></div>
+      <div class="legend dt-leg"><span class="muted" id="x-tip"></span></div>
+    </section>
+  </section>
+</div>
+<div class="foot" id="foot"></div>
+<div class="tip" id="tip" role="tooltip"></div>
+</div>

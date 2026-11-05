@@ -1,0 +1,79 @@
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<div id="pmhub" data-theme="light">
+<style>
+  /* =====================================================================
+     PMIS · several dashboards in one embed · Clean Enterprise UI (DS v8)
+     The navigator bar sits on top (project at the left, the dashboards at
+     the right); each dashboard lives in its own frame below it, exactly as
+     tall as the page it shows. One light / dark choice for every dashboard.
+     ===================================================================== */
+  html,body{margin:0;padding:0;background:transparent}
+  html.hb-framed{overflow-x:hidden;overflow-y:auto;scrollbar-width:none}
+  html.hb-framed::-webkit-scrollbar{display:none}
+  #pmhub{
+    --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+    --bg:#F5F6F3; --surface:#FFFFFF; --primary:#263D33; --secondary:#496454; --text:#29352E; --text2:#77827B;
+    --border:#E5E9E4; --subtle:#EDF1EC; --hover:#F0F3EF; --focus:#263D33;
+    --hb-s:1;
+    position:relative;font-family:var(--sans);font-size:13.5px;line-height:1.4;color:var(--text);
+    font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  #pmhub[data-theme="dark"]{--bg:#111A16;--surface:#1B2821;--primary:#A8BE99;--secondary:#829B79;--text:#E9EEE9;--text2:#A0ADA4;
+    --border:#304037;--subtle:#202E26;--hover:#26372D;--focus:#A8BE99}
+  #pmhub *{box-sizing:border-box}
+  #pmhub .icn{display:block;flex:none;width:18px;height:18px}
+
+  /* ---------- navigator bar: project at the left, the dashboards and the theme switch at the right ---------- */
+  #pmhub .hb-bar{position:sticky;top:0;z-index:30}
+  #pmhub .hb-in{zoom:var(--hb-s);max-width:1240px;margin:0 auto;height:56px;padding:0 16px 0 22px;display:flex;align-items:center;justify-content:space-between;gap:20px;
+    background:var(--surface);border-bottom:1px solid var(--border)}
+  #pmhub .hb-brand{min-width:0}
+  #pmhub .hb-eb{font-size:11px;font-weight:500;line-height:1.2;letter-spacing:.04em;text-transform:uppercase;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #pmhub .hb-tt{margin-top:2px;font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-.005em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #pmhub .hb-act{display:flex;align-items:center;gap:10px;flex:none;height:100%}
+  #pmhub .hb-nav{display:flex;align-items:stretch;gap:2px;height:100%}
+  #pmhub .hb-nav button{position:relative;display:inline-flex;align-items:center;gap:8px;height:100%;padding:0 12px;border:0;border-radius:0;background:transparent;
+    font:500 13.5px/1 var(--sans);color:var(--text2);white-space:nowrap;cursor:pointer}
+  #pmhub .hb-nav button::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:transparent}
+  #pmhub .hb-nav button:hover{color:var(--text);background:var(--hover)}
+  #pmhub .hb-nav button[aria-selected="true"]{color:var(--text)}
+  #pmhub .hb-nav button[aria-selected="true"]::after{background:var(--primary)}
+  #pmhub .hb-nav button[aria-selected="true"] .icn{color:var(--primary)}
+  #pmhub .hb-nav button:focus-visible,#pmhub .hb-tg:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+  #pmhub .hb-nav .sh{display:none}
+  #pmhub .hb-tg{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--border);border-radius:8px;
+    background:var(--surface);color:var(--text2);cursor:pointer}
+  #pmhub .hb-tg:hover{background:var(--hover);color:var(--text)}
+
+  /* ---------- the stage: one frame per dashboard, created the first time it is opened ---------- */
+  #pmhub .hb-stage{position:relative;min-height:240px}
+  #pmhub .hb-frame{display:block;width:100%;height:760px;border:0;background:transparent;color-scheme:normal}
+  #pmhub .hb-frame.off{position:absolute;left:0;top:0;height:0 !important;visibility:hidden;pointer-events:none}
+  #pmhub .hb-ld{position:absolute;z-index:2;top:0;left:0;right:0;zoom:var(--hb-s);max-width:1240px;margin:0 auto;padding:22px;background:var(--bg);
+    font-size:12px;font-weight:500;color:var(--text2)}
+  #pmhub .hb-ld i{display:block;height:10px;margin-top:14px;border-radius:4px;background:var(--subtle)}
+  #pmhub .hb-ld i:nth-child(2){width:72%} #pmhub .hb-ld i:nth-child(3){width:46%}
+  #pmhub .hb-ld[hidden]{display:none}
+  #pmhub .hb-ld.err{color:var(--text)}
+
+  /* ---------- more below (the box scrolls without a scrollbar): a quiet arrow at the bottom ---------- */
+  #pmhub .hb-more{position:fixed;left:50%;bottom:12px;z-index:40;width:34px;height:34px;margin-left:-17px;display:none;align-items:center;justify-content:center;
+    border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text2);pointer-events:none;box-shadow:0 1px 2px rgba(17,26,22,.08)}
+  #pmhub .hb-more.on{display:flex}
+
+  /* ---------- narrower boxes: short names; phones: project above, the navigator full width ---------- */
+  #pmhub.hb-short .hb-nav .lf{display:none}
+  #pmhub.hb-short .hb-nav .sh{display:inline}
+  @media (max-width:640px){
+    #pmhub .hb-in{zoom:1;height:auto;flex-direction:column;align-items:stretch;gap:6px;padding:12px 12px 0}
+    #pmhub .hb-brand{padding-right:44px}
+    #pmhub .hb-act{height:44px}
+    #pmhub .hb-nav{flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+    #pmhub .hb-nav::-webkit-scrollbar{display:none}
+    #pmhub .hb-nav button{flex:1 0 auto;justify-content:center;gap:6px;padding:0 8px;font-size:13px}
+    #pmhub .hb-nav .lf{display:none} #pmhub .hb-nav .sh{display:inline}
+    #pmhub .hb-tg{position:absolute;top:12px;right:12px}
+    #pmhub .hb-ld{padding:18px 14px}
+  }
+  @media print{ #pmhub .hb-bar,#pmhub .hb-more{display:none} }
+</style>

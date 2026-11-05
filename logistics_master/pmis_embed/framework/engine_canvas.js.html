@@ -1,0 +1,154 @@
+<script>
+/* =====================================================================
+   PMIS · canvas — every page is one fixed composition (designed at
+   1240 px wide). It always takes the full width of the embed box (up to
+   1240 px, like the original), and a box narrower than 1240 px shrinks the
+   whole sheet instead of re-flowing it: never stretched, never squeezed.
+   Phones (box 640 px or narrower) get the phone layout.
+   Settings (in the settings block above):
+     Skala : lebar | penuh     lebar = full width of the box; a page taller
+                                       than the box scrolls inside it
+                               penuh = the whole page fits the box (smaller)
+     Latar : auto | transparan | abyss | tide | reef | dusk | kabut | pasir
+             or two hex colours + angle, e.g.  #0f1a24 #1f4a52 160
+   ===================================================================== */
+(function () {
+  'use strict';
+  var root = document.getElementById('pmis');
+  if (!root || root.getAttribute('data-cv') === 'on') return;
+  root.setAttribute('data-cv', 'on');
+  var de = document.documentElement;
+  var cfgEl = document.querySelector('script[type="text/plain"][id$="-config"]'), txt = cfgEl ? cfgEl.textContent : '';
+  function opt(k) { var m = new RegExp('^[ \\t]*' + k + '[ \\t]*:[ \\t]*(.*)$', 'im').exec(txt); return m ? m[1].trim() : ''; }
+  function q(sel, ctx) { return Array.prototype.slice.call((ctx || root).querySelectorAll(sel)); }
+  var framed = true; try { framed = window.self !== window.top; } catch (e) {}
+  var DW = 1240, PHONE = 640, MIN_S = 0.55;
+  var fitPage = /^(penuh|full|page|halaman)/i.test(opt('Skala'));
+  var fixedH = parseInt(opt('Tinggi'), 10); if (!(fixedH >= 400 && fixedH <= 3000)) fixedH = 0;
+  var cs0 = getComputedStyle(root), PH = parseFloat(cs0.paddingLeft) || 0, PV = parseFloat(cs0.paddingTop) || 0;
+  root.style.setProperty('--cv-ph', PH + 'px'); root.style.setProperty('--cv-pv', PV + 'px');
+  de.classList.add('pm-cv-doc');
+
+  /* ---- the sheet: its own opaque background (the site photo never shows through a panel) ---- */
+  var BG = { abyss: ['#0b1a15', '#1d3a45', 160], tide: ['#123039', '#0c141b', 135], reef: ['#0f1b24', '#24585c', 150],
+    dusk: ['#16261e', '#3b3a40', 165], kabut: ['#f2efe3', '#cfe5e4', 160], pasir: ['#f6f3ec', '#dce9e6', 145] };
+  var lat = opt('Latar').toLowerCase(), g = BG[lat] || null, mm = /(#[0-9a-f]{6})[^#0-9a-f]+(#[0-9a-f]{6})(?:[^0-9]+(\d{1,3}))?/i.exec(lat);
+  if (!g && mm) g = [mm[1], mm[2], mm[3] ? +mm[3] : 160];
+  if (g) root.style.setProperty('--cv-bg', 'linear-gradient(' + g[2] + 'deg,' + g[0] + ',' + g[1] + ')');
+  if (!/^(transparan|transparent|none)/.test(lat)) root.classList.add('cv-bg');
+  root.classList.add('cv-solid');
+
+  /* ---- what scales: every block of the sheet except the floating layer (tooltip, toast, help) ---- */
+  function blocks() {
+    var out = [], c = root.children;
+    for (var i = 0; i < c.length; i++) {
+      var k = c[i], t = k.tagName;
+      if (t === 'STYLE' || t === 'SCRIPT' || t === 'LINK' || k.id === 'tip' || k.classList.contains('tip') || k.classList.contains('pm-toast') || k.classList.contains('pm-help') || k.classList.contains('pm-more') || k.classList.contains('fx-home')) continue;
+      if (!k.classList.contains('cvz')) k.classList.add('cvz');
+      out.push(k);
+    }
+    return out;
+  }
+  function scale() { return parseFloat(root.style.getPropertyValue('--cv-s')) || 1; }
+
+  /* ---- fit: full box width (never wider than the 1240 px design); "penuh" also fits the height ---- */
+  var lastKey = '';
+  function fit() {
+    if (root.classList.contains('pm-report')) return;                    /* a report is being laid out: hold the scale */
+    var vw = framed ? (window.innerWidth || de.clientWidth) : de.clientWidth, vh = fixedH || window.innerHeight || 900;
+    if (vw <= PHONE) {
+      if (root.classList.contains('cv')) { root.classList.remove('cv'); root.style.removeProperty('--cv-s'); de.classList.remove('pm-cv-fit', 'pm-cv-scroll'); }
+      return;
+    }
+    if (!root.classList.contains('cv')) root.classList.add('cv');
+    blocks();
+    var s0 = scale(), hc = root.getBoundingClientRect().height / s0;     /* the sheet's own height, unscaled */
+    var s = Math.min(1, vw / DW);
+    if (fitPage) { s = Math.min(s, vh / Math.max(1, hc)); if (s < MIN_S) s = Math.min(1, vw / DW, MIN_S); }
+    var scroll = hc * s > vh + 1;
+    if (framed) {
+      de.classList.toggle('pm-cv-fit', !scroll); de.classList.toggle('pm-cv-scroll', scroll);
+      if (scroll) s = Math.min(s, (de.clientWidth || vw) / DW);          /* the box scrolls: leave room for its scrollbar */
+    }
+    var key = s.toFixed(4) + (scroll ? 's' : 'f');
+    if (key === lastKey) return;
+    lastKey = key;
+    root.style.setProperty('--cv-s', s.toFixed(4));
+  }
+
+  /* ---- sliding thumb under the active option of every segmented control ---- */
+  function thumb(nav) {
+    var th = null, i, c = nav.children;
+    for (i = 0; i < c.length; i++) if (c[i].classList && c[i].classList.contains('sv-thumb')) { th = c[i]; break; }
+    var on = nav.querySelector('button[aria-pressed="true"]');
+    if (!th) {
+      if (!on) return;
+      th = document.createElement('i'); th.className = 'sv-thumb'; th.setAttribute('aria-hidden', 'true'); nav.appendChild(th); nav.classList.add('has-thumb');
+    }
+    if (!on || !on.offsetWidth) { th.style.opacity = '0'; return; }
+    var first = !th._set, h = on.offsetHeight + 'px'; th._set = true;
+    if (first || th.style.height !== h) th.style.transition = 'none';
+    th.style.opacity = '1'; th.style.height = h;
+    th.style.transform = 'translate(' + on.offsetLeft + 'px,' + on.offsetTop + 'px) scaleX(' + (on.offsetWidth / 100).toFixed(4) + ')';
+    if (th.style.transition === 'none') { void th.offsetWidth; th.style.transition = ''; }
+  }
+  /* ---- sheet index in the eyebrow: 01/04, counted from the page tabs ---- */
+  function sheetIndex() {
+    q('.page').forEach(function (pg) {
+      var nav = pg.querySelector('.nav'); if (!nav) return;
+      var tot = nav.querySelectorAll('[data-go]').length; if (!tot) return;
+      var t = '/' + (tot < 10 ? '0' : '') + tot, pn = pg.querySelector('.eyebrow .pn'), eb = pg.querySelector('.eyebrow[data-pn]');
+      if (pn) { var i = pn.querySelector('i'); if (!i) { i = document.createElement('i'); pn.appendChild(i); } if (i.textContent !== t) i.textContent = t; }
+      if (eb) { var v = eb.getAttribute('data-pn').split('/')[0] + t; if (eb.getAttribute('data-pn') !== v) eb.setAttribute('data-pn', v); }
+    });
+  }
+  /* ---- header actions: under the page tabs on the sheet, back on the meta line on phones ---- */
+  function placeActions() {
+    var wide = root.classList.contains('cv');
+    q('.page').forEach(function (pg) {
+      var top = pg.querySelector('.tools-top, .hero-top'), fresh = pg.querySelector('.fresh'); if (!top || !fresh) return;
+      var tr = null, nav = null, i, c = top.children;
+      for (i = 0; i < c.length; i++) { if (c[i].classList.contains('tr')) tr = c[i]; else if (c[i].classList.contains('nav')) nav = c[i]; }
+      if (!tr) { if (!nav) return; tr = document.createElement('div'); tr.className = 'tr'; top.insertBefore(tr, nav); tr.appendChild(nav); }
+      var g = fresh.parentNode && fresh.parentNode.classList && fresh.parentNode.classList.contains('hact') ? fresh.parentNode : null;
+      if (!g) { g = document.createElement('span'); g.className = 'hact'; g._home = fresh.parentNode; fresh.parentNode.insertBefore(g, fresh); g.appendChild(fresh); }
+      if (wide && g.parentNode !== tr) tr.appendChild(g);
+      else if (!wide && g._home && g.parentNode !== g._home) g._home.appendChild(g);
+    });
+  }
+  /* ---- the box scrolls without a scrollbar: a soft cue at the bottom while there is more below ---- */
+  var more = null;
+  function cueMore() {
+    var can = framed && de.classList.contains('pm-cv-scroll'), sc = document.scrollingElement || de;
+    if (!more) { if (!can) return; more = document.createElement('div'); more.className = 'pm-more'; more.setAttribute('aria-hidden', 'true'); root.appendChild(more); }
+    var on = can && sc.scrollHeight - sc.clientHeight - sc.scrollTop > 24;
+    if (more.classList.contains('on') !== on) more.classList.toggle('on', on);
+  }
+  window.addEventListener('scroll', cueMore, { passive: true });
+  /* ---- a table that scrolls fades where it continues ---- */
+  function cue(el) {
+    if (!el || el.nodeType !== 1) return;
+    var oy = getComputedStyle(el).overflowY, sc = oy === 'auto' || oy === 'scroll', rest = el.scrollHeight - el.clientHeight - el.scrollTop;
+    var b = sc && rest > 2; if (el.classList.contains('sc-b') !== b) el.classList.toggle('sc-b', b);
+  }
+
+  function syncAll() {
+    fit(); cueMore(); sheetIndex(); placeActions();
+    q('.seg:not(.nav), .subnav, .svnav').forEach(thumb);
+    q('.dt-wrap, .scr').forEach(cue);
+  }
+  var raf = 0;
+  function schedule() { if (!raf) raf = requestAnimationFrame(function () { raf = 0; syncAll(); }); }
+  root.addEventListener('scroll', function (e) { var t = e.target; if (t && t.nodeType === 1 && (t.classList.contains('dt-wrap') || t.classList.contains('scr'))) cue(t); }, true);
+  var tipEl = null;
+  if (window.MutationObserver) new MutationObserver(function (recs) {
+    tipEl = tipEl || document.getElementById('tip');
+    for (var i = 0; i < recs.length; i++) if (!tipEl || !tipEl.contains(recs[i].target)) { schedule(); return; }
+  }).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-pressed', 'hidden'] });
+  if (window.ResizeObserver) { var ro = new ResizeObserver(schedule); blocks().forEach(function (b) { ro.observe(b); }); }
+  window.addEventListener('resize', function () { lastKey = ''; fit(); schedule(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+  window.addEventListener('load', schedule);
+  fit(); schedule();
+})();
+</script>

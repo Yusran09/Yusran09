@@ -1,0 +1,67 @@
+<style id="lg-extra">
+  /* =====================================================================
+     Logistics dashboard · a thin layer on top of the shared PMIS sheet
+     (pm-finish + pm-ds). Only the few elements the Resources sheet does not
+     have: search box, MDR mini bars, issue-type bars, package gate strip.
+     Tokens only (light / dark follow the sheet automatically).
+     ===================================================================== */
+  #pmis .srch{position:relative;display:flex;align-items:center;min-width:240px;flex:0 1 380px}
+  #pmis .srch svg{position:absolute;left:12px;color:var(--muted);pointer-events:none}
+  #pmis .srch input{width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--line-strong);border-radius:var(--r-s);background:transparent;color:var(--ink);font:inherit;font-size:13px;outline:none}
+  #pmis .srch input::placeholder{color:var(--muted)}
+  #pmis .srch input:hover{border-color:var(--axis)}
+  #pmis .srch input:focus{border-color:var(--ink2);background:var(--hover)}
+  #pmis .srch input::-webkit-search-cancel-button{display:none}
+  #pmis .lg-tall{max-height:560px}
+
+  /* MDR state per batch · category (overview panel, replaces the mini chart) */
+  #pmis .mstk{display:flex;flex-direction:column;gap:9px;padding:4px 0 2px}
+  #pmis .mstk .r{display:grid;grid-template-columns:92px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:12px;color:var(--ink2)}
+  #pmis .mstk .r b{font-weight:600;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+  #pmis .mstk .bar{display:flex;height:10px;border-radius:2px;overflow:hidden;background:var(--track)}
+  #pmis .mstk .bar i{display:block;height:100%}
+
+  /* proportional bar (0–100 %) used in tables and drop-down rows */
+  #pmis .pbar{position:relative;display:inline-block;vertical-align:middle;width:56px;height:6px;border-radius:1px;background:var(--track);margin-right:8px}
+  #pmis .pbar i{position:absolute;left:0;top:0;bottom:0;border-radius:1px}
+  #pmis .opt .pp .pbar{width:48px;margin-right:0}
+
+  /* issue types (exceptions page) */
+  #pmis .lg-hb{display:flex;flex-direction:column;gap:6px;padding:6px 0 4px}
+  #pmis .lg-hb .hbr{display:grid;grid-template-columns:minmax(150px,260px) minmax(0,1fr) 120px;gap:14px;align-items:center;width:100%;padding:7px 10px;border:1px solid transparent;border-radius:var(--r-s);background:none;color:var(--ink);font:inherit;font-size:12.5px;text-align:left;cursor:pointer}
+  #pmis .lg-hb .hbr:hover,#pmis .lg-hb .hbr.on{background:var(--hover);border-color:var(--line)}
+  #pmis .lg-hb .hbr .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  #pmis .lg-hb .hbr .tr{display:flex;height:10px;border-radius:2px;overflow:hidden;background:var(--track)}
+  #pmis .lg-hb .hbr .tr i{display:block;height:100%}
+  #pmis .lg-hb .hbr .ct{text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
+  #pmis .lg-hb .hbr .ct b{color:var(--ink);font-weight:600}
+
+  /* package gate strip (packing list → one package) */
+  #pmis .gstrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:14px 16px 6px}
+  #pmis .gstrip .g{border:1px solid var(--line);border-radius:var(--r-s);padding:10px 12px;min-width:0}
+  #pmis .gstrip .g .k{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  #pmis .gstrip .g .v{margin-top:6px;font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #pmis .gstrip .g .s{margin-top:3px;font-size:11.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #pmis .gstrip .g.ok{box-shadow:inset 2px 0 0 var(--good)}
+  #pmis .gstrip .g.part{box-shadow:inset 2px 0 0 var(--warn)}
+  #pmis .gstrip .g.no{box-shadow:inset 2px 0 0 var(--crit)}
+  #pmis .lg-sub{font-size:11.5px;color:var(--muted)}
+  #pmis .lg-mono{font-family:var(--mono);font-size:12px;letter-spacing:-.01em;white-space:nowrap}
+  #pmis .lg-cn{display:block;font-size:11.5px;color:var(--muted)}
+  #pmis .lt th.lg-wrap,#pmis .lt td.lg-wrap{text-align:left}
+  #pmis .lt td.lg-wrap{white-space:normal;min-width:220px;max-width:460px;line-height:1.45}
+  #pmis .lt td.lg-strong{font-weight:500;color:var(--ink)}
+  #pmis .lt td.lg-res{color:var(--ink2);font-size:12px}
+  #pmis .lg-next{padding:4px 18px 14px;font-size:13px;line-height:1.55;color:var(--ink2)}
+  #pmis .lg-next b{color:var(--ink);font-weight:600}
+  #pmis tr.child td:first-child{padding-left:26px}
+  #pmis .lg-more{display:flex;justify-content:center;padding:10px}
+
+  @media (max-width:640px){
+    #pmis .srch{min-width:0;flex:1 1 100%}
+    #pmis .gstrip{grid-template-columns:repeat(2,minmax(0,1fr))}
+    #pmis .lg-hb .hbr{grid-template-columns:minmax(0,1fr) 90px}
+    #pmis .lg-hb .hbr .tr{grid-column:1 / -1;grid-row:2}
+    #pmis .mstk .r{grid-template-columns:74px minmax(0,1fr) 52px}
+  }
+</style>
