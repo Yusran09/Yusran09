@@ -58,8 +58,18 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
   await f.click('#o-loc .lr'); await p.waitForTimeout(1200); await shot(p, '02b_location_list', true);
   P.locOpen = { loc: locName, page: await f.evaluate(() => window.__pmLogistics.state.page), rows: await f.evaluate(() => document.querySelectorAll('#p-tbl tbody tr.go').length + 0) };
   P.locButtons = await rows(f, '#p-loc button');
+  P.mdrButtons = await rows(f, '#p-mdr button');
   await f.click('#p-loc [data-v="ALL"]'); await p.waitForTimeout(500);
   await f.click('#pg3 .nav [data-go="1"]'); await p.waitForTimeout(800);
+  // quick view buttons on the overview: position (laydown / on-site / not on site) and status
+  P.quick = { n: await rows(f, '#o-quick .lg-qb'), opened: {} };
+  const qlabels = await f.$$eval('#o-quick .lg-qb', (bs) => bs.map((b) => [...b.childNodes].filter((x) => x.nodeType === 3).map((x) => x.textContent).join('').trim()));
+  for (let i = 0; i < qlabels.length; i++) {
+    await f.evaluate((k) => document.querySelectorAll('#o-quick .lg-qb')[k].click(), i); await p.waitForTimeout(700);
+    P.quick.opened[qlabels[i]] = { page: await f.evaluate(() => window.__pmLogistics.state.page), n: await f.evaluate(() => window.__pmLogistics.count()) };
+    await f.click('#pg3 .nav [data-go="1"]'); await p.waitForTimeout(500);
+  }
+  await f.evaluate(() => Object.assign(window.__pmLogistics.state, { ploc: 'ALL', pst: 'ALL', pmdr: 'ALL' }));   // filters persist across tabs by design
   await f.click('#pg1 .nav [data-go="2"]'); await p.waitForTimeout(1200); await shot(p, '03_receiving', true);
   P.receivingGroups = await rows(f, '#r-tbl tbody tr.go');
   P.chartSvg = await rows(f, '#r-chart svg');

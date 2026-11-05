@@ -113,7 +113,7 @@ def evaluate(ctx, rules, today=None):
         location = loc_remark or loc_tag or ("On site (location not stated)" if (onsite_tag or inspected) else None)
         # location group for the laydown summary: Remark column (U in B4-P5 / B5-P3, T elsewhere) first, then site tags
         location_grp = location_group(loc_remark or loc_tag, rules["location_patterns"]) or \
-            ("Location not stated" if (onsite_tag or inspected) else None)
+            ("On-site (no laydown)" if (onsite_tag or inspected) else None)
         if inspected:
             evidence = "INSPECTION_RECORD"
         elif onsite_tag:

@@ -62,19 +62,22 @@ column is not in the same place in every workbook:
 * **On site** = received & inspected, **or** a location in the Remark column (U / T: laydown, askara, camp, warehouse, yard,
   store), **or** an `onsite` / `arrived` tag on the same row (V / W). The words are configurable.
 * **Location group** (`site_location_group`) = the location keyword plus its number or code, taken from the Remark column first,
-  then from the tags: `Laydown 4`, `Laydown 5`, `Askara`, `Camp HHI`. On site without any location = `Location not stated`;
+  then from the tags: `Laydown 4`, `Laydown 5`, `Askara`, `Camp HHI`. On site without any location = `On-site (no laydown)`;
   not on site = NULL. View `v_readiness_by_location` and query Q34 summarise it.
-* The status `ON_SITE_AWAITING_INSPECTION` (short label "On site, no RFS") is only the part of the on-site material that has
-  no RFS / inspection yet. All material on site is the sum of Ready, MDR pending and "On site, no RFS".
+* **Position** of a package, used for the dashboard buttons: **Laydown / area** (a laydown or named area in the Remark
+  column or a tag) · **On-site (no laydown)** (an `onsite` tag or RFS + inspection date, but no laydown) · **Not on site**.
+* The status `ON_SITE_AWAITING_INSPECTION` (short label "Awaiting RFS") is only the part of the on-site material that has
+  no RFS / inspection yet; `AWAITING_RECEIVING` (short label "In transit") has no site record at all. All material on
+  site is the sum of Ready, MDR pending and "Awaiting RFS".
 
 Current result, which equals the site team's own pivot in B4-P5 (Askara 7 · Laydown 4 70 · Laydown 5 258 · blank 251):
 
-| Location | Packages | t | Ready | MDR pending | On site, no RFS |
+| Location | Packages | t | Ready | MDR pending | Awaiting RFS |
 |---|---:|---:|---:|---:|---:|
 | Laydown 5 (B4-P5 258) | 258 | 1,291.8 | 258 | – | – |
 | Laydown 4 (B4-P5 70 · B5-P3 10) | 80 | 376.2 | 70 | 10 | – |
 | Askara (B4-P5 7) | 7 | 20.0 | 7 | – | – |
-| Location not stated (B4-P3 6 inspected · B5-P3 10 `onsite` tags) | 16 | 139.4 | 6 | – | 10 |
+| On-site (no laydown): B4-P3 6 inspected · B5-P3 10 `onsite` tags | 16 | 139.4 | 6 | – | 10 |
 | **On site** | **361** | **1,827.5** | **341** | **10** | **10** |
 | Not on site | 792 | 4,991.4 | | | |
 

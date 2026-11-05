@@ -26,6 +26,10 @@ BASE = PMIS.parent
 sys.path.insert(0, str(PMIS))
 import build_pmis_embed as B  # noqa: E402
 
+# readiness status code -> button label in the dashboard (short labels of config/readiness_rules.json)
+STATUS_LABEL = {"READY_FOR_CONSTRUCTION": "Ready", "INSPECTED_MDR_PENDING": "MDR pending", "ON_SITE_AWAITING_INSPECTION": "Awaiting RFS",
+                "AWAITING_RECEIVING": "In transit", "BLOCKED": "Blocked"}
+
 
 def reference(db):
     c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
@@ -33,6 +37,8 @@ def reference(db):
         "SELECT package_id, readiness_status, readiness_score, receiving_date, site_location, mdr_state, open_issue_count, next_action, "
         "site_location_group FROM PACKAGE_READINESS")}
     locs = dict(c.execute("SELECT COALESCE(site_location_group, 'Not on site'), COUNT(*) FROM PACKAGE_READINESS GROUP BY 1"))
+    status = dict(c.execute("SELECT readiness_status, COUNT(*) FROM PACKAGE_READINESS GROUP BY 1"))
+    mdr = dict(c.execute("SELECT mdr_state, COUNT(*) FROM PACKAGE_READINESS GROUP BY 1"))
     items = dict(c.execute("SELECT detail_package_id, COUNT(*) FROM PACKAGE_DETAIL GROUP BY 1"))
     split = dict(c.execute("SELECT package_id, COUNT(*) n FROM DETAIL_PACKAGES WHERE package_id IS NOT NULL GROUP BY 1 HAVING n > 1 ORDER BY n DESC LIMIT 1"))
     grp = c.execute("SELECT package_group FROM PACKAGE_MASTER WHERE package_group IS NOT NULL ORDER BY batch_id, category, source_row LIMIT 1").fetchone()
@@ -41,6 +47,7 @@ def reference(db):
     pend = c.execute("SELECT COUNT(*) FROM PACKAGE_READINESS WHERE readiness_status = 'INSPECTED_MDR_PENDING'").fetchone()[0]
     dd = c.execute("SELECT substr(started_at, 1, 10) FROM IMPORT_HISTORY WHERE status = 'SUCCESS' ORDER BY started_at DESC LIMIT 1").fetchone()[0]
     return dict(pk=pk, items=items, itemsTotal=sum(items.values()), splitBlocks=split, combos=combos, pending=pend, dataDate=dd, locs=locs,
+                status=status, mdr=mdr,
                 searches=[s for s in (grp and grp[0], dwg and dwg[0]) if s])
 
 
@@ -96,7 +103,16 @@ def main():
         chk("overview: one row per site location (laydown summary)", P["locRows"] == len(ref["locs"]), (P["locRows"], ref["locs"]))
         chk("location row opens the packing list with exactly its packages", P["locOpen"]["rows"] == ref["locs"].get(P["locOpen"]["loc"]),
             (P["locOpen"], ref["locs"].get(P["locOpen"]["loc"])))
-        chk("location buttons on the packing list", P["locButtons"] == len(ref["locs"]) + 1, P["locButtons"])
+        named = {k: v for k, v in ref["locs"].items() if k not in ("Not on site", "On-site (no laydown)")}
+        chk("packing list position buttons: All · Laydown / area · each laydown · On-site · Not on site",
+            P["locButtons"] == len(named) + 4, P["locButtons"])
+        chk("packing list MDR buttons", P["mdrButtons"] == len(ref["mdr"]) + 1, (P["mdrButtons"], ref["mdr"]))
+        q = P["quick"]["opened"]
+        want = {"Laydown / area": sum(named.values()), "On-site (no laydown)": ref["locs"].get("On-site (no laydown)", 0),
+                "Not on site": ref["locs"].get("Not on site", 0), **named, **{lab: ref["status"].get(code, 0) for code, lab in STATUS_LABEL.items()}}
+        chk("overview quick view: one button per position, laydown and status", P["quick"]["n"] == len(want), (P["quick"]["n"], len(want)))
+        bad = {k: (q.get(k), v) for k, v in want.items() if not q.get(k) or q[k]["page"] != 3 or q[k]["n"] != v}
+        chk("every quick view button opens the packing list with exactly its packages", not bad, bad or {k: q[k]["n"] for k in want})
         chk("receiving: one row per batch·category + chart", P["receivingGroups"] == ref["combos"] and P["chartSvg"] == 1, (P["receivingGroups"], P["chartSvg"]))
         chk("receiving drill-down to packages", P["receivingDrillPackages"] > 0, P["receivingDrillPackages"])
         chk("packing list rows (first 300)", P["packingRows"] == min(300, n), P["packingRows"])

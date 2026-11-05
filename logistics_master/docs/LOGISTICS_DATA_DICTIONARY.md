@@ -15,7 +15,7 @@ Layers: **REFERENCE** (lookups) · **LINEAGE** (source register) · **RAW** (unm
 | [REFERENCE_MAPPING_STATUS](#reference_mapping_status) | REFERENCE | 8 | Allowed mapping status values and whether they create an effective Summary->Detail link. |
 | [REFERENCE_MDR_STATUS](#reference_mdr_status) | REFERENCE | 5 | MDR status codes derived from the Summary 'MDR Status' column. |
 | [REFERENCE_READINESS_STATUS](#reference_readiness_status) | REFERENCE | 5 | Logistics readiness status lookup (from config/readiness_rules.json). |
-| [IMPORT_HISTORY](#import_history) | CONTROL | 3 | One row per ETL run (appended, never truncated). |
+| [IMPORT_HISTORY](#import_history) | CONTROL | 4 | One row per ETL run (appended, never truncated). |
 | [SOURCE_DOCUMENTS](#source_documents) | LINEAGE | 4 | One row per source workbook (the four original packing-list workbooks). |
 | [SOURCE_SHEETS](#source_sheets) | LINEAGE | 31 | Worksheet register for every sheet in every workbook (audit of structure and counts). |
 | [PACKAGE_MASTER](#package_master) | CORE | 1,153 | Summary Packing List master: one row per Summary package (package-level record). |
@@ -33,7 +33,7 @@ Layers: **REFERENCE** (lookups) · **LINEAGE** (source register) · **RAW** (unm
 | [DATA_QUALITY_CHECKS](#data_quality_checks) | CONTROL | 130 | Validation and reconciliation checks executed by the ETL with expected vs actual results. |
 | [CHANGE_LOG](#change_log) | CONTROL | 12 | Every transformation rule applied by the ETL with the number of values affected and an example. |
 | [DATA_DICTIONARY](#data_dictionary) | CONTROL | 355 | Field definitions for every table (generated from the ETL schema module). |
-| [AUDIT_LOG](#audit_log) | CONTROL | 87 | Event log of every import run (appended). |
+| [AUDIT_LOG](#audit_log) | CONTROL | 116 | Event log of every import run (appended). |
 
 ## Views (web-app query layer)
 
@@ -124,7 +124,7 @@ Logistics readiness status lookup (from config/readiness_rules.json).
 
 ## IMPORT_HISTORY
 
-**Layer:** CONTROL · **Rows:** 3
+**Layer:** CONTROL · **Rows:** 4
 
 One row per ETL run (appended, never truncated).
 
@@ -494,7 +494,7 @@ Logistics readiness per Summary package: four gates (PL, MDR, SITE, INSP), Readi
 | 18 | `on_site` | INTEGER |  | N | Gate SITE: 1 if inspection record, site tag or location remark exists. | PACKAGE_MASTER / SOURCE_ANNOTATIONS |
 | 19 | `on_site_evidence` | TEXT |  | Y | INSPECTION_RECORD, SITE_TAG or LOCATION_REMARK. | Derived |
 | 20 | `site_location` | TEXT |  | Y | Known site location (laydown / camp) or 'On site (location not stated)'. | PACKAGE_MASTER.remark / SOURCE_ANNOTATIONS |
-| 21 | `site_location_group` | TEXT |  | Y | Site location group for the laydown summary: 'Laydown 4', 'Laydown 5', 'Askara', 'Camp HHI' ... (location keyword + number/code) from the Summary Remark column (U in B4-P5 / B5-P3, T in B4-P3 / B5-P5) or a same-row site tag; 'Location not stated' when on site without a location; NULL when not on site. | PACKAGE_MASTER.remark / SOURCE_ANNOTATIONS |
+| 21 | `site_location_group` | TEXT |  | Y | Site location group for the laydown summary: 'Laydown 4', 'Laydown 5', 'Askara', 'Camp HHI' ... (location keyword + number/code) from the Summary Remark column (U in B4-P5 / B5-P3, T in B4-P3 / B5-P5) or a same-row site tag; 'On-site (no laydown)' when on site ('onsite' tag or RFS + inspection date) without a laydown / location; NULL when not on site. | PACKAGE_MASTER.remark / SOURCE_ANNOTATIONS |
 | 22 | `receiving_date` | DATE |  | Y | Inspection date used for the receiving curve (latest plausible date for multi-date cells). | PACKAGE_MASTER.inspection_date(_original) |
 | 23 | `inspection_dates` | TEXT |  | Y | All inspection dates found (ISO, comma list). | PACKAGE_MASTER.inspection_date_original |
 | 24 | `open_issue_count` | INTEGER |  | N | Open non-INFO issues on the package or its blocks. | MAPPING_ISSUES |
@@ -613,7 +613,7 @@ Field definitions for every table (generated from the ETL schema module).
 
 ## AUDIT_LOG
 
-**Layer:** CONTROL · **Rows:** 87
+**Layer:** CONTROL · **Rows:** 116
 
 Event log of every import run (appended).
 

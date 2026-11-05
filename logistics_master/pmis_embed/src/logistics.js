@@ -9,7 +9,7 @@
   ICONS.inv = 'M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1zM16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 17.5v-11';
   ICONS.weight = 'M12 5a3 3 0 1 0 0 0.01M6.5 8h11l2.5 12H4zM12 8V5';
   ICONS.ramp = 'M3.5 19.5h17M5.5 16.5l4-4 3 2.5 6-7M18.5 8v4M18.5 8h-4';
-  BADGE_ICON.unshift([/^ready/i, 'check'], [/^mdr pending/i, 'doc'], [/^on site/i, 'pin'], [/^not on site/i, 'ship'], [/^awaiting/i, 'ship'], [/^blocked/i, 'alert'],
+  BADGE_ICON.unshift([/^ready/i, 'check'], [/^mdr pending/i, 'doc'], [/^on site/i, 'pin'], [/^awaiting rfs/i, 'pin'], [/^in transit/i, 'ship'], [/^not on site/i, 'ship'], [/^awaiting/i, 'ship'], [/^blocked/i, 'alert'],
     [/^high$/i, 'alert'], [/^medium$/i, 'alertc'], [/^(low|info)$/i, 'minus'], [/^flag\b/i, 'alertc'], [/^pass\b/i, 'check'], [/^(split|sub-package)/i, 'split'],
     [/^(exact|normalized|confirmed)/i, 'check'], [/^(candidate|manual|unmatched)/i, 'alertc']);
   hydrateIcons();
@@ -64,8 +64,8 @@
   var ST = {
     READY: { n: 'Ready for construction', s: 'Ready', lv: 'good', o: 1, c: 'var(--good)', etl: 'READY_FOR_CONSTRUCTION', act: 'Available for issue to construction.' },
     PEND: { n: 'Inspected – MDR pending', s: 'MDR pending', lv: 'warn', o: 2, c: 'var(--warn)', etl: 'INSPECTED_MDR_PENDING', act: 'Expedite MDR approval with vendor / QA-QC before issue to construction.' },
-    SITE: { n: 'On site – awaiting RFS / inspection', s: 'On site, no RFS', lv: 'warn', o: 3, c: 'var(--plan)', etl: 'ON_SITE_AWAITING_INSPECTION', act: 'Raise RFS and perform receiving inspection.' },
-    AWAIT: { n: 'Shipped – not yet on site', s: 'Not on site', lv: '', o: 4, c: 'var(--line-strong)', etl: 'AWAITING_RECEIVING', act: 'Track delivery; prepare MDR so the package is ready on arrival.' },
+    SITE: { n: 'On site – awaiting RFS / inspection', s: 'Awaiting RFS', lv: 'warn', o: 3, c: 'var(--plan)', etl: 'ON_SITE_AWAITING_INSPECTION', act: 'Raise RFS and perform receiving inspection.' },
+    AWAIT: { n: 'Shipped – in transit, not yet on site', s: 'In transit', lv: '', o: 4, c: 'var(--line-strong)', etl: 'AWAITING_RECEIVING', act: 'Track delivery; prepare MDR so the package is ready on arrival.' },
     BLOCK: { n: 'Blocked – packing list issue', s: 'Blocked', lv: 'crit', o: 5, c: 'var(--crit)', etl: 'BLOCKED', act: 'Resolve the packing-list identity issue (see MAPPING_ISSUES).' }
   };
   var STO = ['READY', 'PEND', 'SITE', 'AWAIT', 'BLOCK'];
@@ -115,7 +115,7 @@
   }
   /* site location group (same rule as the ETL, readiness.location_group): location keyword + its number / code,
      e.g. 'Laydown 5', 'Askara', 'Camp HHI'. Read from the Summary Remark column (U in B4-P5 / B5-P3, T elsewhere), then site tags (V / W). */
-  var NOLOC = 'Location not stated', OFFSITE = 'Not on site';
+  var NOLOC = 'On-site (no laydown)', OFFSITE = 'Not on site';
   function locGroup(text) {
     var t = String(text || ''), low = t.toLowerCase();
     for (var i = 0; i < P_LOC.length; i++) {
@@ -256,7 +256,7 @@
 
   /* ---------- 4. agregat (basis: package count | tonnage) ---------- */
   var state = { page: 1, basis: /^(ton|t\b|berat|weight)/i.test(cfg.basis) ? 't' : 'n', rview: 'wk', rsort: 'order', rb: null, rc: null, rs: null,
-    pb: null, pc: null, pg: null, pst: 'ALL', ploc: 'ALL', psort: 'order', q: '', pkg: null, blk: null, pall: false, xsev: 'ALL', xtype: null, xall: false };
+    pb: null, pc: null, pg: null, pst: 'ALL', ploc: 'ALL', pmdr: 'ALL', psort: 'order', q: '', pkg: null, blk: null, pall: false, xsev: 'ALL', xtype: null, xall: false };
   function agg(list) {
     var a = { n: list.length, t: 0, sc: 0, sct: 0, f: {} };
     ['READY', 'PEND', 'SITE', 'AWAIT', 'BLOCK', 'insp', 'onsite', 'mdr', 'pl', 'mdrRisk'].forEach(function (k) { a.f[k] = { n: 0, t: 0 }; });
@@ -356,7 +356,7 @@
       fill: rIn, marks: [['var(--good)', rRd], ['var(--plan)', share(a, 'onsite')]], gtip: 'Received & inspected ' + bv(B_(a, 'insp')) + ' · ready ' + bv(B_(a, 'READY')) + ' · on site ' + bv(B_(a, 'onsite')) + ' · shipped ' + bv(B_(a)) + ' ' + bu(),
       kq: [['check', 'Ready', bv(B_(a, 'READY')), '', pc(rRd) + ' of shipped', 'Packing list verified, MDR approved, received & inspected'],
         ['pin', 'On site', bv(B_(a, 'onsite')), '', bv(sumBy(R.pk, function (p) { return p.onsite && p.lg !== NOLOC; })) + ' at laydown/area', 'Physically on site: RFS + inspection date, a laydown / location in the Summary Remark column (U or T) or an "onsite" tag (V / W)'],
-        ['flag', 'On site, no RFS', bv(B_(a, 'SITE')), '', 'awaiting inspection', 'On site (tag or laydown) but no RFS Material Receiving / inspection date yet'],
+        ['flag', 'Awaiting RFS', bv(B_(a, 'SITE')), '', 'on site, not inspected', 'On site (tag or laydown) but no RFS Material Receiving / inspection date yet'],
         ['clock', 'Weekly pace', nf1(pc0.avg), '', bu() + '/week · ' + pc0.k + ' wks', 'Average received & inspected per week over the last ' + pc0.k + ' weeks to the data date']],
       ramp: { icon: 'ramp', html: 'Receiving pace <b>' + nf1(pc0.avg) + ' ' + bu() + '/week</b> (last ' + pc0.k + ' weeks) — the <b>' + bv(awaitV) + ' ' + bu() + '</b> not yet inspected need about <b>' + (wks == null ? '—' : nf(wks) + ' weeks') + '</b> at this pace.',
         badge: wks == null ? ['crit', 'No receipts'] : wks > 26 ? ['warn', '≈' + nf(wks) + ' wks'] : ['good', '≈' + nf(wks) + ' wks'] },
@@ -486,7 +486,7 @@
     $('l-title').textContent = cfg.judul || 'Logistics Readiness';
     var a = agg(R.pk), g = clear($('o-st'));
     g.appendChild(receivingPanel(a)); g.appendChild(docPanel(a));
-    renderLoc(a);
+    renderQuick(); renderLoc(a);
     var ins = clear($('o-ins')), h = el('div', 'sec-h'), h3 = el('h3'); h3.appendChild(chipIco('zap')); h3.appendChild(document.createTextNode('Key insights'));
     h3.appendChild(infoIcon('Generated automatically from the data: blocked packages, MDR at site, site tags without RFS, pre-arrival MDR risk, ready tonnage, receiving pace, readiness per batch, invoice consistency and data currency. Sorted by severity.'));
     h.appendChild(h3); ins.appendChild(h);
@@ -513,12 +513,53 @@
     function rk(g) { return g.k === OFFSITE ? 2 : g.k === NOLOC ? 1 : 0; }
     return out.sort(function (x, y) { return rk(x) - rk(y) || (state.basis === 't' ? y.t - x.t : y.n - x.n) || (x.k < y.k ? -1 : 1); });
   }
-  function openLoc(k) { state.ploc = k; state.pst = 'ALL'; state.pb = state.pc = state.pg = null; state.q = ''; state.pkg = null; state.blk = null; state.pall = false; var qi = $('p-q'); if (qi) qi.value = ''; if (state.page === 3) renderP3(); else go(3); }
+  /* position of a package: at a laydown / named area · on site without laydown · not on site */
+  var POSL = { LAYDOWN: 'Laydown / area', ONSITE: 'On-site (no laydown)', OFF: 'Not on site' };
+  var POSC = { LAYDOWN: 'var(--good)', ONSITE: 'var(--warn)', OFF: 'var(--line-strong)' };
+  var POST = { LAYDOWN: 'Laydown / area written in the Summary Remark column (U in B4-P5 / B5-P3, T elsewhere) or in a site tag',
+    ONSITE: 'On site — "onsite" tag (column V / W) or RFS + inspection date (R / S) — but no laydown in the Remark column',
+    OFF: 'No RFS / inspection date, no laydown and no site tag yet' };
+  function posOf(p) { return !p.onsite ? 'OFF' : p.lg === NOLOC ? 'ONSITE' : 'LAYDOWN'; }
+  function matchLoc(p, v) { return v === 'ALL' || (POSL[v] ? posOf(p) === v : p.lg === v); }
+  function laydowns(list) { var o = {}; list.forEach(function (p) { if (posOf(p) === 'LAYDOWN') o[p.lg] = (o[p.lg] || 0) + 1; }); return Object.keys(o).sort(function (x, y) { return o[y] - o[x] || (x < y ? -1 : 1); }).map(function (k) { return { k: k, n: o[k] }; }); }
+  function filtName() {
+    var parts = [];
+    if (state.ploc !== 'ALL') parts.push(POSL[state.ploc] || state.ploc);
+    if (state.pst !== 'ALL') parts.push(ST[state.pst].s);
+    if (state.pmdr !== 'ALL') parts.push('MDR ' + (MDRL[state.pmdr] || state.pmdr).toLowerCase());
+    return parts.join(' · ');
+  }
+  function openFilter(loc, st, mdr) {
+    state.ploc = loc || 'ALL'; state.pst = st || 'ALL'; state.pmdr = mdr || 'ALL';
+    state.pb = state.pc = state.pg = null; state.q = ''; state.pkg = null; state.blk = null; state.pall = false;
+    var qi = $('p-q'); if (qi) qi.value = '';
+    if (state.page === 3) renderP3(); else go(3);
+  }
+  function openLoc(k) { openFilter(k === OFFSITE ? 'OFF' : k === NOLOC ? 'ONSITE' : k); }
+  function qbRow(box, label, items) {
+    var row = el('div', 'lg-frow'), wrap = el('div', 'lg-qbs'); row.appendChild(el('span', 'lg-flab', label));
+    items.forEach(function (it) {
+      var b = el('button', 'lg-qb' + (it.sub ? ' sub' : '') + (it.n ? '' : ' zero')); b.type = 'button';
+      if (it.dot) { var d = el('i', 'lg-dot'); d.style.background = it.dot; b.appendChild(d); } else if (it.icon) b.appendChild(ico(it.icon, 12));
+      b.appendChild(document.createTextNode(it.t)); b.appendChild(el('b', null, nf(it.n)));
+      b.title = (it.tip ? it.tip + '\n' : '') + 'Click to list these ' + nf(it.n) + ' packages';
+      b.addEventListener('click', it.go); wrap.appendChild(b);
+    });
+    row.appendChild(wrap); box.appendChild(row);
+  }
+  function renderQuick() {
+    var box = clear($('o-quick')), pk = R.pk, c = function (f) { return pk.filter(f).length; };
+    qbRow(box, 'Position', [{ t: POSL.LAYDOWN, n: c(function (p) { return posOf(p) === 'LAYDOWN'; }), dot: POSC.LAYDOWN, tip: POST.LAYDOWN, go: function () { openFilter('LAYDOWN'); } }]
+      .concat(laydowns(pk).map(function (g) { return { t: g.k, n: g.n, icon: 'pin', sub: true, go: function () { openFilter(g.k); } }; }))
+      .concat([{ t: POSL.ONSITE, n: c(function (p) { return posOf(p) === 'ONSITE'; }), dot: POSC.ONSITE, tip: POST.ONSITE, go: function () { openFilter('ONSITE'); } },
+        { t: POSL.OFF, n: c(function (p) { return posOf(p) === 'OFF'; }), dot: POSC.OFF, tip: POST.OFF, go: function () { openFilter('OFF'); } }]));
+    qbRow(box, 'Status', STO.map(function (k) { return { t: ST[k].s, n: c(function (p) { return p.st === k; }), dot: ST[k].c, tip: ST[k].n, go: function () { openFilter('ALL', k); } }; }));
+  }
   function renderLoc(a) {
     var box = clear($('o-loc')), gs = locStats(R.pk), on = gs.filter(function (g) { return g.k !== OFFSITE; });
     var onN = on.reduce(function (s0, g) { return s0 + g.n; }, 0), onT = on.reduce(function (s0, g) { return s0 + g.t; }, 0);
     var h = el('div', 'sec-h'), h3 = el('h3'); h3.appendChild(chipIco('pin')); h3.appendChild(document.createTextNode('Material on site by location'));
-    h3.appendChild(infoIcon('Location of every package on site, as written in the Summary Packing List:\n· Remark column — U in B4-P5 and B5-P3, T in B4-P3 and B5-P5 ("Laydown 4", "Laydown 5", "Askara" …)\n· tags on the same row right of the table — V / W ("onsite", "Mechanical part at Camp HHI")\n· RFS + inspection date (R / S) without a location = "Location not stated".\nClick a row to list its packages.'));
+    h3.appendChild(infoIcon('Location of every package on site, as written in the Summary Packing List:\n· Remark column — U in B4-P5 and B5-P3, T in B4-P3 and B5-P5 ("Laydown 4", "Laydown 5", "Askara" …)\n· tags on the same row right of the table — V / W ("onsite", "Mechanical part at Camp HHI")\n· on site ("onsite" tag, or RFS + inspection date in R / S) without a laydown = "On-site (no laydown)".\nClick a row to list its packages.'));
     h.appendChild(h3); h.appendChild(el('span', 'muted', nf(onN) + ' of ' + nf(R.pk.length) + ' packages · ' + nf1(onT) + ' t on site')); box.appendChild(h);
     var rows = el('div', 'lg-locs'), mx = gs.reduce(function (m, g) { return Math.max(m, state.basis === 't' ? g.t : g.n); }, 0) || 1;
     var ORDER = ['READY', 'PEND', 'SITE', 'AWAIT', 'BLOCK'];
@@ -542,7 +583,7 @@
   }
   function locChip(p) {
     if (!p.onsite) return document.createTextNode(OFFSITE);
-    var c = el('span', 'lg-loc' + (p.lg === NOLOC ? ' ns' : '')); c.appendChild(ico('pin', 11)); c.appendChild(document.createTextNode(p.lg === NOLOC ? 'Not stated' : p.lg));
+    var c = el('span', 'lg-loc' + (p.lg === NOLOC ? ' ns' : '')); c.appendChild(ico('pin', 11)); c.appendChild(document.createTextNode(p.lg === NOLOC ? 'On-site' : p.lg));
     c.title = (p.locSrc ? p.locSrc + ': ' + p.loc : p.locN) + (p.ev ? ' · ' + p.ev : '');
     return c;
   }
@@ -672,12 +713,13 @@
     Object.keys(R.items).forEach(function (did) { itemIdx[did] = U(R.items[did].map(function (it) { return it.d + ' ' + it.cn + ' ' + it.dw + ' ' + it.eq; }).join(' ')); });
     return itemIdx;
   }
-  function scopeP() {
+  function scopeP(skip) {
     var q = U(state.q).replace(/\s+/g, ''), qi = q.length >= 3 ? itemSearchIndex() : null;
     return R.pk.filter(function (p) {
       if (state.pb && p.b !== state.pb) return false; if (state.pc && p.c !== state.pc) return false; if (state.pg && p.grp !== state.pg) return false;
-      if (state.pst !== 'ALL' && p.st !== state.pst) return false;
-      if (state.ploc !== 'ALL' && (p.onsite ? p.lg : OFFSITE) !== state.ploc) return false;
+      if (skip !== 'st' && state.pst !== 'ALL' && p.st !== state.pst) return false;
+      if (skip !== 'loc' && !matchLoc(p, state.ploc)) return false;
+      if (skip !== 'mdr' && state.pmdr !== 'ALL' && p.mdr !== state.pmdr) return false;
       if (!q) return true;
       if (p._q == null) p._q = U([p.no, p.eq, p.desc, p.cn, p.mdrNo, p.rfs, p.locN, p.grp, p.type].join(' ')).replace(/\s+/g, '');
       if (p._q.indexOf(q) > -1) return true;
@@ -686,30 +728,34 @@
       return !!qi && bl.some(function (b) { return (qi[b.id] || '').replace(/\s+/g, '').indexOf(q) > -1; });
     });
   }
-  function renderPStatus() {
-    var sg = $('p-status');
-    if (!sg._built) {
-      sg._built = true;
-      [['ALL', 'All']].concat(STO.map(function (k) { return [k, ST[k].s]; })).forEach(function (o) {
-        var b = el('button', null, o[1]); b.type = 'button'; b.setAttribute('data-v', o[0]);
-        b.addEventListener('click', function () { state.pst = o[0]; state.pkg = null; state.blk = null; state.pall = false; renderP3(); });
-        sg.appendChild(b);
-      });
-    }
-    setSeg('p-status', state.pst);
-  }
-  function renderPLoc() {
-    var sg = clear($('p-loc')), gs = locStats(R.pk);
-    if (state.ploc !== 'ALL' && !gs.some(function (g) { return g.k === state.ploc; })) state.ploc = 'ALL';
-    [{ k: 'ALL', n: R.pk.length }].concat(gs).forEach(function (g) {
-      var b = el('button'); b.type = 'button'; b.setAttribute('data-v', g.k);
-      if (g.k !== 'ALL' && g.k !== OFFSITE) b.appendChild(ico('pin', 12));
-      b.appendChild(document.createTextNode((g.k === 'ALL' ? 'All locations' : g.k === NOLOC ? 'Not stated' : g.k) + ' '));
-      b.appendChild(el('b', 'lg-n', nf(g.n)));
-      b.addEventListener('click', function () { state.ploc = g.k; state.pkg = null; state.blk = null; state.pall = false; $('p-tbl').scrollTop = 0; renderP3(); });
+  function segRow(id, items, cur, onPick) {
+    var sg = clear($(id));
+    items.forEach(function (it) {
+      var b = el('button', it.n ? '' : 'zero'); b.type = 'button'; b.setAttribute('data-v', it.v);
+      if (it.dot) { var d = el('i', 'lg-dot'); d.style.background = it.dot; b.appendChild(d); } else if (it.icon) b.appendChild(ico(it.icon, 12));
+      b.appendChild(document.createTextNode(it.t + ' ')); b.appendChild(el('b', 'lg-n', nf(it.n)));
+      if (it.tip) b.title = it.tip;
+      b.addEventListener('click', function () { onPick(it.v); });
       sg.appendChild(b);
     });
-    setSeg('p-loc', state.ploc);
+    setSeg(id, cur);
+  }
+  /* counts in each row follow the other filters (e.g. Laydown 4 → how many Ready / MDR pending) */
+  function renderPFilters() {
+    function pick(k) { return function (v) { state[k] = v; state.pkg = null; state.blk = null; state.pall = false; $('p-tbl').scrollTop = 0; renderP3(); }; }
+    var lb = scopeP('loc'), cnt = function (f) { return lb.filter(f).length; }, lds = laydowns(R.pk);
+    if (state.ploc !== 'ALL' && !POSL[state.ploc] && !lds.some(function (g) { return g.k === state.ploc; })) state.ploc = 'ALL';
+    segRow('p-loc', [{ v: 'ALL', t: 'All', n: lb.length },
+      { v: 'LAYDOWN', t: POSL.LAYDOWN, n: cnt(function (p) { return posOf(p) === 'LAYDOWN'; }), dot: POSC.LAYDOWN, tip: POST.LAYDOWN }]
+      .concat(lds.map(function (g) { return { v: g.k, t: g.k, n: cnt(function (p) { return p.lg === g.k; }), icon: 'pin', tip: g.k + ' (Summary Remark column / site tag)' }; }))
+      .concat([{ v: 'ONSITE', t: POSL.ONSITE, n: cnt(function (p) { return posOf(p) === 'ONSITE'; }), dot: POSC.ONSITE, tip: POST.ONSITE },
+        { v: 'OFF', t: POSL.OFF, n: cnt(function (p) { return posOf(p) === 'OFF'; }), dot: POSC.OFF, tip: POST.OFF }]), state.ploc, pick('ploc'));
+    var sb = scopeP('st');
+    segRow('p-status', [{ v: 'ALL', t: 'All', n: sb.length }].concat(STO.map(function (k) { return { v: k, t: ST[k].s, n: sb.filter(function (p) { return p.st === k; }).length, dot: ST[k].c, tip: ST[k].n }; })), state.pst, pick('pst'));
+    var mb = scopeP('mdr'), ms = MDRO.filter(function (k) { return R.pk.some(function (p) { return p.mdr === k; }); });
+    R.pk.forEach(function (p) { if (ms.indexOf(p.mdr) < 0) ms.push(p.mdr); });
+    if (state.pmdr !== 'ALL' && ms.indexOf(state.pmdr) < 0) state.pmdr = 'ALL';
+    segRow('p-mdr', [{ v: 'ALL', t: 'All', n: mb.length }].concat(ms.map(function (k) { return { v: k, t: MDRL[k] || k, n: mb.filter(function (p) { return p.mdr === k; }).length, dot: (MDRC[k] || ['var(--muted)'])[0] }; })), state.pmdr, pick('pmdr'));
   }
   function renderPSteps() {
     var box = $('p-steps'), all = R.pk, bs = uniq(all, function (p) { return p.b; }).sort();
@@ -732,14 +778,14 @@
     ], 'Readiness index', state.pb || state.pc || state.pg ? function () { pick(null, null, null); } : null);
   }
   function renderP3() {
-    renderPStatus(); renderPLoc(); renderPSteps();
+    renderPFilters(); renderPSteps();
     var p = state.pkg ? R.byId[state.pkg] : null;
     if (state.pkg && !p) state.pkg = null;
     var kb = clear($('p-kpi'));
     if (!p) {
       var list = scopeP(), a = agg(list), nb = 0, ns = 0, nl = 0, ni = 0, nh = 0;
       list.forEach(function (x) { var bl = R.blkBy[x.id] || []; nb += bl.length; ns += x.split || 0; nl += x.lines || 0; ni += x.openN; if (x.maxSev === 'HIGH') nh++; });
-      $('p-title').textContent = state.q ? 'Search: ' + state.q : state.ploc !== 'ALL' ? (state.ploc === NOLOC ? 'On site · location not stated' : state.ploc) + (state.pb || state.pc ? ' · ' + bcName(state.pb, state.pc) : '') : state.pg ? state.pg + ' · ' + bcName(state.pb, state.pc) : state.pb || state.pc ? bcName(state.pb, state.pc) : 'All packages';
+      $('p-title').textContent = state.q ? 'Search: ' + state.q : filtName() ? filtName() + (state.pb || state.pc ? ' · ' + bcName(state.pb, state.pc) : '') : state.pg ? state.pg + ' · ' + bcName(state.pb, state.pc) : state.pb || state.pc ? bcName(state.pb, state.pc) : 'All packages';
       kb.appendChild(statCard('box', 'Packages', nf(list.length), '', [nf1(a.t) + ' t gross · ' + nf1(list.reduce(function (s0, x) { return s0 + (x.vol || 0); }, 0)) + ' m³']));
       kb.appendChild(statCard('split', 'Detail blocks', nf(nb), '', [ns ? nf(ns) + ' split sub-packages' : 'one block per package']));
       kb.appendChild(statCard('list', 'Material lines', nf(nl), '', ['in the linked detail packing lists']));
@@ -758,8 +804,8 @@
   }
   function renderPList(list) {
     var wrap = clear($('p-tbl')), t = el('table', 'lt'), hd = el('thead'), tr = el('tr'), tb = el('tbody'), srt = state.psort;
-    headBack($('p-head'), 'Summary Packing List', nf(list.length) + ' packages' + (state.ploc !== 'ALL' ? ' · ' + (state.ploc === NOLOC ? 'location not stated' : state.ploc) : '') + (state.q ? ' matching "' + state.q + '"' : ''),
-      state.pb || state.pc || state.pg || state.pst !== 'ALL' || state.ploc !== 'ALL' || state.q ? { t: 'All packages', fn: function () { state.pb = state.pc = state.pg = null; state.pst = 'ALL'; state.ploc = 'ALL'; state.q = ''; $('p-q').value = ''; state.pall = false; renderP3(); } } : null,
+    headBack($('p-head'), 'Summary Packing List', nf(list.length) + ' packages' + (filtName() ? ' · ' + filtName() : '') + (state.q ? ' matching "' + state.q + '"' : ''),
+      state.pb || state.pc || state.pg || filtName() || state.q ? { t: 'All packages', fn: function () { state.pb = state.pc = state.pg = null; state.pst = 'ALL'; state.ploc = 'ALL'; state.pmdr = 'ALL'; state.q = ''; $('p-q').value = ''; state.pall = false; renderP3(); } } : null,
       'One row per Summary package. Readiness is computed here from the packing-list link, MDR status, site tag / laydown and RFS + inspection date (rules in the settings block).');
     heads(tr, [['Package', 'c-nm2'], ['B · Cat', 'c-code'], ['Status', 'c-st'], ['Readiness'], ['MDR', 'c-sc'], ['Inspected'], ['Location', 'c-desc'], ['G.W. (t)'], ['System', 'c-desc'], ['']]);
     var l2 = list.slice();
@@ -1110,4 +1156,4 @@
     setInterval(function () { if (!document.hidden) refreshAll(); }, every * 60000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden && fr.tryAt && Date.now() - fr.tryAt >= every * 60000) refreshAll(); });
   }
-  window.__pmLogistics = { state: state, model: function () { return R; }, go: go, openPackage: openPackage, agg: agg };
+  window.__pmLogistics = { state: state, model: function () { return R; }, go: go, openPackage: openPackage, agg: agg, openFilter: openFilter, count: function () { return R ? scopeP().length : 0; } };

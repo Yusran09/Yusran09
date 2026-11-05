@@ -17,8 +17,11 @@ tindakan berikutnya?* Satu package **Ready for Construction** bila lolos empat g
 | Site | 15 | Ada bukti di site: catatan inspeksi, tag "onsite", atau remark lokasi (laydown, camp, …) |
 | Inspection | 35 | No. RFS Material Receiving **dan** tanggal inspeksi (RFS saja = kredit 0,5) |
 
-Status: **Ready** · **MDR pending** (sudah diinspeksi, MDR belum approved) · **On site, no RFS** (ada di site, belum RFS /
-inspeksi) · **Not on site** (belum ada catatan di site) · **Blocked** (masalah packing list). Aturannya sama dengan ETL
+Status: **Ready** · **MDR pending** (sudah diinspeksi, MDR belum approved) · **Awaiting RFS** (ada di site, belum RFS /
+inspeksi) · **In transit** (belum ada catatan di site) · **Blocked** (masalah packing list).
+
+Posisi material (tombol "Position"): **Laydown / area** (Laydown 5, Laydown 4, Askara … dari kolom Remark U/T atau tag) ·
+**On-site (no laydown)** (tag `onsite` di kolom V, atau sudah RFS + inspeksi, tapi belum ada laydown) · **Not on site**. Aturannya sama dengan ETL
 (`config/readiness_rules.json`); dashboard menghitung ulang dari kolom mentah dan memberi tanda **Data check**
 bila hasilnya berbeda dari kolom "Readiness Status (ETL)" (misalnya sheet sudah diedit setelah ETL dijalankan).
 
@@ -26,9 +29,9 @@ bila hasilnya berbeda dari kolom "Readiness Status (ETL)" (misalnya sheet sudah 
 
 | Halaman | Isi | KPI utama |
 |---|---|---|
-| 01 Overview | Panel *Site receiving* dan *Documentation · MDR*, **Material on site by location** (Laydown 4 / Laydown 5 / Askara …, klik baris → daftar package-nya), Key insights, Readiness checks | Received & inspected, On site, Ready, weekly pace, MDR approved %, MDR pending + umur, pre-arrival MDR risk, Readiness Index |
+| 01 Overview | **Tombol Quick view** di atas: *Position* (Laydown / area · Laydown 5 · Laydown 4 · Askara · On-site · Not on site) dan *Status* (Ready · MDR pending · Awaiting RFS · In transit · Blocked) — klik untuk membuka daftar package-nya. Panel *Site receiving* dan *Documentation · MDR*, **Material on site by location** (Laydown 4 / Laydown 5 / Askara …, klik baris → daftar package-nya), Key insights, Readiness checks | Received & inspected, On site, Ready, weekly pace, MDR approved %, MDR pending + umur, pre-arrival MDR risk, Readiness Index |
 | 02 Receiving | Grafik mingguan / kumulatif (ISO week, per tanggal inspeksi), drill-down Batch › Category › System › Package | Received %, Ready %, On site tanpa RFS, Readiness Index per grup |
-| 03 Packing List | Summary › Detail › Items: cari package/MDR/RFS/drawing, filter status, **tombol lokasi** (All · Laydown 5 · Laydown 4 · Askara · Not stated · Not on site), penanda lokasi di tiap baris, gate strip per package, blok split, baris material | Packages, detail blocks, material lines, open issues |
+| 03 Packing List | Summary › Detail › Items: cari package/MDR/RFS/drawing, **tiga baris tombol filter**: Position (All · Laydown / area · Laydown 5 · Laydown 4 · Askara · On-site · Not on site), Status, MDR — angka di tiap tombol mengikuti filter lain; penanda lokasi di tiap baris, gate strip per package, blok split, baris material | Packages, detail blocks, material lines, open issues |
 | 04 Exceptions | Register isu dari ETL (R01–R18) per tipe & severity, klik untuk membuka package | Open issues, HIGH, packages affected |
 
 Basis **Packages / Tonnage** bisa diganti di setiap halaman. Tema terang/gelap, cetak laporan, umur data
@@ -48,9 +51,9 @@ Semua dari sheet **Summary Packing List**. Kolom Remark tidak sama posisinya di 
 * **On site** = sudah RFS + tanggal inspeksi (R + S), **atau** ada lokasi di kolom Remark (U / T), **atau** ada tag `onsite`
   di baris yang sama (V / W). Kata kunci bisa diubah di pengaturan (`Lokasi`, `Tag Site`).
 * **Lokasi** = kata kunci + nomornya dari kolom Remark (lalu dari tag): `Laydown 4`, `Laydown 5`, `Askara`, `Camp HHI`.
-  On site tanpa lokasi = **Location not stated** (sekarang 16: B4-P3 6 sudah diinspeksi, B5-P3 10 bertag `onsite`).
-* Status **On site, no RFS** hanya bagian yang belum RFS / inspeksi. Total material di site = Ready + MDR pending +
-  On site, no RFS = **361 package** (Laydown 5: 258 · Laydown 4: 80 · Askara: 7 · tanpa lokasi: 16). Angka B4-P5 sama
+  On site tanpa lokasi = **On-site (no laydown)** (sekarang 16: B4-P3 6 sudah diinspeksi, B5-P3 10 bertag `onsite`).
+* Status **Awaiting RFS** hanya bagian yang belum RFS / inspeksi. Total material di site = Ready + MDR pending +
+  Awaiting RFS = **361 package** (Laydown 5: 258 · Laydown 4: 80 · Askara: 7 · tanpa lokasi: 16). Angka B4-P5 sama
   dengan pivot "Delivery at Site" di file aslinya (Askara 7 · Laydown 4 70 · Laydown 5 258 · blank 251).
 
 ## 3. Arsitektur

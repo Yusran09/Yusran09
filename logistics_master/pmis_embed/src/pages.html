@@ -20,6 +20,7 @@
         <div class="seg basisseg" role="group" aria-label="Basis"></div>
         <span class="note pnote"></span>
       </div>
+      <div class="tools-bot lg-filters" id="o-quick" role="group" aria-label="Quick view: laydown, on-site and status"></div>
     </div>
 
     <div class="st-grid" id="o-st"></div>
@@ -101,11 +102,12 @@
       </div>
       <div class="tools-bot">
         <label class="srch" id="p-srch"><i class="ic" data-i="search" data-s="15"></i><input type="search" id="p-q" placeholder="Package no., equipment, MDR, RFS, drawing…" aria-label="Search packages"></label>
-        <div class="seg" id="p-status" role="group" aria-label="Readiness status"></div>
+        <span class="note">Position = Summary Remark column (U / T: Laydown 4, Laydown 5, Askara …) and site tags (V / W: onsite)</span>
       </div>
-      <div class="tools-bot tools-loc">
-        <div class="seg lg-segloc" id="p-loc" role="group" aria-label="Site location"></div>
-        <span class="note">Location = Summary Remark column (U / T) and site tags (V / W)</span>
+      <div class="tools-bot lg-filters">
+        <div class="lg-frow"><span class="lg-flab">Position</span><div class="seg lg-segloc" id="p-loc" role="group" aria-label="Position: laydown, on-site, not on site"></div></div>
+        <div class="lg-frow"><span class="lg-flab">Status</span><div class="seg lg-segloc" id="p-status" role="group" aria-label="Readiness status"></div></div>
+        <div class="lg-frow"><span class="lg-flab">MDR</span><div class="seg lg-segloc" id="p-mdr" role="group" aria-label="MDR status"></div></div>
       </div>
       <div class="tools-bot tools-drill">
         <div class="steps" id="p-steps" role="group" aria-label="Drill-down: Batch, Category, Package group"></div>
