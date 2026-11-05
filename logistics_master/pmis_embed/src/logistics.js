@@ -896,7 +896,11 @@
   function settle(v) { return typeof v === 'function' ? v() : Promise.resolve(v); }
   var EMB = { pkg: blockSrc('lg-data-pkg'), blk: blockSrc('lg-data-blk'), iss: blockSrc('lg-data-iss'), itm: blockSrc('lg-data-itm') };
   var first = 'no embedded data';
-  function showFirst() { if (first !== true) Array.prototype.forEach.call(root.querySelectorAll('.ddt'), function (n0) { n0.textContent = first === 'no embedded data' ? 'Loading data from Google Sheets…' : 'Data error: ' + first; }); }
+  function showFirst() {
+    if (first === true) return;
+    var msg = first !== 'no embedded data' ? 'Data error: ' + first : hasSrc ? 'Loading data from Google Sheets…' : 'No data yet — fill in "Sheet ID" in the settings block or paste the data blocks';
+    Array.prototype.forEach.call(root.querySelectorAll('.ddt'), function (n0) { n0.textContent = msg; });
+  }
   var embReady = !EMB.pkg ? Promise.resolve() : Promise.all([settle(EMB.pkg), settle(EMB.blk), settle(EMB.iss)]).then(function (a) {
     EMB.pkg = a[0]; EMB.blk = a[1]; EMB.iss = a[2];                       /* items stay packed until a package or a search needs them */
     first = render(EMB, 'code', []);
