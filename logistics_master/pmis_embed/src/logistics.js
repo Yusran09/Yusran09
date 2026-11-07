@@ -9,6 +9,8 @@
   ICONS.inv = 'M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1zM16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 17.5v-11';
   ICONS.weight = 'M12 5a3 3 0 1 0 0 0.01M6.5 8h11l2.5 12H4zM12 8V5';
   ICONS.ramp = 'M3.5 19.5h17M5.5 16.5l4-4 3 2.5 6-7M18.5 8v4M18.5 8h-4';
+  ICONS.print = 'M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6M7 14h10a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1z';
+  ICONS.dl = 'M12 15V3M7 10l5 5 5-5M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4';
   BADGE_ICON.unshift([/^ready/i, 'check'], [/^mdr pending/i, 'doc'], [/^on site/i, 'pin'], [/^awaiting rfs/i, 'pin'], [/^in transit/i, 'ship'], [/^not on site/i, 'ship'], [/^awaiting/i, 'ship'], [/^blocked/i, 'alert'],
     [/^high$/i, 'alert'], [/^medium$/i, 'alertc'], [/^(low|info)$/i, 'minus'], [/^flag\b/i, 'alertc'], [/^pass\b/i, 'check'], [/^(split|sub-package)/i, 'split'],
     [/^(exact|normalized|confirmed)/i, 'check'], [/^(candidate|manual|unmatched)/i, 'alertc']);
@@ -256,7 +258,7 @@
 
   /* ---------- 4. agregat (basis: package count | tonnage) ---------- */
   var state = { page: 1, basis: /^(ton|t\b|berat|weight)/i.test(cfg.basis) ? 't' : 'n', rview: 'wk', rsort: 'order', rb: null, rc: null, rs: null,
-    pb: null, pc: null, pg: null, pst: 'ALL', ploc: 'ALL', pmdr: 'ALL', psort: 'order', q: '', pkg: null, blk: null, pall: false, xsev: 'ALL', xtype: null, xall: false };
+    pb: null, pc: null, pg: null, pst: 'ALL', ploc: 'ALL', plocs: [], pmdr: 'ALL', pview: 'pkg', pdall: false, psort: 'order', q: '', pkg: null, blk: null, pall: false, xsev: 'ALL', xtype: null, xall: false };
   function agg(list) {
     var a = { n: list.length, t: 0, sc: 0, sct: 0, f: {} };
     ['READY', 'PEND', 'SITE', 'AWAIT', 'BLOCK', 'insp', 'onsite', 'mdr', 'pl', 'mdrRisk'].forEach(function (k) { a.f[k] = { n: 0, t: 0 }; });
@@ -520,17 +522,18 @@
     ONSITE: 'On site — "onsite" tag (column V / W) or RFS + inspection date (R / S) — but no laydown in the Remark column',
     OFF: 'No RFS / inspection date, no laydown and no site tag yet' };
   function posOf(p) { return !p.onsite ? 'OFF' : p.lg === NOLOC ? 'ONSITE' : 'LAYDOWN'; }
-  function matchLoc(p, v) { return v === 'ALL' || (POSL[v] ? posOf(p) === v : p.lg === v); }
+  function matchLoc(p, v) { return v === 'ALL' || (v === 'PICK' ? state.plocs.indexOf(p.lg) > -1 : POSL[v] ? posOf(p) === v : p.lg === v); }
   function laydowns(list) { var o = {}; list.forEach(function (p) { if (posOf(p) === 'LAYDOWN') o[p.lg] = (o[p.lg] || 0) + 1; }); return Object.keys(o).sort(function (x, y) { return o[y] - o[x] || (x < y ? -1 : 1); }).map(function (k) { return { k: k, n: o[k] }; }); }
   function filtName() {
     var parts = [];
-    if (state.ploc !== 'ALL') parts.push(POSL[state.ploc] || state.ploc);
+    if (state.ploc === 'PICK') parts.push(state.plocs.join(' + ')); else if (state.ploc !== 'ALL') parts.push(POSL[state.ploc] || state.ploc);
     if (state.pst !== 'ALL') parts.push(ST[state.pst].s);
     if (state.pmdr !== 'ALL') parts.push('MDR ' + (MDRL[state.pmdr] || state.pmdr).toLowerCase());
     return parts.join(' · ');
   }
   function openFilter(loc, st, mdr) {
-    state.ploc = loc || 'ALL'; state.pst = st || 'ALL'; state.pmdr = mdr || 'ALL';
+    if (loc && loc !== 'ALL' && !POSL[loc]) { state.ploc = 'PICK'; state.plocs = [loc]; } else { state.ploc = loc || 'ALL'; state.plocs = []; }
+    state.pst = st || 'ALL'; state.pmdr = mdr || 'ALL'; state.pdall = false;
     state.pb = state.pc = state.pg = null; state.q = ''; state.pkg = null; state.blk = null; state.pall = false;
     var qi = $('p-q'); if (qi) qi.value = '';
     if (state.page === 3) renderP3(); else go(3);
@@ -735,21 +738,32 @@
       if (it.dot) { var d = el('i', 'lg-dot'); d.style.background = it.dot; b.appendChild(d); } else if (it.icon) b.appendChild(ico(it.icon, 12));
       b.appendChild(document.createTextNode(it.t + ' ')); b.appendChild(el('b', 'lg-n', nf(it.n)));
       if (it.tip) b.title = it.tip;
-      b.addEventListener('click', function () { onPick(it.v); });
+      b.setAttribute('aria-pressed', (typeof cur === 'function' ? cur(it.v) : it.v === cur) ? 'true' : 'false');
+      b.addEventListener('click', function () { onPick(it.v, it); });
       sg.appendChild(b);
     });
-    setSeg(id, cur);
   }
   /* counts in each row follow the other filters (e.g. Laydown 4 → how many Ready / MDR pending) */
   function renderPFilters() {
-    function pick(k) { return function (v) { state[k] = v; state.pkg = null; state.blk = null; state.pall = false; $('p-tbl').scrollTop = 0; renderP3(); }; }
+    function pick(k) { return function (v) { state[k] = v; state.pkg = null; state.blk = null; state.pall = false; state.pdall = false; $('p-tbl').scrollTop = 0; renderP3(); }; }
     var lb = scopeP('loc'), cnt = function (f) { return lb.filter(f).length; }, lds = laydowns(R.pk);
-    if (state.ploc !== 'ALL' && !POSL[state.ploc] && !lds.some(function (g) { return g.k === state.ploc; })) state.ploc = 'ALL';
+    state.plocs = state.plocs.filter(function (k) { return lds.some(function (g) { return g.k === k; }); });
+    if (state.ploc === 'PICK' && !state.plocs.length) state.ploc = 'ALL';
+    if (['ALL', 'PICK', 'LAYDOWN', 'ONSITE', 'OFF'].indexOf(state.ploc) < 0) state.ploc = 'ALL';
     segRow('p-loc', [{ v: 'ALL', t: 'All', n: lb.length },
       { v: 'LAYDOWN', t: POSL.LAYDOWN, n: cnt(function (p) { return posOf(p) === 'LAYDOWN'; }), dot: POSC.LAYDOWN, tip: POST.LAYDOWN }]
-      .concat(lds.map(function (g) { return { v: g.k, t: g.k, n: cnt(function (p) { return p.lg === g.k; }), icon: 'pin', tip: g.k + ' (Summary Remark column / site tag)' }; }))
+      .concat(lds.map(function (g) { return { v: g.k, t: g.k, n: cnt(function (p) { return p.lg === g.k; }), icon: 'pin', toggle: true, tip: g.k + ' — click several laydowns to combine them (e.g. Laydown 4 + Laydown 5)' }; }))
       .concat([{ v: 'ONSITE', t: POSL.ONSITE, n: cnt(function (p) { return posOf(p) === 'ONSITE'; }), dot: POSC.ONSITE, tip: POST.ONSITE },
-        { v: 'OFF', t: POSL.OFF, n: cnt(function (p) { return posOf(p) === 'OFF'; }), dot: POSC.OFF, tip: POST.OFF }]), state.ploc, pick('ploc'));
+        { v: 'OFF', t: POSL.OFF, n: cnt(function (p) { return posOf(p) === 'OFF'; }), dot: POSC.OFF, tip: POST.OFF }]),
+      function (v) { return v === state.ploc || (state.ploc === 'PICK' && state.plocs.indexOf(v) > -1); },
+      function (v, it) {
+        if (it && it.toggle) {
+          var cur = state.ploc === 'PICK' ? state.plocs.slice() : [], k = cur.indexOf(v);
+          if (k > -1) cur.splice(k, 1); else cur.push(v);
+          state.plocs = cur; state.ploc = cur.length ? 'PICK' : 'ALL';
+        } else { state.ploc = v; state.plocs = []; }
+        state.pkg = null; state.blk = null; state.pall = false; state.pdall = false; $('p-tbl').scrollTop = 0; renderP3();
+      });
     var sb = scopeP('st');
     segRow('p-status', [{ v: 'ALL', t: 'All', n: sb.length }].concat(STO.map(function (k) { return { v: k, t: ST[k].s, n: sb.filter(function (p) { return p.st === k; }).length, dot: ST[k].c, tip: ST[k].n }; })), state.pst, pick('pst'));
     var mb = scopeP('mdr'), ms = MDRO.filter(function (k) { return R.pk.some(function (p) { return p.mdr === k; }); });
@@ -790,7 +804,7 @@
       kb.appendChild(statCard('split', 'Detail blocks', nf(nb), '', [ns ? nf(ns) + ' split sub-packages' : 'one block per package']));
       kb.appendChild(statCard('list', 'Material lines', nf(nl), '', ['in the linked detail packing lists']));
       kb.appendChild(statCard('alert', 'Open issues', nf(ni), '', [nh ? badge('crit', nf(nh) + ' pkgs with HIGH') : 'on these packages · no HIGH']));
-      renderPList(list);
+      if (state.pview === 'dwg') renderDwg(list); else renderPList(list);
     } else {
       $('p-title').textContent = p.no;
       kb.appendChild(statCard('gauge', 'Readiness', nf(p.score), '/ 100', [badge(p.lv, ST[p.st].s)]));
@@ -801,15 +815,14 @@
       renderPkg(p);
     }
     setSeg('p-sort', state.psort); $('p-sort').style.visibility = p ? 'hidden' : '';
+    setSeg('p-view', state.pview); $('p-view').style.display = p ? 'none' : '';
   }
   function renderPList(list) {
     var wrap = clear($('p-tbl')), t = el('table', 'lt'), hd = el('thead'), tr = el('tr'), tb = el('tbody'), srt = state.psort;
-    headBack($('p-head'), 'Summary Packing List', nf(list.length) + ' packages' + (filtName() ? ' · ' + filtName() : '') + (state.q ? ' matching "' + state.q + '"' : ''),
-      state.pb || state.pc || state.pg || filtName() || state.q ? { t: 'All packages', fn: function () { state.pb = state.pc = state.pg = null; state.pst = 'ALL'; state.ploc = 'ALL'; state.pmdr = 'ALL'; state.q = ''; $('p-q').value = ''; state.pall = false; renderP3(); } } : null,
+    headBack($('p-head'), 'Summary Packing List', nf(list.length) + ' packages' + (filtName() ? ' · ' + filtName() : '') + (state.q ? ' matching "' + state.q + '"' : ''), resetBack(),
       'One row per Summary package. Readiness is computed here from the packing-list link, MDR status, site tag / laydown and RFS + inspection date (rules in the settings block).');
     heads(tr, [['Package', 'c-nm2'], ['B · Cat', 'c-code'], ['Status', 'c-st'], ['Readiness'], ['MDR', 'c-sc'], ['Inspected'], ['Location', 'c-desc'], ['G.W. (t)'], ['System', 'c-desc'], ['']]);
-    var l2 = list.slice();
-    if (srt === 'score') l2.sort(function (x, y) { return x.score - y.score || x.i - y.i; }); else if (srt === 'gw') l2.sort(function (x, y) { return (y.gw || 0) - (x.gw || 0); });
+    var l2 = sortList(list);
     var cap = state.pall ? l2.length : Math.min(l2.length, 300);
     l2.slice(0, cap).forEach(function (p) {
       var r = el('tr', 'go'), c0 = el('td', 'c-nm2'); if (p.grp) c0.appendChild(el('span', 'gchip', p.grp)); c0.appendChild(el('span', 'lg-mono', p.no)); c0.title = p.no + (p.desc ? ' — ' + p.desc : ''); r.appendChild(c0);
@@ -834,10 +847,11 @@
     headBack($('p-head'), b0 && blocks.length > 1 ? b0.no : p.no, b0 ? (b0.items != null ? nf(b0.items) + ' material lines' : 'material lines') + ' · ' + (b0.inv ? 'invoice ' + b0.inv : '') : blocks.length + ' detail block(s) · ' + (p.desc || ''),
       { t: b0 && blocks.length > 1 ? 'All blocks of ' + p.no.replace(/^P\d+-[A-Z]+-\d+-/, '') : 'All packages', fn: function () { if (b0 && blocks.length > 1) { state.blk = null; renderP3(); } else { state.pkg = null; state.blk = null; renderP3(); } } },
       'Gates: packing list ' + nf(GW.PL) + ' · MDR ' + nf(GW.MDR) + ' · site ' + nf(GW.SITE) + ' · inspection ' + nf(GW.INSP) + ' points.\nNext action: ' + p.act + (p.src ? '\nSource: ' + p.src : ''));
+    dwgActions($('p-head'), [p], true);
     var gs = el('div', 'gstrip');
     gs.appendChild(gateBox(p.pl ? 'ok' : 'no', 'list', 'Packing list', p.pl ? 'Verified' : 'Not verified', nf(p.links || 0) + ' detail block(s) · ' + (p.map || '—')));
     gs.appendChild(gateBox(p.mdrCr >= 1 ? 'ok' : p.mdrCr > 0 ? 'part' : 'no', 'doc', 'MDR', MDRL[p.mdr] || p.mdr, p.mdrNo || 'no MDR number'));
-    gs.appendChild(gateBox(p.onsite ? 'ok' : 'no', 'pin', 'Site', p.onsite ? (p.lg === NOLOC ? 'On site · location not stated' : p.lg) : OFFSITE, p.onsite ? [p.ev, p.locSrc ? p.locSrc + ': ' + p.loc : null].filter(Boolean).join(' · ') : 'no RFS, site tag or laydown remark'));
+    gs.appendChild(gateBox(p.onsite ? 'ok' : 'no', 'pin', 'Site', p.onsite ? p.lg : OFFSITE, p.onsite ? [p.ev, p.locSrc ? p.locSrc + ': ' + p.loc : null].filter(Boolean).join(' · ') : 'no RFS, site tag or laydown remark'));
     gs.appendChild(gateBox(p.inspected ? 'ok' : p.rfs ? 'part' : 'no', 'check', 'Inspection', p.inspected ? fdd(p.recv) : p.rfs ? 'RFS raised' : 'No RFS', p.rfs || (p.insp || '—')));
     wrap.appendChild(gs);
     var na = el('div', 'lg-next'); na.innerHTML = '<b>Next action:</b> ' + esc(p.act) + (p.note ? '<br><span class="lg-sub">Site note: ' + esc(p.note) + '</span>' : '') + (p.openN ? '<br><span class="lg-sub">' + nf(p.openN) + ' open issue(s) — see Exceptions.</span>' : '');
@@ -874,6 +888,241 @@
       $('p-tip').textContent = 'Material lines exactly as in the detail packing list · weights are item weights, not package weights';
     }
     hd.appendChild(tr); t.appendChild(hd); t.appendChild(tb); wrap.appendChild(t);
+  }
+  /* ---------- 8b. drawing list: every material line (drawing number) of the filtered packages — screen, print (A4), Excel ---------- */
+  function resetBack() {
+    return state.pb || state.pc || state.pg || filtName() || state.q ? { t: 'All packages', fn: function () { state.pb = state.pc = state.pg = null; state.pst = 'ALL'; state.ploc = 'ALL'; state.plocs = []; state.pmdr = 'ALL'; state.q = ''; $('p-q').value = ''; state.pall = false; state.pdall = false; renderP3(); } } : null;
+  }
+  function sortList(list) {
+    var l2 = list.slice(), srt = state.psort;
+    if (srt === 'score') l2.sort(function (x, y) { return x.score - y.score || x.i - y.i; }); else if (srt === 'gw') l2.sort(function (x, y) { return (y.gw || 0) - (x.gw || 0); });
+    return l2;
+  }
+  function blocksOf(p) { return (R.blkBy[p.id] || []).slice().sort(function (x, y) { return (x.parent ? 1 : 0) - (y.parent ? 1 : 0) || String(x.src).localeCompare(String(y.src), undefined, { numeric: true }); }); }
+  function linesOf(p) {                     /* material lines of every detail block (sub-package references of split parents left out) */
+    var out = [];
+    blocksOf(p).forEach(function (b) { ((R.items || {})[b.id] || []).forEach(function (it) { if (!/sub/i.test(it.ty)) out.push({ b: b, it: it }); }); });
+    return out;
+  }
+  function dwgStats(list) { var n = 0, d = {}; list.forEach(function (p) { linesOf(p).forEach(function (x) { n++; if (x.it.dw) d[x.it.dw] = 1; }); }); return { lines: n, dwg: Object.keys(d).length }; }
+  function pkgMeta(p, n) {
+    return [p.b + '-' + p.c, p.onsite ? p.lg : OFFSITE, ST[p.st].s, 'MDR ' + (MDRL[p.mdr] || p.mdr) + (p.mdrNo ? ' ' + p.mdrNo : ''),
+      p.recv != null ? 'inspected ' + fdate(p.recv) : '', p.rfs ? 'RFS ' + p.rfs : '', nf1(p.t) + ' t', nf(n) + ' line' + (n === 1 ? '' : 's')].filter(Boolean);
+  }
+  function filtText() {
+    return [state.pb ? bcName(state.pb) : '', state.pc || '', state.pg ? 'group ' + state.pg : '', filtName(), state.q ? 'search "' + state.q + '"' : ''].filter(Boolean).join(' · ') || 'All packages';
+  }
+  function pages(stt, n, compact) { return Math.max(1, Math.ceil(compact ? (n * 1.6 + stt.lines / 6) / 33 : (stt.lines + n * 2.5) / 30)); }
+  function dwgActions(box, list, one) {
+    var stt = R.items ? dwgStats(list) : null;
+    var pb = el('button', 'upb lg-act'); pb.type = 'button'; pb.appendChild(ico('print', 12)); pb.appendChild(document.createTextNode(one ? 'Print drawings' : 'Print list'));
+    pb.title = 'Print every material line with its drawing number · A4 landscape · ' + nf(list.length) + ' package(s)' + (stt ? ' · ' + nf(stt.lines) + ' lines · about ' + nf(pages(stt, list.length)) + ' page(s)' : '') + '\nTip: choose "Save as PDF" to keep a file.';
+    pb.addEventListener('click', function () { printDwg(list); });
+    box.appendChild(pb);
+    if (!one) {
+      var cb = el('button', 'upb lg-act'); cb.type = 'button'; cb.appendChild(ico('print', 12)); cb.appendChild(document.createTextNode('Print compact'));
+      cb.title = 'One line per package with all its drawing numbers · about ' + nf(pages(stt || { lines: 0 }, list.length, true)) + ' page(s)';
+      cb.addEventListener('click', function () { printDwg(list, true); });
+      box.appendChild(cb);
+    }
+    var xb = el('button', 'upb lg-act'); xb.type = 'button'; xb.appendChild(ico('dl', 12)); xb.appendChild(document.createTextNode('Excel'));
+    xb.title = 'Download the same list as an Excel file (.xlsx): one row per material line with its drawing number';
+    xb.addEventListener('click', function () { xlsxDwg(list); });
+    box.appendChild(xb);
+  }
+  function renderDwg(list) {
+    var wrap = clear($('p-tbl'));
+    if (!R.items) { wrap.appendChild(el('div', 'd-empty', 'Loading material lines…')); ensureItems(function () { if (state.page === 3 && state.pview === 'dwg' && !state.pkg) renderP3(); }); return; }
+    var l2 = sortList(list), stt = dwgStats(l2), q = U(state.q).replace(/\s+/g, '');
+    headBack($('p-head'), 'Drawing list', nf(l2.length) + ' packages · ' + nf(stt.lines) + ' material lines · ' + nf(stt.dwg) + ' drawing numbers', resetBack(),
+      'Every material line of the packages in the current filter (position, status, MDR, batch, category, group, search), exactly as in the detail packing lists. Print it (A4) or download it for the site team.');
+    dwgActions($('p-head'), l2);
+    var t = el('table', 'lt lg-dwg'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
+    heads(tr, [['S/N', 'c-code'], ['Description', 'lg-wrap'], ['Drawing No', 'c-code'], ['Equipment', 'c-code'], ['Qty'], ['Unit', 'c-sc'], ['Total wt (kg)'], ['Detail package · remark', 'lg-wrap']]);
+    var cap = state.pdall ? l2.length : Math.min(l2.length, 40);
+    l2.slice(0, cap).forEach(function (p) {
+      var ls = linesOf(p), split = (R.blkBy[p.id] || []).length > 1, r = el('tr', 'lg-pkr go'), c = el('td');
+      c.colSpan = 8; c.appendChild(el('span', 'lg-pkno', p.no)); c.appendChild(locChip(p)); c.appendChild(badge(p.lv, ST[p.st].s));
+      c.appendChild(el('span', 'lg-pkmeta', pkgMeta(p, ls.length).slice(3).join(' · '))); r.appendChild(c); r.title = 'Open ' + p.no;
+      rowKeys(r, function () { state.pkg = p.id; state.blk = null; renderP3(); $('p-tbl').scrollTop = 0; }); tb.appendChild(r);
+      if (!ls.length) { var e = el('tr'), ec = el('td', 'z', 'No material lines in the detail packing list.'); ec.colSpan = 8; e.appendChild(ec); tb.appendChild(e); }
+      ls.forEach(function (x) {
+        var it = x.it, rr = el('tr', q.length >= 3 && U([it.dw, it.d, it.cn, it.eq].join(' ')).replace(/\s+/g, '').indexOf(q) > -1 ? 'hit' : '');
+        rr.appendChild(el('td', 'c-code', it.sn || '—'));
+        var d = el('td', 'lg-wrap'); d.appendChild(document.createTextNode(it.d || '—')); if (it.cn) d.appendChild(el('span', 'lg-cn', it.cn)); if (it.sp) d.appendChild(el('span', 'lg-cn', it.sp)); rr.appendChild(d);
+        rr.appendChild(el('td', 'c-code lg-dw', it.dw || '—')); rr.appendChild(el('td', 'c-code', it.eq || '—'));
+        rr.appendChild(el('td', '', it.q == null ? '—' : num(it.q, it.q % 1 ? 2 : 0))); rr.appendChild(el('td', 'c-sc', it.u || '—'));
+        rr.appendChild(el('td', '', it.tw == null ? '—' : num(it.tw, 1)));
+        rr.appendChild(el('td', 'lg-wrap lg-res', [split ? x.b.no : '', it.rm].filter(Boolean).join(' · ')));
+        tb.appendChild(rr);
+      });
+    });
+    hd.appendChild(tr); t.appendChild(hd); t.appendChild(tb); wrap.appendChild(t);
+    if (cap < l2.length) { var mb = el('div', 'lg-more'), b = el('button', 'upb'); b.type = 'button'; b.appendChild(ico('list', 12)); b.appendChild(document.createTextNode('Show all ' + nf(l2.length) + ' packages on screen')); b.addEventListener('click', function () { state.pdall = true; renderDwg(list); }); mb.appendChild(b); wrap.appendChild(mb); }
+    $('p-tip').textContent = 'Print and Excel take every package of the filter: ' + nf(l2.length) + ' packages · ' + nf(stt.lines) + ' material lines (print list ≈ ' + nf(pages(stt, l2.length)) + ' A4 pages, compact ≈ ' + nf(pages(stt, l2.length, true)) + ') · click a package row to open it';
+  }
+  function docShell(sub, stats, colgroup, thead, body, extraCss) {
+    var d0 = new Date(), stamp = d0.getDate() + ' ' + MS[d0.getMonth()] + ' ' + d0.getFullYear() + ' ' + ('0' + d0.getHours()).slice(-2) + ':' + ('0' + d0.getMinutes()).slice(-2);
+    var ttl = (cfg.judul || 'Logistics Readiness') + ' — Drawing list';
+    var css = '@page{size:A4 landscape;margin:10mm 10mm 12mm;@bottom-left{content:"' + esc(ttl).replace(/"/g, '') + '";font:7.5pt Arial,sans-serif;color:#6b7770}@bottom-right{content:"Page " counter(page) " / " counter(pages);font:7.5pt Arial,sans-serif;color:#6b7770}}' +
+      '*{box-sizing:border-box}body{margin:0;font:8.6pt/1.32 "Segoe UI",Inter,Arial,sans-serif;color:#1e2b25;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+      'header{display:flex;justify-content:space-between;align-items:flex-end;gap:16pt;border-bottom:2px solid #263d33;padding-bottom:5pt;margin-bottom:6pt}h1{margin:0;font-size:14pt}' +
+      'header p{margin:2pt 0 0;color:#33413a;font-weight:600}header .r{text-align:right;color:#4a5750;font-size:8pt;white-space:nowrap}' +
+      'table{width:100%;border-collapse:collapse;table-layout:fixed}thead{display:table-header-group}' +
+      'th{font-size:7pt;letter-spacing:.05em;text-transform:uppercase;text-align:left;color:#3a4741;background:#e9eee8;border-bottom:1px solid #263d33;padding:3pt 4pt}' +
+      'td{padding:2pt 4pt;border-bottom:.6pt solid #dfe5de;vertical-align:top;overflow-wrap:anywhere}tr{break-inside:avoid}td.n{text-align:right;white-space:nowrap}' +
+      'small{color:#6b7770;font-size:7.4pt}.z{color:#8a958f}footer{margin-top:6pt;color:#6b7770;font-size:7.5pt}@media screen{body{padding:18px;max-width:1300px;margin:0 auto}}' + (extraCss || '');
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>' + esc('Drawing list — ' + sub) + '</title><style>' + css + '</style></head><body>' +
+      '<header><div><h1>' + esc(ttl) + '</h1><p>' + esc(sub) + '</p></div><div class="r">Data date ' + esc(fdate(R.dd)) + '<br>' + stats + '<br>Printed ' + esc(stamp) + '</div></header>' +
+      '<table>' + colgroup + '<thead><tr>' + thead.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '</tr></thead>' + body + '</table>' +
+      '<footer>Material lines exactly as in the detail packing lists (Logistics ETL) · Position = Summary Remark column (U / T) and site tags (V / W) · weights are item weights.</footer></body></html>';
+  }
+  function cols(ws) { return '<colgroup>' + ws.map(function (w) { return '<col style="width:' + w + '%">'; }).join('') + '</colgroup>'; }
+  function dwgDoc(list, compact) {
+    var stt = dwgStats(list), sub = list.length === 1 ? list[0].no : filtText(), rows = [];
+    var stats = nf(list.length) + ' package(s) · ' + nf(stt.lines) + ' material lines · ' + nf(stt.dwg) + ' drawing numbers';
+    if (compact) {                                           /* drawing index: one line per package with all its drawing numbers */
+      list.forEach(function (p) {
+        var ls = linesOf(p), seen = {}, ds = [];
+        ls.forEach(function (x) { var d = x.it.dw; if (d && !seen[d]) { seen[d] = 1; ds.push(d); } });
+        rows.push('<tr class="ix"><td><b>' + esc(p.no) + '</b><small>' + esc(p.b + '-' + p.c + (p.desc ? ' · ' + p.desc : '')) + '</small></td><td>' + esc(p.onsite ? p.lg : OFFSITE) + '</td><td>' + esc(ST[p.st].s) +
+          '<small>MDR ' + esc((MDRL[p.mdr] || p.mdr) + (p.mdrNo ? ' ' + p.mdrNo : '')) + '</small></td><td>' + (p.recv != null ? esc(fdate(p.recv)) : '—') + (p.rfs ? '<small>' + esc(p.rfs) + '</small>' : '') + '</td><td class="n">' + nf(ls.length) +
+          '</td><td class="ds">' + (ds.length ? ds.map(function (d) { return '<span>' + esc(d) + '</span>'; }).join('') : '<i class="z">no drawing number</i>') + '</td></tr>');
+      });
+      return docShell(sub + ' · compact', stats, cols([15, 8, 11, 9, 4, 53]), ['Package', 'Laydown / position', 'Status · MDR', 'Inspected · RFS', 'Lines', 'Drawing numbers'], '<tbody>' + rows.join('') + '</tbody>',
+        'tr.ix{break-inside:auto}tr.ix td{padding:3pt 4pt}tr.ix b{font:700 8.6pt Consolas,"Courier New",monospace;display:block}tr.ix small{display:block}' +
+        'td.ds{line-height:1.45}td.ds span{display:inline-block;margin:0 8pt 0 0;font:700 7.8pt Consolas,"Courier New",monospace;white-space:nowrap}');
+    }
+    list.forEach(function (p) {
+      var ls = linesOf(p), split = (R.blkBy[p.id] || []).length > 1;
+      rows.push('<tbody><tr class="pk"><td colspan="8"><b>' + esc(p.no) + '</b><span>' + esc(pkgMeta(p, ls.length).join('  ·  ')) + '</span>' + (p.desc ? '<em>' + esc(p.desc + (p.eq ? ' · ' + p.eq : '')) + '</em>' : '') + '</td></tr>');
+      if (!ls.length) rows.push('<tr><td colspan="8" class="z">No material lines in the detail packing list.</td></tr>');
+      ls.forEach(function (x) {
+        var it = x.it;
+        rows.push('<tr class="it"><td>' + esc(it.sn) + '</td><td>' + esc(it.d) + (it.cn ? ' <small>' + esc(it.cn) + '</small>' : '') + (it.sp ? ' <small>' + esc(it.sp) + '</small>' : '') + '</td><td class="dw">' + esc(it.dw || '—') +
+          '</td><td>' + esc(it.eq) + '</td><td class="n">' + (it.q == null ? '' : num(it.q, it.q % 1 ? 2 : 0)) + '</td><td>' + esc(it.u) + '</td><td class="n">' + (it.tw == null ? '' : num(it.tw, 1)) +
+          '</td><td>' + esc([split ? x.b.no : '', it.rm].filter(Boolean).join(' · ')) + '</td></tr>');
+      });
+      rows.push('</tbody>');
+    });
+    return docShell(sub, stats, cols([5, 31, 17, 7, 6, 5, 8, 21]), ['S/N', 'Description', 'Drawing No', 'Equipment', 'Qty', 'Unit', 'Total wt (kg)', 'Detail package · remark'], rows.join(''),
+      'tr.pk td{background:#eef3ec;border-top:1.2pt solid #263d33;padding:4pt}tr.pk b{font:700 9.6pt Consolas,"Courier New",monospace;margin-right:8pt}tr.pk span{color:#33413a}' +
+      'tr.pk em{display:block;font-style:normal;color:#5d6a63;font-size:7.8pt}td.dw{font:700 8.4pt Consolas,"Courier New",monospace}');
+  }
+  function dwgMsg(t) { var x = $('p-tip'); if (x) x.textContent = t; }
+  function printDwg(list, compact) {
+    if (!R.items) { ensureItems(function () { printDwg(list, compact); }); return; }
+    printHtml(dwgDoc(list, compact));
+  }
+  function printHtml(html) {                /* print from a hidden frame; if the website blocks it, from a new window */
+    var fr = document.createElement('iframe'), done = false;
+    fr.setAttribute('aria-hidden', 'true'); fr.setAttribute('tabindex', '-1');
+    fr.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none';
+    document.body.appendChild(fr);
+    var w = fr.contentWindow;
+    try { w.document.open(); w.document.write(html); w.document.close(); } catch (e) { fr.parentNode.removeChild(fr); popupHtml(html); return; }
+    setTimeout(function () {
+      try { w.addEventListener('beforeprint', function () { done = true; }); w.focus(); w.print(); } catch (e) {}
+      setTimeout(function () { if (!done) popupHtml(html); }, 500);
+      setTimeout(function () { if (fr.parentNode) fr.parentNode.removeChild(fr); }, 60000);
+    }, 250);
+  }
+  function popupHtml(html) {
+    var w = null; try { w = window.open('', '_blank'); } catch (e) {}
+    if (!w) { dwgMsg('This website blocks printing from the dashboard — use "Excel", or open the dashboard in its own tab and print again.'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+    setTimeout(function () { try { w.focus(); w.print(); } catch (e) {} }, 600);
+  }
+  /* Excel (.xlsx) written here: a small zip (stored) with one worksheet — no library, works offline */
+  var CRC = null;
+  function crc32(u) {
+    if (!CRC) { CRC = new Uint32Array(256); for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; } }
+    var x = -1; for (var i = 0; i < u.length; i++) x = CRC[(x ^ u[i]) & 255] ^ (x >>> 8); return (x ^ -1) >>> 0;
+  }
+  function deflate(u) {
+    if (!window.CompressionStream || !window.Response || !window.Blob) return Promise.resolve(null);
+    try { return new Response(new Blob([u]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer().then(function (x) { return new Uint8Array(x); }, function () { return null; }); }
+    catch (e) { return Promise.resolve(null); }
+  }
+  function zipFiles(files, type) {             /* zip: deflate where the browser can, otherwise stored */
+    return Promise.all(files.map(function (f) { return deflate(f.d); })).then(function (zs) {
+      var parts = [], cen = [], off = 0;
+      files.forEach(function (f, i) {
+        var z = zs[i] && zs[i].length < f.d.length ? zs[i] : null, dat = z || f.d, m = z ? 8 : 0;
+        var nm = new TextEncoder().encode(f.n), c = crc32(f.d), h = new DataView(new ArrayBuffer(30)), e = new DataView(new ArrayBuffer(46));
+        h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, m, true); h.setUint16(12, 0x21, true);
+        h.setUint32(14, c, true); h.setUint32(18, dat.length, true); h.setUint32(22, f.d.length, true); h.setUint16(26, nm.length, true);
+        e.setUint32(0, 0x02014b50, true); e.setUint16(4, 20, true); e.setUint16(6, 20, true); e.setUint16(8, 0x0800, true); e.setUint16(10, m, true); e.setUint16(14, 0x21, true);
+        e.setUint32(16, c, true); e.setUint32(20, dat.length, true); e.setUint32(24, f.d.length, true); e.setUint16(28, nm.length, true); e.setUint32(42, off, true);
+        parts.push(new Uint8Array(h.buffer), nm, dat); cen.push(new Uint8Array(e.buffer), nm);
+        off += 30 + nm.length + dat.length;
+      });
+      var csz = cen.reduce(function (s0, x) { return s0 + x.length; }, 0), end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, csz, true); end.setUint32(16, off, true);
+      return new Blob(parts.concat(cen, [new Uint8Array(end.buffer)]), { type: type });
+    });
+  }
+  function xEsc(v) { return String(v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function colL(i) { var s0 = ''; for (i++; i > 0; i = Math.floor((i - 1) / 26)) s0 = String.fromCharCode(65 + (i - 1) % 26) + s0; return s0; }
+  function xlsxBlob(sheet, rows, widths) {
+    var NSM = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', RNS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+      PNS = 'http://schemas.openxmlformats.org/package/2006/relationships', CT = 'application/vnd.openxmlformats-', X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+    var last = colL(rows[0].length - 1), data = rows.map(function (r, ri) {
+      var cells = '';
+      r.forEach(function (v, ci) {
+        if (v == null || v === '') return;
+        var ref = colL(ci) + (ri + 1), st = ri ? '' : ' s="1"';
+        cells += typeof v === 'number' && isFinite(v) ? '<c r="' + ref + '"' + st + '><v>' + v + '</v></c>' : '<c r="' + ref + '" t="inlineStr"' + st + '><is><t xml:space="preserve">' + xEsc(v) + '</t></is></c>';
+      });
+      return '<row r="' + (ri + 1) + '">' + cells + '</row>';
+    }).join('');
+    var files = [
+      ['[Content_Types].xml', X + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="' + CT + 'package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="' + CT + 'officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="' + CT + 'officedocument.spreadsheetml.worksheet+xml"/>' +
+        '<Override PartName="/xl/styles.xml" ContentType="' + CT + 'officedocument.spreadsheetml.styles+xml"/></Types>'],
+      ['_rels/.rels', X + '<Relationships xmlns="' + PNS + '"><Relationship Id="rId1" Type="' + RNS + '/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+      ['xl/workbook.xml', X + '<workbook xmlns="' + NSM + '" xmlns:r="' + RNS + '"><sheets><sheet name="' + xEsc(sheet) + '" sheetId="1" r:id="rId1"/></sheets>' +
+        '<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">\'' + xEsc(sheet) + '\'!$A$1:$' + last + '$' + rows.length + '</definedName></definedNames></workbook>'],
+      ['xl/_rels/workbook.xml.rels', X + '<Relationships xmlns="' + PNS + '"><Relationship Id="rId1" Type="' + RNS + '/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="' + RNS + '/styles" Target="styles.xml"/></Relationships>'],
+      ['xl/styles.xml', X + '<styleSheet xmlns="' + NSM + '"><fonts count="2"><font><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="10"/><name val="Calibri"/></font></fonts>' +
+        '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6ECE5"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+        '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+        '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs>' +
+        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
+      ['xl/worksheets/sheet1.xml', X + '<worksheet xmlns="' + NSM + '"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+        '<cols>' + widths.map(function (wd, i) { return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + wd + '" customWidth="1"/>'; }).join('') + '</cols>' +
+        '<sheetData>' + data + '</sheetData><autoFilter ref="A1:' + last + rows.length + '"/></worksheet>']
+    ];
+    var enc = new TextEncoder();
+    return zipFiles(files.map(function (f) { return { n: f[0], d: enc.encode(f[1]) }; }), CT + 'officedocument.spreadsheetml.sheet');
+  }
+  function isoD(t) { return t == null ? '' : new Date(t).toISOString().slice(0, 10); }
+  function dwgRows(list) {
+    var rows = [['Batch', 'Category', 'Package No', 'Position', 'Laydown / area', 'Status', 'MDR status', 'MDR No', 'RFS Material Receiving', 'Inspection date', 'Detail package no',
+      'S/N', 'Description', 'Description CN', 'Specification', 'Drawing No', 'Equipment', 'Qty', 'Unit', 'Unit wt (kg)', 'Total wt (kg)', 'Remark']];
+    list.forEach(function (p) {
+      linesOf(p).forEach(function (x) {
+        var it = x.it;
+        rows.push([p.b, p.c, p.no, POSL[posOf(p)], posOf(p) === 'LAYDOWN' ? p.lg : '', ST[p.st].s, MDRL[p.mdr] || p.mdr, p.mdrNo, p.rfs, p.recv != null ? isoD(p.recv) : p.insp,
+          x.b.no, it.sn, it.d, it.cn, it.sp, it.dw, it.eq, it.q, it.u, it.uw, it.tw, it.rm]);
+      });
+    });
+    return rows;
+  }
+  function download(name, blob) {
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; a.target = '_self'; a.rel = 'noopener'; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); if (a.parentNode) a.parentNode.removeChild(a); }, 4000);
+  }
+  function xlsxDwg(list) {
+    if (!R.items) { ensureItems(function () { xlsxDwg(list); }); return; }
+    var tag = (list.length === 1 ? list[0].no : filtText()).replace(/[\\\/:*?"<>|]+/g, '-').replace(/\s*·\s*/g, ' ').replace(/\s+/g, ' ').slice(0, 90);
+    dwgMsg('Preparing the Excel file…');
+    xlsxBlob('Drawing list', dwgRows(list), [7, 9, 30, 18, 13, 14, 16, 24, 22, 12, 30, 8, 38, 24, 18, 26, 12, 8, 7, 11, 11, 30]).then(function (blob) {
+      download('Drawing list ' + tag + ' ' + isoD(R.dd) + '.xlsx', blob);
+      dwgMsg('Excel file ready: ' + nf(list.length) + ' package(s) · ' + nf(dwgStats(list).lines) + ' material lines (' + nf(blob.size / 1024) + ' KB).');
+    }, function (e) { dwgMsg('Excel file could not be made: ' + ((e && e.message) || e)); });
   }
   function heads(tr, defs) { defs.forEach(function (d) { th(tr, d[0], d[1] || ''); }); }
   function esc(s0) { return String(s0 == null ? '' : s0).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -986,6 +1235,7 @@
   segBind('r-view', 'rview', function () { if (R) renderP2(); });
   segBind('r-sort', 'rsort', function () { if (R) renderP2(); });
   segBind('p-sort', 'psort', function () { if (R) renderP3(); });
+  segBind('p-view', 'pview', function () { state.pdall = false; if (R) renderP3(); });
   var qT = null;
   $('p-q').addEventListener('input', function (e) {
     clearTimeout(qT); var v = e.target.value;
@@ -1156,4 +1406,5 @@
     setInterval(function () { if (!document.hidden) refreshAll(); }, every * 60000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden && fr.tryAt && Date.now() - fr.tryAt >= every * 60000) refreshAll(); });
   }
-  window.__pmLogistics = { state: state, model: function () { return R; }, go: go, openPackage: openPackage, agg: agg, openFilter: openFilter, count: function () { return R ? scopeP().length : 0; } };
+  window.__pmLogistics = { state: state, model: function () { return R; }, go: go, openPackage: openPackage, agg: agg, openFilter: openFilter, count: function () { return R ? scopeP().length : 0; },
+    drawingDoc: function (compact) { return dwgDoc(sortList(scopeP()), compact); }, drawingRows: function () { return dwgRows(sortList(scopeP())); } };

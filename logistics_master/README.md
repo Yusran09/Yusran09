@@ -51,10 +51,12 @@ readiness with the ETL rules; any difference with the ETL is flagged.
 
 * `python3 pmis_embed/build_pmis_embed.py` writes `output/pmis/LOGISTICS-PMIS-KODE.txt` (paste into the website),
   a local preview and `LOGISTICS-PMIS-SHEET.xlsx` (the four tabs for Google Sheets). Current size: ±865 KB.
-* `python3 pmis_embed/tests/run_pmis_tests.py` runs 22 browser checks (all 1,153 packages equal to
+* `python3 pmis_embed/tests/run_pmis_tests.py` runs 29 browser checks (all 1,153 packages equal to
   `PACKAGE_READINESS`, all pages, the live-sheet path, phone layout, no JavaScript errors).
 * Material on site per location (Laydown 4 / Laydown 5 / Askara …, from the Summary Remark column U or T and the
   site tags in V / W): overview section, location buttons on the Packing List page and a location marker per package.
+* Drawing list: every material line with its drawing number for the filtered packages (e.g. MDR approved at Laydown 4 +
+  Laydown 5), printable on A4 (full or compact) and downloadable as Excel (.xlsx), built in the browser.
 * How-to (Indonesian): [pmis_embed/README.md](pmis_embed/README.md).
 
 ## Folder structure

@@ -101,6 +101,16 @@
   #pmis .lg-qb.sub .icn{color:var(--good)}
   #pmis .lg-qb.zero{opacity:.5}
 
+  /* drawing list (packing list page): package rows + material lines with drawing numbers */
+  #pmis .lt.lg-dwg tr.lg-pkr td{background:var(--hover);border-top:1px solid var(--line-strong);padding:9px 10px;text-align:left;white-space:normal}
+  #pmis .lt.lg-dwg tr.lg-pkr td > *{vertical-align:middle;margin-right:8px}
+  #pmis .lg-pkno{font:600 13px var(--mono);letter-spacing:-.01em;color:var(--ink)}
+  #pmis .lg-pkmeta{font-size:11.5px;color:var(--ink2)}
+  #pmis .lt.lg-dwg td.lg-dw{font-weight:700;color:var(--ink)}
+  #pmis .lt.lg-dwg tr.hit td{background:rgba(var(--hl-rgb),.14)}
+  #pmis .crumbs .lg-act{margin-left:2px}
+  #pmis .dt-ctl{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+
   @media (max-width:640px){
     #pmis .lg-frow{flex-direction:column;align-items:stretch;gap:4px}
     #pmis .lg-flab{width:auto}

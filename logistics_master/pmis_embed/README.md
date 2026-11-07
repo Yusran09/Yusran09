@@ -56,6 +56,23 @@ Semua dari sheet **Summary Packing List**. Kolom Remark tidak sama posisinya di 
   Awaiting RFS = **361 package** (Laydown 5: 258 · Laydown 4: 80 · Askara: 7 · tanpa lokasi: 16). Angka B4-P5 sama
   dengan pivot "Delivery at Site" di file aslinya (Askara 7 · Laydown 4 70 · Laydown 5 258 · blank 251).
 
+### Drawing list — cetak & Excel drawing number
+
+Untuk mengambil semua drawing number dari package tertentu (contoh: MDR **Approved** di **Laydown 4 + Laydown 5**):
+
+1. Buka **Packing List** → baris *Position*: klik **Laydown 5** lalu **Laydown 4** (tombol laydown bisa digabung) →
+   baris *MDR*: **Approved** → bila perlu pilih Batch / Category / Package group.
+2. Klik **Drawing list** (kanan atas tabel): setiap package (laydown, status, MDR, tanggal inspeksi, RFS, berat) diikuti
+   semua baris materialnya dengan **Drawing No**, S/N, deskripsi, equipment, qty dan berat.
+3. Tombol di atas tabel:
+   * **Print list** — semua baris material, A4 landscape, judul + filter + data date + nomor halaman
+     (contoh di atas: 328 package · 5.807 baris ≈ 214 halaman). Pilih "Save as PDF" untuk menyimpan.
+   * **Print compact** — satu baris per package dengan semua drawing number-nya (contoh di atas ≈ 42 halaman).
+   * **Excel** — file .xlsx, satu baris per material (22 kolom, judul kolom beku, filter aktif).
+4. Dari satu package (klik package-nya): tombol **Print drawings** / **Excel** untuk package itu saja.
+
+Bila website memblokir print / download di dalam embed, buka dashboard di tab sendiri lalu ulangi.
+
 ## 3. Arsitektur
 
 ```
@@ -152,6 +169,6 @@ pmis_embed/
 │   ├── logistics.css.html     # gaya tambahan kecil (token DS v8)
 │   └── welcome.json           # teks halaman Welcome
 └── tests/
-    ├── run_pmis_tests.py      # build sementara + referensi ETL + uji browser (22 cek)
+    ├── run_pmis_tests.py      # build sementara + referensi ETL + uji browser (29 cek)
     └── test_pmis_embed.js     # skenario Playwright: offline, 4 halaman, live sheet, HP
 ```

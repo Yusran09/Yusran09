@@ -34,7 +34,7 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
 
 (async () => {
   // ---------------- offline: embedded data vs the ETL
-  let { b, p, f } = await open({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  let { b, p, f } = await open({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, acceptDownloads: true });
   await p.waitForTimeout(800);
   OUT.offline = await f.evaluate((REF) => {
     const R = window.__pmLogistics.model(), ETL = { READY: 'READY_FOR_CONSTRUCTION', PEND: 'INSPECTED_MDR_PENDING', SITE: 'ON_SITE_AWAITING_INSPECTION', AWAIT: 'AWAITING_RECEIVING', BLOCK: 'BLOCKED' };
@@ -70,6 +70,23 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
     await f.click('#pg3 .nav [data-go="1"]'); await p.waitForTimeout(500);
   }
   await f.evaluate(() => Object.assign(window.__pmLogistics.state, { ploc: 'ALL', pst: 'ALL', pmdr: 'ALL' }));   // filters persist across tabs by design
+  // drawing list: two laydowns combined + MDR approved → every material line with its drawing number (screen, print, Excel)
+  if (REF.dwg) {
+    await f.evaluate((k) => window.__pmLogistics.openFilter(k), REF.dwg.locs[0]); await p.waitForTimeout(700);
+    await f.click(`#p-loc [data-v="${REF.dwg.locs[1]}"]`); await p.waitForTimeout(500);
+    await f.click('#p-mdr [data-v="APV"]'); await p.waitForTimeout(500);
+    await f.click('#p-view [data-v="dwg"]'); await p.waitForTimeout(2500);
+    const D = { n: await f.evaluate(() => window.__pmLogistics.count()), head: await f.$eval('#p-head', (e) => e.textContent.replace(/\s+/g, ' ')) };
+    const doc = await f.evaluate(() => window.__pmLogistics.drawingDoc()), idx = await f.evaluate(() => window.__pmLogistics.drawingDoc(true));
+    D.printPackages = (doc.match(/<tr class="pk">/g) || []).length; D.printLines = (doc.match(/<tr class="it">/g) || []).length; D.compactPackages = (idx.match(/<tr class="ix">/g) || []).length;
+    D.buttons = await f.$$eval('#p-head .lg-act', (bs) => bs.map((b) => b.textContent.trim()));
+    await shot(p, '04b_drawing_list', true);
+    if (csvDir) { const [dl] = await Promise.all([p.waitForEvent('download'), f.click('#p-head button:has-text("Excel")')]); await dl.saveAs(`${csvDir}/drawing-list.xlsx`); D.xlsx = dl.suggestedFilename(); }
+    P.drawing = D;
+    await f.click('#p-view [data-v="pkg"]'); await p.waitForTimeout(400);
+    await f.evaluate(() => Object.assign(window.__pmLogistics.state, { ploc: 'ALL', plocs: [], pst: 'ALL', pmdr: 'ALL' }));
+    await f.click('#pg3 .nav [data-go="1"]'); await p.waitForTimeout(500);
+  }
   await f.click('#pg1 .nav [data-go="2"]'); await p.waitForTimeout(1200); await shot(p, '03_receiving', true);
   P.receivingGroups = await rows(f, '#r-tbl tbody tr.go');
   P.chartSvg = await rows(f, '#r-chart svg');

@@ -38,6 +38,15 @@ def reference(db):
         "site_location_group FROM PACKAGE_READINESS")}
     locs = dict(c.execute("SELECT COALESCE(site_location_group, 'Not on site'), COUNT(*) FROM PACKAGE_READINESS GROUP BY 1"))
     status = dict(c.execute("SELECT readiness_status, COUNT(*) FROM PACKAGE_READINESS GROUP BY 1"))
+    named = [k for k, _ in sorted(((k, v) for k, v in locs.items() if k not in ("Not on site", "On-site (no laydown)")), key=lambda kv: -kv[1])][:2]
+    dlist = None
+    if len(named) == 2:
+        sel = """FROM PACKAGE_READINESS r JOIN PACKAGE_DETAIL it ON it.package_id = r.package_id
+                 WHERE r.mdr_state = 'APV' AND r.site_location_group IN (?, ?) AND it.item_type <> 'SUB_PACKAGE_REFERENCE'"""
+        n_pk = c.execute("SELECT COUNT(*) FROM PACKAGE_READINESS WHERE mdr_state = 'APV' AND site_location_group IN (?, ?)", named).fetchone()[0]
+        n_ln = c.execute("SELECT COUNT(*) " + sel, named).fetchone()[0]
+        dws = sorted({r[0] for r in c.execute("SELECT DISTINCT it.drawing_number " + sel + " AND it.drawing_number IS NOT NULL", named)})
+        dlist = dict(locs=named, packages=n_pk, lines=n_ln, drawings=dws)
     mdr = dict(c.execute("SELECT mdr_state, COUNT(*) FROM PACKAGE_READINESS GROUP BY 1"))
     items = dict(c.execute("SELECT detail_package_id, COUNT(*) FROM PACKAGE_DETAIL GROUP BY 1"))
     split = dict(c.execute("SELECT package_id, COUNT(*) n FROM DETAIL_PACKAGES WHERE package_id IS NOT NULL GROUP BY 1 HAVING n > 1 ORDER BY n DESC LIMIT 1"))
@@ -47,7 +56,7 @@ def reference(db):
     pend = c.execute("SELECT COUNT(*) FROM PACKAGE_READINESS WHERE readiness_status = 'INSPECTED_MDR_PENDING'").fetchone()[0]
     dd = c.execute("SELECT substr(started_at, 1, 10) FROM IMPORT_HISTORY WHERE status = 'SUCCESS' ORDER BY started_at DESC LIMIT 1").fetchone()[0]
     return dict(pk=pk, items=items, itemsTotal=sum(items.values()), splitBlocks=split, combos=combos, pending=pend, dataDate=dd, locs=locs,
-                status=status, mdr=mdr,
+                status=status, mdr=mdr, dwg=dlist,
                 searches=[s for s in (grp and grp[0], dwg and dwg[0]) if s])
 
 
@@ -83,6 +92,17 @@ def main():
             print(run.stdout[-2000:], run.stderr[-2000:])
             raise SystemExit("no RESULT from the browser test")
         R = json.loads(line[7:])
+        xl = tmp / "drawing-list.xlsx"
+        if xl.exists():                                     # the Excel file the dashboard wrote, read back while the folder exists
+            from openpyxl import load_workbook
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                wb = load_workbook(xl, read_only=True)
+                rows = list(wb.worksheets[0].iter_rows(values_only=True))
+            R.setdefault("pages", {}).setdefault("drawing", {})["xlsxRows"] = len(rows) - 1
+            R["pages"]["drawing"]["xlsxDrawings"] = sorted({r[15] for r in rows[1:] if r[15]})
+            R["pages"]["drawing"]["xlsxPackages"] = len({r[2] for r in rows[1:]})
 
     checks = []
 
@@ -127,6 +147,15 @@ def main():
         lv = R.get("live") or {}
         chk("live sheet: edited package follows the sheet", lv.get("edited") and lv.get("status") in ("READY", "PEND") and lv.get("etl") == "AWAITING_RECEIVING", lv)
         chk("live sheet: edit flagged against the ETL column", lv.get("mism") == 1 and "Data check" in lv.get("chip", ""), (lv.get("mism"), lv.get("chip")))
+        if ref.get("dwg"):
+            d, w = P.get("drawing") or {}, ref["dwg"]
+            chk(f"drawing list ({' + '.join(w['locs'])}, MDR approved): packages", d.get("n") == w["packages"] and d.get("printPackages") == w["packages"]
+                and d.get("compactPackages") == w["packages"], (d.get("n"), d.get("printPackages"), d.get("compactPackages"), w["packages"]))
+            chk("drawing list: print lists every material line", d.get("printLines") == w["lines"], (d.get("printLines"), w["lines"]))
+            chk("drawing list: Excel has every line and the same drawing numbers as the ETL", d.get("xlsxRows") == w["lines"]
+                and d.get("xlsxDrawings") == w["drawings"] and d.get("xlsxPackages") == w["packages"],
+                (d.get("xlsxRows"), w["lines"], len(d.get("xlsxDrawings") or []), len(w["drawings"]), d.get("xlsx")))
+            chk("drawing list buttons: print list · print compact · Excel", d.get("buttons") == ["Print list", "Print compact", "Excel"], d.get("buttons"))
         ph = R["phone"]
         chk("phone: no horizontal scrolling", ph["scrollWidth"] <= ph["innerWidth"], ph)
     chk("no JavaScript errors", not R.get("errors"), R.get("errors"))
