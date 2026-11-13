@@ -10,8 +10,12 @@ its own frame, settings block + plain-text data blocks, engine stored compressed
     python3 pmis_embed/build_pmis_embed.py
     python3 pmis_embed/build_pmis_embed.py --sheet-id <ID> --image https://...   (optional settings)
     python3 pmis_embed/build_pmis_embed.py --no-data                              (code without data)
+    python3 pmis_embed/build_pmis_embed.py --foundation FOUNDATION.xlsx \
+        --foundation-src "<Publish to web CSV link>" --foundation-sheet-id <ID> --foundation-tab <gid>
+                                          (page 05 Foundations: foundation snapshot + live foundation sheet)
 
 Inputs   output/MASTER_LOGISTICS_DATABASE.sqlite (from etl/run_etl.py)
+         --foundation  foundation register (xlsx sheet "Map Area Readiness", or csv), optional
          pmis_embed/framework/*   PMIS DS v8 parts, verbatim from the PMIS hub embed
          pmis_embed/src/*         the logistics dashboard (pages, logic, styles, settings)
 Outputs  output/pmis/LOGISTICS-PMIS-KODE.txt     paste into the website "custom code" block
@@ -208,6 +212,49 @@ def extract(db):
     return dict(pkg=(PKG_COLS, pkg), blk=(BLK_COLS, blk), iss=(ISS_COLS, iss), itm=(ITM_COLS, itm)), info
 
 
+def fcell(v):
+    """foundation cell as the sheet shows it: dates as ISO, numbers without trailing zeros, line breaks -> ' / '."""
+    if isinstance(v, dt.datetime):
+        return v.date().isoformat() if (v.hour, v.minute, v.second) == (0, 0, 0) else v.strftime("%Y-%m-%d %H:%M")
+    if isinstance(v, dt.date):
+        return v.isoformat()
+    return fmt(v, " / ")
+
+
+def read_foundation(path, sheet):
+    """Foundation register -> TSV text. Every column from A is kept, so column letters (B = Axis ID,
+    R = Foundation Works) stay as in the sheet; rows above the header row and empty rows are left out."""
+    p = Path(path)
+    if p.suffix.lower() in (".csv", ".txt"):
+        import csv
+        with p.open(newline="", encoding="utf-8-sig") as fh:
+            rows = [list(r) for r in csv.reader(fh)]
+        name = p.name
+    else:
+        from openpyxl import load_workbook
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            wb = load_workbook(p, read_only=True, data_only=True)
+        if sheet not in wb.sheetnames:
+            raise SystemExit(f"foundation: sheet '{sheet}' not in {p.name} ({', '.join(wb.sheetnames)}) — use --foundation-sheet")
+        rows = [list(r) for r in wb[sheet].iter_rows(values_only=True)]
+        name = f"{p.name} · {sheet}"
+    hkey = lambda c: re.sub(r"[^a-z0-9]", "", str(c or "").lower())
+    hi = next((i for i, r in enumerate(rows[:10]) if "axisid" in [hkey(c) for c in r]), None)
+    if hi is None:
+        raise SystemExit("foundation: no header row with an 'Axis ID' column in the first 10 rows")
+    rows = [[fcell(c) for c in r] for r in rows[hi:]]
+    width = max(len(r) for r in rows)
+    while width > 1 and not any(len(r) >= width and r[width - 1] for r in rows):
+        width -= 1
+    out = [(r + [""] * width)[:width] for r in rows]
+    out = [out[0]] + [r for r in out[1:] if any(r)]
+    if len(out) < 2:
+        raise SystemExit("foundation: no data rows under the header")
+    return "\n".join("\t".join(r) for r in out), dict(name=name, rows=len(out) - 1, cols=width)
+
+
 def tsv(cols, rows):
     out = ["\t".join(cols)]
     for r in rows:
@@ -223,8 +270,9 @@ def tsv(cols, rows):
 BLOCK_IDS = (("pkg", "lg-data-pkg"), ("blk", "lg-data-blk"), ("iss", "lg-data-iss"), ("itm", "lg-data-itm"))
 
 
-def data_blocks(t, packed, skip=()):
-    """t: {key: tsv}; packed: keys stored compressed (data-z="1"); skip: keys left empty (Google Sheet only)."""
+def data_blocks(t, packed, skip=(), fnd=None):
+    """t: {key: tsv}; packed: keys stored compressed (data-z="1"); skip: keys left empty (Google Sheet only);
+    fnd: (tsv, label) foundation snapshot for page 05, always compressed, or None."""
     out = []
     for k, bid in BLOCK_IDS:
         if k in skip:
@@ -233,6 +281,10 @@ def data_blocks(t, packed, skip=()):
             out.append(f'<script type="text/plain" id="{bid}" data-z="1">\n{zpack(t[k])}\n</script>')
         else:
             out.append(f'<script type="text/plain" id="{bid}">\n{t[k]}\n</script>')
+    if fnd:
+        out.append(f'<script type="text/plain" id="lg-data-fnd" data-z="1" data-src="{html.escape(fnd[1], quote=True)}">\n{zpack(fnd[0])}\n</script>')
+    else:
+        out.append('<script type="text/plain" id="lg-data-fnd"></script>')
     return "\n".join(out)
 
 
@@ -288,6 +340,9 @@ def assemble(args, engine_z, blocks, data_info):
         "{{DASH_TITLE}}": f"{args.project} – Logistics Readiness",
         "{{SHEET_ID}}": args.sheet_id or "",
         "{{IMAGE}}": args.image or "",
+        "{{FND_SRC}}": args.foundation_src or "",
+        "{{FND_SID}}": args.foundation_sheet_id or "",
+        "{{FND_TAB}}": args.foundation_tab or "",
         "{{WELCOME_JSON}}": json.dumps(welcome, ensure_ascii=False).replace("</", "<\\/"),
         "{{DATA_INFO}}": data_info,
         "{{DATA_BLOCKS}}": blocks,
@@ -313,7 +368,15 @@ def build(args):
         raise SystemExit("engine must not contain the keep marker")
     engine_z = zpack(engine)
     rpt = {"engine_bytes": len(engine.encode()), "engine_z_bytes": len(engine_z)}
-    tabs = None
+    tabs, fnd = None, None
+    for k in ("foundation_src", "foundation_sheet_id", "foundation_tab"):
+        v = getattr(args, k) or ""
+        if any(c in v for c in "<>\n\"") or v.startswith(("http:", "javascript:")):
+            raise SystemExit(f"--{k.replace('_', '-')}: not a valid link / ID")
+    if args.foundation and not args.no_data:
+        ftxt, finfo = read_foundation(args.foundation, args.foundation_sheet)
+        fnd = (ftxt, f"{finfo['name']} · snapshot {fdate(dt.date.today().isoformat())}")
+        rpt["foundation"] = dict(finfo, tsv_bytes=len(ftxt.encode()), packed_bytes=len(zpack(ftxt)))
     if args.no_data:
         page = assemble(args, engine_z, data_blocks({}, set(), skip={"pkg", "blk", "iss", "itm"}), "no data — template only")
         rpt["layout"] = "template without data"
@@ -324,11 +387,19 @@ def build(args):
         data_info = (f"Logistics ETL {info['import_id']} (v{info['etl_version']}) · data date {fdate(info['data_date'])} · "
                      f"{c['packages']} packages / {c['blocks']} detail blocks / {c['items']} material lines / {c['issues']} issues")
         tried = []
-        for lay in LAYOUTS:
-            page = assemble(args, engine_z, data_blocks(t, lay["packed"], lay["skip"]), data_info)
-            tried.append((lay["name"], len(page.encode("utf-8"))))
+        # the foundation snapshot is kept if a layout that still embeds the material lines fits with it (page 05
+        # needs both); otherwise it is dropped first and page 05 loads the foundation sheet only
+        keep = [l for l in LAYOUTS if not l["skip"]]
+        order = [(l, True) for l in keep if fnd] + [(l, False) for l in keep]
+        order += [(l, w) for l in LAYOUTS if l["skip"] for w in ((True, False) if fnd else (False,))]
+        for lay, with_f in order:
+            page = assemble(args, engine_z, data_blocks(t, lay["packed"], lay["skip"], fnd if with_f else None), data_info)
+            tried.append((lay["name"] + (" · foundation snapshot" if with_f else ""), len(page.encode("utf-8"))))
             if tried[-1][1] < LIMIT:
                 break
+        if fnd and not with_f:
+            print("WARNING: foundation snapshot not embedded (size limit) — page 05 loads the foundation sheet only.", file=sys.stderr)
+        rpt["foundation_embedded"] = bool(fnd and with_f)
         rpt.update(layout=lay["name"], tried=tried, data=info, tsv_bytes={k: len(v.encode()) for k, v in t.items()})
         if lay["skip"]:
             print("WARNING: material lines are not embedded (size limit) — they load from the Google Sheet tab only.", file=sys.stderr)
@@ -358,6 +429,11 @@ def main(argv=None):
     ap.add_argument("--image", default="", help="https:// photo for the welcome page (optional)")
     ap.add_argument("--no-data", action="store_true", help="code only, without the embedded data blocks")
     ap.add_argument("--no-sheet", action="store_true", help="do not write LOGISTICS-PMIS-SHEET.xlsx")
+    ap.add_argument("--foundation", default="", help="foundation register (xlsx / csv) embedded as the page-05 snapshot (optional)")
+    ap.add_argument("--foundation-sheet", default="Map Area Readiness", help="sheet of the foundation xlsx (default: Map Area Readiness)")
+    ap.add_argument("--foundation-src", default="", help='"Pondasi Sumber": Publish to web CSV link of the foundation tab (optional)')
+    ap.add_argument("--foundation-sheet-id", default="", help='"Pondasi Sheet ID": share link / ID of the foundation Google Sheet (optional)')
+    ap.add_argument("--foundation-tab", default="", help='"Pondasi Tab": gid or tab name for the Sheet ID (optional)')
     build(ap.parse_args(argv))
 
 

@@ -3,8 +3,10 @@
 // Prints one line "RESULT {json}" that run_pmis_tests.py checks.
 //   offline : Google not reachable → embedded data; every package must match PACKAGE_READINESS of the ETL
 //   pages   : the 4 pages, drill-downs, split package → block → material lines, search, filters, tonnage, dark theme
-//   live    : the Google Sheet tabs (gviz CSV, simulated) with one package edited → status follows the sheet
-//   phone   : iPhone 13 layout without horizontal scrolling
+//   fnd     : page 05 Foundations (embedded register snapshot × material lines) vs the Python mirror
+//   live    : the Google Sheet tabs (gviz CSV, simulated) with one package edited → status follows the sheet;
+//             the foundation "Publish to web" CSV (simulated) with one status changed → page 05 follows it
+//   phone   : iPhone 13 layout without horizontal scrolling (overview + foundations)
 const { chromium, devices } = require('playwright');
 const fs = require('fs');
 
@@ -13,11 +15,12 @@ const REF = JSON.parse(fs.readFileSync(refPath, 'utf8'));
 const OUT = { errors: [] };
 if (shots) fs.mkdirSync(shots, { recursive: true });
 
-async function open(ctxOpts, sheet) {
+async function open(ctxOpts, sheet, fcsv) {
   const b = await chromium.launch(), ctx = await b.newContext(ctxOpts), p = await ctx.newPage();
   p.on('pageerror', (e) => OUT.errors.push('pageerror: ' + String(e).slice(0, 300)));
   p.on('console', (m) => { if (m.type() === 'error' && !/ERR_FAILED|net::/.test(m.text())) OUT.errors.push('console: ' + m.text().slice(0, 300)); });
   await p.route(/^https?:\/\//, (r) => {
+    if (fcsv && /docs\.google\.com\/spreadsheets\/d\/e\/[^/]+\/pub\?/.test(r.request().url())) return r.fulfill({ status: 200, contentType: 'text/csv', body: fcsv });
     const m = /docs\.google\.com\/spreadsheets\/d\/[^/]+\/gviz\/tq\?.*sheet=([^&]+).*tqx=out:csv/.exec(r.request().url());
     if (sheet && m && sheet[decodeURIComponent(m[1])] != null) return r.fulfill({ status: 200, contentType: 'text/csv', body: sheet[decodeURIComponent(m[1])] });
     return r.abort();
@@ -80,6 +83,7 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
     const doc = await f.evaluate(() => window.__pmLogistics.drawingDoc()), idx = await f.evaluate(() => window.__pmLogistics.drawingDoc(true));
     D.printPackages = (doc.match(/<tr class="pk">/g) || []).length; D.printLines = (doc.match(/<tr class="it">/g) || []).length; D.compactPackages = (idx.match(/<tr class="ix">/g) || []).length;
     D.buttons = await f.$$eval('#p-head .lg-act', (bs) => bs.map((b) => b.textContent.trim()));
+    D.heads = await f.$$eval('#p-tbl thead th', (t) => t.map((x) => x.textContent.trim()));
     await shot(p, '04b_drawing_list', true);
     if (csvDir) { const [dl] = await Promise.all([p.waitForEvent('download'), f.click('#p-head button:has-text("Excel")')]); await dl.saveAs(`${csvDir}/drawing-list.xlsx`); D.xlsx = dl.suggestedFilename(); }
     P.drawing = D;
@@ -110,7 +114,47 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
   await f.click('#pg3 .nav [data-go="4"]'); await p.waitForTimeout(1200); await shot(p, '06_exceptions', true);
   P.issueTypes = await rows(f, '#x-bars .hbr');
   await f.click('#x-bars .hbr'); await p.waitForTimeout(600); P.issueRowsFiltered = await rows(f, '#x-tbl tbody tr');
-  await f.click('#pg4 .nav [data-go="1"]'); await p.waitForTimeout(800);
+  // ---------------- foundations (page 05): embedded register snapshot × material lines
+  if (REF.fnd) {
+    await f.click('#pg4 .nav [data-go="5"]');
+    await f.waitForFunction(() => document.querySelectorAll('#f-tbl tbody tr.go').length > 0 && !!window.__pmLogistics.foundation(), null, { timeout: 20000 });
+    await p.waitForTimeout(400); await shot(p, '09_foundations', true);
+    const F = await f.evaluate(() => {
+      const x = window.__pmLogistics.foundation(), fd = x.fd, J = x.join, mat = {}, unm = {};
+      fd.list.forEach((q) => { mat[q.mat] = (mat[q.mat] || 0) + 1; });
+      Object.keys(J.unm).forEach((k) => { unm[k] = J.unm[k].n; });
+      return { n: fd.list.length, keys: Object.keys(fd.by).length, dup: fd.dup.length, bad: fd.bad.length, axisCol: fd.axisCol, statusCol: fd.statusCol,
+        matched: J.matched, axisLike: J.axisLike, unm, mat, perAxis: fd.list.map((q) => [q.raw, q.lines.length, q.pks.length, q.mat]) };
+    });
+    F.kpi = await f.$$eval('#f-kpi .stat .v', (v) => v.map((x) => x.textContent.trim()));
+    F.kpiSub = await f.$eval('#f-kpi .stat .sub', (e) => e.textContent.trim());
+    F.mxRows = await f.$$eval('#f-mx table tbody tr:not(.tot)', (rs) => rs.map((r) => Array.from(r.children).map((c) => c.textContent.trim())));
+    F.mxTotal = await f.$$eval('#f-mx table tbody tr.tot td', (cs) => cs.map((c) => c.textContent.trim()));
+    F.stripCells = await rows(f, '#f-mx .lg-strip .cells i');
+    F.listWith = await rows(f, '#f-tbl tbody tr.go');
+    await f.click('#f-mat [data-v="ALL"]'); await p.waitForTimeout(700);
+    F.listAll = await rows(f, '#f-tbl tbody tr.go');
+    const more = await f.$('#f-tbl .lg-more button'); if (more) { await more.click(); await p.waitForTimeout(900); }
+    F.listAllShown = await rows(f, '#f-tbl tbody tr.go');
+    const fdoc = await f.evaluate(() => window.__pmLogistics.foundationDoc()); F.docRows = (fdoc.match(/<tr class="ix">/g) || []).length;
+    if (csvDir) { const [dl] = await Promise.all([p.waitForEvent('download'), f.click('#f-head button:has-text("Excel")')]); await dl.saveAs(`${csvDir}/foundation.xlsx`); F.xlsxName = dl.suggestedFilename(); }
+    F.cell = await f.evaluate(() => {
+      const td = document.querySelector('#f-mx td.cell:not(.z)'); if (!td) return null;
+      const out = { st: td.parentNode.children[0].textContent.trim(), col: Array.prototype.indexOf.call(td.parentNode.children, td), n: +td.textContent.replace(/[^\d]/g, '') };
+      td.click(); return out;
+    });
+    await p.waitForTimeout(700); if (F.cell) F.cell.rows = await rows(f, '#f-tbl tbody tr.go');
+    await f.click('#f-st [data-v="ALL"]'); await p.waitForTimeout(400); await f.click('#f-mat [data-v="ALL"]'); await p.waitForTimeout(400);
+    await f.fill('#f-q', REF.fnd.sample.raw); await p.waitForTimeout(900);
+    const hitRow = await f.evaluate((raw) => { const rs = Array.from(document.querySelectorAll('#f-tbl tbody tr.go')); const i = rs.findIndex((r) => (r.querySelector('.lg-mono') || {}).textContent === raw); if (i > -1) rs[i].click(); return i; }, REF.fnd.sample.raw);
+    await p.waitForTimeout(900); await shot(p, '09b_foundation_axis', true);
+    F.axis = { row: hitRow, title: await f.$eval('#f-title', (e) => e.textContent), gates: await rows(f, '#f-tbl .gstrip > *'), lines: await rows(f, '#f-tbl table tbody tr.go') };
+    await f.click('#f-tbl table tbody tr.go'); await p.waitForTimeout(1000);
+    F.lineOpens = await f.evaluate(() => ({ page: window.__pmLogistics.state.page, pkg: window.__pmLogistics.state.pkg }));
+    await f.evaluate(() => { Object.assign(window.__pmLogistics.state, { fq: '', fax: null, fst: 'ALL', fmat: 'WITH', fall: false, pkg: null }); document.getElementById('f-q').value = ''; });
+    P.fnd = F;
+  }
+  { const cur = await f.evaluate(() => window.__pmLogistics.state.page); await f.click(`#pg${cur} .nav [data-go="1"]`); await p.waitForTimeout(800); }
   await f.click('#pg1 .basisseg [data-v="t"]'); await p.waitForTimeout(800);
   P.tonnage = await f.$$eval('#o-st .stp-big small', (s) => s.map((x) => x.textContent.trim()));
   await p.click('#pmhub .hb-tg'); await p.waitForTimeout(1200);
@@ -131,12 +175,22 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
       }
     }
     sheet.Packages = L.join('\n');
-    ({ b, p, f } = await open({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 }, sheet));
+    const fcsv = REF.fnd && fs.existsSync(`${csvDir}/foundation-live.csv`) ? fs.readFileSync(`${csvDir}/foundation-live.csv`, 'utf8') : null;
+    ({ b, p, f } = await open({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 }, sheet, fcsv));
     await f.waitForFunction(() => /Updated/.test((document.querySelector('.fresh .ft') || {}).textContent || ''), null, { timeout: 20000 });
     OUT.live = await f.evaluate((no) => {
       const R = window.__pmLogistics.model(), x = R.pk.find((q) => q.no === no);
       return { edited: no, status: x && x.st, etl: x && x.etlSt, mism: R.mism, chip: (document.querySelector('.src') || {}).textContent || '', items: typeof R.itmIn };
     }, edited);
+    if (fcsv && REF.fnd.live) {
+      await f.waitForFunction(() => window.__pmLogistics.foundationSource().kind === 'live', null, { timeout: 20000 });
+      await f.evaluate(() => window.__pmLogistics.go(5));
+      await f.waitForFunction(() => !!window.__pmLogistics.foundation(), null, { timeout: 20000 });
+      OUT.liveF = await f.evaluate((raw) => {
+        const x = window.__pmLogistics.foundation(), s = window.__pmLogistics.foundationSource(), a = x.fd.list.find((q) => q.raw === raw);
+        return { kind: s.kind, name: s.name, n: x.fd.list.length, st: a && a.st, ready: a && a.ready, mat: a && a.mat, notes: s.notes };
+      }, REF.fnd.live.raw);
+    }
     await b.close();
   }
 
@@ -144,7 +198,15 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
   ({ b, p, f } = await open({ ...devices['iPhone 13'] }));
   await p.waitForTimeout(800); await f.click('.wel-go'); await p.waitForTimeout(1200); await shot(p, '08_phone_overview', true);
   const w = await p.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
-  OUT.phone = { scrollWidth: w[0], innerWidth: w[1] };
+  OUT.phone = { scrollWidth: w[0], innerWidth: w[1], frame: await f.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]) };
+  if (REF.fnd) {
+    await f.click('#pg1 .nav [data-go="5"]');
+    await f.waitForFunction(() => document.querySelectorAll('#f-tbl tbody tr.go').length > 0, null, { timeout: 20000 });
+    await p.waitForTimeout(600); await shot(p, '10_phone_foundations', true);
+    OUT.phone.p5 = { outer: await p.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]),
+      frame: await f.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]) };
+    OUT.phone.p5rows = await rows(f, '#f-tbl tbody tr.go');
+  }
   await b.close();
   console.log('RESULT ' + JSON.stringify(OUT));
 })().catch((e) => { console.log('RESULT ' + JSON.stringify({ fatal: String(e).slice(0, 500), errors: OUT.errors })); process.exit(1); });

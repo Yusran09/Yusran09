@@ -10,7 +10,8 @@
     {"text": "Receiving and MDR readiness at a glance"},
     {"text": "Site receiving per week, batch and system"},
     {"text": "Summary › detail › material lines of every package"},
-    {"text": "Packing-list exceptions found by the ETL"}
+    {"text": "Packing-list exceptions found by the ETL"},
+    {"text": "Foundation status of every OLC axis against the material on site"}
   ],
   "stats": [
     {"list": "#o-st .stp", "lab": ".stp-name", "val": ".stp-big .v"},

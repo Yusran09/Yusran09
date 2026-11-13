@@ -11,6 +11,7 @@
   ICONS.ramp = 'M3.5 19.5h17M5.5 16.5l4-4 3 2.5 6-7M18.5 8v4M18.5 8h-4';
   ICONS.print = 'M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6M7 14h10a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-10a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1z';
   ICONS.dl = 'M12 15V3M7 10l5 5 5-5M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4';
+  ICONS.found = 'M3 20h18M5 20v-4h14v4M8 16v-5h8v5M10 11V5h4v6';
   BADGE_ICON.unshift([/^ready/i, 'check'], [/^mdr pending/i, 'doc'], [/^on site/i, 'pin'], [/^awaiting rfs/i, 'pin'], [/^in transit/i, 'ship'], [/^not on site/i, 'ship'], [/^awaiting/i, 'ship'], [/^blocked/i, 'alert'],
     [/^high$/i, 'alert'], [/^medium$/i, 'alertc'], [/^(low|info)$/i, 'minus'], [/^flag\b/i, 'alertc'], [/^pass\b/i, 'check'], [/^(split|sub-package)/i, 'split'],
     [/^(exact|normalized|confirmed)/i, 'check'], [/^(candidate|manual|unmatched)/i, 'alertc']);
@@ -33,9 +34,10 @@
   var cfg = { judul: 'Logistics Readiness', sheetid: '', sumber: '', tabpackage: 'Packages', tabdetail: 'Detail', tabitem: 'Items', tabissue: 'Issues',
     datadate: '', bobotgate: '15 / 35 / 15 / 35', kreditres: '0.5', mdrtidakperlu: 'mdr not required, mdr is not required, no mdr required',
     lokasi: 'laydown, askara, camp, warehouse, yard, store', tagsite: 'onsite, on site, on-site, arrived', batasmdr: '7 / 14',
-    basis: 'package', tema: 'terang', kepekatan: '62', autorefresh: '120', cekdata: 'tampil' };
+    basis: 'package', tema: 'terang', kepekatan: '62', autorefresh: '120', cekdata: 'tampil',
+    pondasisumber: '', pondasisheetid: '', pondasitab: '', pondasikolomaxis: 'B', pondasikolomstatus: 'R', pondasisiap: 'concreting, complete, completed, done, finish' };
   $('lg-config').textContent.split(/\r?\n/).forEach(function (line) {
-    var m = line.trim().match(/^(judul|sheet\s*id|sumber|tab\s*package|tab\s*detail|tab\s*item|tab\s*issue|data\s*date|bobot\s*gate|kredit\s*res|mdr\s*tidak\s*perlu|lokasi|tag\s*site|batas\s*mdr|basis|tema|kepekatan|auto\s*refresh|cek\s*data)\s*:\s*(.*)$/i);
+    var m = line.trim().match(/^(judul|sheet\s*id|sumber|tab\s*package|tab\s*detail|tab\s*item|tab\s*issue|data\s*date|bobot\s*gate|kredit\s*res|mdr\s*tidak\s*perlu|lokasi|tag\s*site|batas\s*mdr|basis|tema|kepekatan|auto\s*refresh|cek\s*data|pondasi\s*sumber|pondasi\s*sheet\s*id|pondasi\s*tab|pondasi\s*kolom\s*axis|pondasi\s*kolom\s*status|pondasi\s*siap)\s*:\s*(.*)$/i);
     if (m) cfg[m[1].toLowerCase().replace(/[\s-]+/g, '')] = m[2].trim();
   });
   var tint = parseFloat(String(cfg.kepekatan).replace(',', '.'));
@@ -258,7 +260,7 @@
 
   /* ---------- 4. agregat (basis: package count | tonnage) ---------- */
   var state = { page: 1, basis: /^(ton|t\b|berat|weight)/i.test(cfg.basis) ? 't' : 'n', rview: 'wk', rsort: 'order', rb: null, rc: null, rs: null,
-    pb: null, pc: null, pg: null, pst: 'ALL', ploc: 'ALL', plocs: [], pmdr: 'ALL', pview: 'pkg', pdall: false, psort: 'order', q: '', pkg: null, blk: null, pall: false, xsev: 'ALL', xtype: null, xall: false };
+    pb: null, pc: null, pg: null, pst: 'ALL', ploc: 'ALL', plocs: [], pmdr: 'ALL', pview: 'pkg', pdall: false, psort: 'order', fst: 'ALL', fmat: 'WITH', fsta: 'ALL', fq: '', fsort: 'axis', fax: null, fall: false, q: '', pkg: null, blk: null, pall: false, xsev: 'ALL', xtype: null, xall: false };
   function agg(list) {
     var a = { n: list.length, t: 0, sc: 0, sct: 0, f: {} };
     ['READY', 'PEND', 'SITE', 'AWAIT', 'BLOCK', 'insp', 'onsite', 'mdr', 'pl', 'mdrRisk'].forEach(function (k) { a.f[k] = { n: 0, t: 0 }; });
@@ -871,7 +873,7 @@
       });
       $('p-tip').textContent = blocks.length > 1 ? 'Split package: the parent block lists its sub-packages · click a block for its material lines' : 'Click the block for its material lines';
     } else {
-      heads(tr, [['#'], ['S/N', 'c-code'], ['Description', 'lg-wrap'], ['Qty'], ['Unit', 'c-sc'], ['Unit wt'], ['Total wt'], ['Equipment', 'c-code'], ['Drawing', 'c-code'], ['Remark', 'lg-wrap']]);
+      heads(tr, [['#'], ['S/N', 'c-code'], ['Description', 'lg-wrap'], ['Qty'], ['Unit', 'c-sc'], ['Unit wt'], ['Total wt'], ['Equipment', 'c-code'], ['Drawing', 'c-code']].concat(FD ? [['Foundation · status', 'c-desc']] : []).concat([['Remark', 'lg-wrap']]));
       if (!R.items) { var lr = el('tr'), lc = el('td', 'z', 'Loading material lines…'); lc.colSpan = 10; lr.appendChild(lc); tb.appendChild(lr); }
       else {
         var its = R.items[b0.id] || [];
@@ -881,7 +883,7 @@
           var d = el('td', 'lg-wrap lg-strong'); d.appendChild(document.createTextNode(it.d || '—')); if (it.cn) d.appendChild(el('span', 'lg-cn', it.cn)); if (it.sp) d.appendChild(el('span', 'lg-cn', it.sp)); if (/sub/i.test(it.ty)) d.appendChild(badge('', 'Sub-package ref')); r.appendChild(d);
           r.appendChild(el('td', '', it.q == null ? '—' : num(it.q, it.q % 1 ? 2 : 0))); r.appendChild(el('td', 'c-sc', it.u || '—'));
           r.appendChild(el('td', '', it.uw == null ? '—' : num(it.uw, 2))); r.appendChild(el('td', 'cum', it.tw == null ? '—' : num(it.tw, 2)));
-          r.appendChild(el('td', 'c-code', it.eq || '—')); r.appendChild(el('td', 'c-code', it.dw || '—')); r.appendChild(el('td', 'lg-wrap lg-res', it.rm || ''));
+          r.appendChild(el('td', 'c-code', it.eq || '—')); r.appendChild(el('td', 'c-code', it.dw || '—')); if (FD) { var fc = el('td', 'c-desc'); fdCell(fc, it.dw); r.appendChild(fc); } r.appendChild(el('td', 'lg-wrap lg-res', it.rm || ''));
           tb.appendChild(r);
         });
       }
@@ -938,19 +940,20 @@
       'Every material line of the packages in the current filter (position, status, MDR, batch, category, group, search), exactly as in the detail packing lists. Print it (A4) or download it for the site team.');
     dwgActions($('p-head'), l2);
     var t = el('table', 'lt lg-dwg'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
-    heads(tr, [['S/N', 'c-code'], ['Description', 'lg-wrap'], ['Drawing No', 'c-code'], ['Equipment', 'c-code'], ['Qty'], ['Unit', 'c-sc'], ['Total wt (kg)'], ['Detail package · remark', 'lg-wrap']]);
+    var nc = FD ? 9 : 8;
+    heads(tr, [['S/N', 'c-code'], ['Description', 'lg-wrap'], ['Drawing No', 'c-code']].concat(FD ? [['Foundation · status', 'c-desc']] : []).concat([['Equipment', 'c-code'], ['Qty'], ['Unit', 'c-sc'], ['Total wt (kg)'], ['Detail package · remark', 'lg-wrap']]));
     var cap = state.pdall ? l2.length : Math.min(l2.length, 40);
     l2.slice(0, cap).forEach(function (p) {
       var ls = linesOf(p), split = (R.blkBy[p.id] || []).length > 1, r = el('tr', 'lg-pkr go'), c = el('td');
-      c.colSpan = 8; c.appendChild(el('span', 'lg-pkno', p.no)); c.appendChild(locChip(p)); c.appendChild(badge(p.lv, ST[p.st].s));
+      c.colSpan = nc; c.appendChild(el('span', 'lg-pkno', p.no)); c.appendChild(locChip(p)); c.appendChild(badge(p.lv, ST[p.st].s));
       c.appendChild(el('span', 'lg-pkmeta', pkgMeta(p, ls.length).slice(3).join(' · '))); r.appendChild(c); r.title = 'Open ' + p.no;
       rowKeys(r, function () { state.pkg = p.id; state.blk = null; renderP3(); $('p-tbl').scrollTop = 0; }); tb.appendChild(r);
-      if (!ls.length) { var e = el('tr'), ec = el('td', 'z', 'No material lines in the detail packing list.'); ec.colSpan = 8; e.appendChild(ec); tb.appendChild(e); }
+      if (!ls.length) { var e = el('tr'), ec = el('td', 'z', 'No material lines in the detail packing list.'); ec.colSpan = nc; e.appendChild(ec); tb.appendChild(e); }
       ls.forEach(function (x) {
         var it = x.it, rr = el('tr', q.length >= 3 && U([it.dw, it.d, it.cn, it.eq].join(' ')).replace(/\s+/g, '').indexOf(q) > -1 ? 'hit' : '');
         rr.appendChild(el('td', 'c-code', it.sn || '—'));
         var d = el('td', 'lg-wrap'); d.appendChild(document.createTextNode(it.d || '—')); if (it.cn) d.appendChild(el('span', 'lg-cn', it.cn)); if (it.sp) d.appendChild(el('span', 'lg-cn', it.sp)); rr.appendChild(d);
-        rr.appendChild(el('td', 'c-code lg-dw', it.dw || '—')); rr.appendChild(el('td', 'c-code', it.eq || '—'));
+        rr.appendChild(el('td', 'c-code lg-dw', it.dw || '—')); if (FD) { var fc = el('td', 'c-desc'); fdCell(fc, it.dw); rr.appendChild(fc); } rr.appendChild(el('td', 'c-code', it.eq || '—'));
         rr.appendChild(el('td', '', it.q == null ? '—' : num(it.q, it.q % 1 ? 2 : 0))); rr.appendChild(el('td', 'c-sc', it.u || '—'));
         rr.appendChild(el('td', '', it.tw == null ? '—' : num(it.tw, 1)));
         rr.appendChild(el('td', 'lg-wrap lg-res', [split ? x.b.no : '', it.rm].filter(Boolean).join(' · ')));
@@ -993,21 +996,24 @@
         'tr.ix{break-inside:auto}tr.ix td{padding:3pt 4pt}tr.ix b{font:700 8.6pt Consolas,"Courier New",monospace;display:block}tr.ix small{display:block}' +
         'td.ds{line-height:1.45}td.ds span{display:inline-block;margin:0 8pt 0 0;font:700 7.8pt Consolas,"Courier New",monospace;white-space:nowrap}');
     }
+    var nc = FD ? 9 : 8;
     list.forEach(function (p) {
       var ls = linesOf(p), split = (R.blkBy[p.id] || []).length > 1;
-      rows.push('<tbody><tr class="pk"><td colspan="8"><b>' + esc(p.no) + '</b><span>' + esc(pkgMeta(p, ls.length).join('  ·  ')) + '</span>' + (p.desc ? '<em>' + esc(p.desc + (p.eq ? ' · ' + p.eq : '')) + '</em>' : '') + '</td></tr>');
-      if (!ls.length) rows.push('<tr><td colspan="8" class="z">No material lines in the detail packing list.</td></tr>');
+      rows.push('<tbody><tr class="pk"><td colspan="' + nc + '"><b>' + esc(p.no) + '</b><span>' + esc(pkgMeta(p, ls.length).join('  ·  ')) + '</span>' + (p.desc ? '<em>' + esc(p.desc + (p.eq ? ' · ' + p.eq : '')) + '</em>' : '') + '</td></tr>');
+      if (!ls.length) rows.push('<tr><td colspan="' + nc + '" class="z">No material lines in the detail packing list.</td></tr>');
       ls.forEach(function (x) {
-        var it = x.it;
+        var it = x.it, fx = FD ? fdOf(it.dw) : null;
         rows.push('<tr class="it"><td>' + esc(it.sn) + '</td><td>' + esc(it.d) + (it.cn ? ' <small>' + esc(it.cn) + '</small>' : '') + (it.sp ? ' <small>' + esc(it.sp) + '</small>' : '') + '</td><td class="dw">' + esc(it.dw || '—') +
+          (FD ? '</td><td>' + (fx ? '<b class="fa">' + esc(fx.k) + '</b> ' + (fx.fs.length ? '<i class="fs" style="background:' + fMeta(fx.st).c + '"></i>' : '') + esc(fx.fs.length ? fx.st : 'not in register') : '') : '') +
           '</td><td>' + esc(it.eq) + '</td><td class="n">' + (it.q == null ? '' : num(it.q, it.q % 1 ? 2 : 0)) + '</td><td>' + esc(it.u) + '</td><td class="n">' + (it.tw == null ? '' : num(it.tw, 1)) +
           '</td><td>' + esc([split ? x.b.no : '', it.rm].filter(Boolean).join(' · ')) + '</td></tr>');
       });
       rows.push('</tbody>');
     });
-    return docShell(sub, stats, cols([5, 31, 17, 7, 6, 5, 8, 21]), ['S/N', 'Description', 'Drawing No', 'Equipment', 'Qty', 'Unit', 'Total wt (kg)', 'Detail package · remark'], rows.join(''),
+    return docShell(sub, stats, FD ? cols([5, 25, 15, 15, 7, 5, 4, 7, 17]) : cols([5, 31, 17, 7, 6, 5, 8, 21]), ['S/N', 'Description', 'Drawing No'].concat(FD ? ['Foundation · status'] : []).concat(['Equipment', 'Qty', 'Unit', 'Total wt (kg)', 'Detail package · remark']), rows.join(''),
       'tr.pk td{background:#eef3ec;border-top:1.2pt solid #263d33;padding:4pt}tr.pk b{font:700 9.6pt Consolas,"Courier New",monospace;margin-right:8pt}tr.pk span{color:#33413a}' +
-      'tr.pk em{display:block;font-style:normal;color:#5d6a63;font-size:7.8pt}td.dw{font:700 8.4pt Consolas,"Courier New",monospace}');
+      'tr.pk em{display:block;font-style:normal;color:#5d6a63;font-size:7.8pt}td.dw{font:700 8.4pt Consolas,"Courier New",monospace}' +
+      'b.fa{font:700 7.8pt Consolas,"Courier New",monospace}i.fs{display:inline-block;width:6.5pt;height:6.5pt;border-radius:1.5pt;margin:0 3pt 0 2pt;vertical-align:-.5pt}');
   }
   function dwgMsg(t) { var x = $('p-tip'); if (x) x.textContent = t; }
   function printDwg(list, compact) {
@@ -1099,12 +1105,13 @@
   function isoD(t) { return t == null ? '' : new Date(t).toISOString().slice(0, 10); }
   function dwgRows(list) {
     var rows = [['Batch', 'Category', 'Package No', 'Position', 'Laydown / area', 'Status', 'MDR status', 'MDR No', 'RFS Material Receiving', 'Inspection date', 'Detail package no',
-      'S/N', 'Description', 'Description CN', 'Specification', 'Drawing No', 'Equipment', 'Qty', 'Unit', 'Unit wt (kg)', 'Total wt (kg)', 'Remark']];
+      'S/N', 'Description', 'Description CN', 'Specification', 'Drawing No'].concat(FD ? ['Axis (foundation)', 'Foundation status', 'Foundation STA'] : []).concat(['Equipment', 'Qty', 'Unit', 'Unit wt (kg)', 'Total wt (kg)', 'Remark'])];
     list.forEach(function (p) {
       linesOf(p).forEach(function (x) {
         var it = x.it;
+        var fx = FD ? fdOf(it.dw) : null;
         rows.push([p.b, p.c, p.no, POSL[posOf(p)], posOf(p) === 'LAYDOWN' ? p.lg : '', ST[p.st].s, MDRL[p.mdr] || p.mdr, p.mdrNo, p.rfs, p.recv != null ? isoD(p.recv) : p.insp,
-          x.b.no, it.sn, it.d, it.cn, it.sp, it.dw, it.eq, it.q, it.u, it.uw, it.tw, it.rm]);
+          x.b.no, it.sn, it.d, it.cn, it.sp, it.dw].concat(FD ? [fx ? fx.k : '', fx ? fx.st : '', fx && fx.fs[0] ? fx.fs[0].sta : ''] : []).concat([it.eq, it.q, it.u, it.uw, it.tw, it.rm]));
       });
     });
     return rows;
@@ -1119,7 +1126,7 @@
     if (!R.items) { ensureItems(function () { xlsxDwg(list); }); return; }
     var tag = (list.length === 1 ? list[0].no : filtText()).replace(/[\\\/:*?"<>|]+/g, '-').replace(/\s*·\s*/g, ' ').replace(/\s+/g, ' ').slice(0, 90);
     dwgMsg('Preparing the Excel file…');
-    xlsxBlob('Drawing list', dwgRows(list), [7, 9, 30, 18, 13, 14, 16, 24, 22, 12, 30, 8, 38, 24, 18, 26, 12, 8, 7, 11, 11, 30]).then(function (blob) {
+    xlsxBlob('Drawing list', dwgRows(list), [7, 9, 30, 18, 13, 14, 16, 24, 22, 12, 30, 8, 38, 24, 18, 26].concat(FD ? [14, 22, 18] : []).concat([12, 8, 7, 11, 11, 30])).then(function (blob) {
       download('Drawing list ' + tag + ' ' + isoD(R.dd) + '.xlsx', blob);
       dwgMsg('Excel file ready: ' + nf(list.length) + ' package(s) · ' + nf(dwgStats(list).lines) + ' material lines (' + nf(blob.size / 1024) + ' KB).');
     }, function (e) { dwgMsg('Excel file could not be made: ' + ((e && e.message) || e)); });
@@ -1187,8 +1194,419 @@
     $('x-tip').textContent = 'Click a type above to filter · click an issue to open its package';
   }
 
+
+  /* ================= 12. FOUNDATION × MATERIAL — OLC axis register (foundation sheet) linked to the drawing numbers =================
+     Axis ID (foundation sheet, column B: "O2J3Z043", "O2J2Z003 ~ 5") ↔ drawing number of the material lines ("02J3Z043-HJ-1"):
+     letter O and digit 0 are the same at the start, ranges are expanded, a trailing letter (010B) is kept. */
+  var AXRE = /^[0O](\d)([A-Z])(\d{1,2})([A-Z]{1,2})(\d{3})([A-Z](?![A-Z]))?/;
+  function axKey(m) { return '0' + m[1] + m[2] + m[3] + m[4] + m[5] + (m[6] || ''); }
+  function axSpan(m, k, to, suf) {
+    var base = k.slice(0, k.length - (m[6] ? 4 : 3)), a = +m[5], out = [];
+    if (!(to >= a) || to - a > 60) return [k];
+    for (var n = a; n <= to; n++) out.push(base + ('00' + n).slice(-3));
+    if (suf) out.push(base + ('00' + to).slice(-3) + suf);
+    return out;
+  }
+  function axisKeys(raw) {                       /* register: "O2J2Z003 ~ 5" → 02J2Z003 · 02J2Z004 · 02J2Z005 */
+    var s = U(raw).replace(/\s+/g, ''), m = AXRE.exec(s); if (!m) return [];
+    var k = axKey(m), r = /^~(\d{1,3})([A-Z])?$/.exec(s.slice(m[0].length));
+    return r ? axSpan(m, k, +r[1], r[2] || '') : [k];
+  }
+  function drawingAxes(dw) {                     /* material: "02J3Z043-HJ-1" → 02J3Z043 · "01J5Z001~01J5Z008" → 8 axes */
+    var s = U(dw).replace(/\s+/g, ''), m = AXRE.exec(s); if (!m) return [];
+    var k = axKey(m), r = /^~(?:[0O]\d[A-Z]\d{1,2}[A-Z]{1,2})?(\d{3})/.exec(s.slice(m[0].length));
+    return r ? axSpan(m, k, +r[1], '') : [k];
+  }
+  function colIdx(spec, H) {                     /* "B" → column B · "Axis ID" → the column with that header */
+    var s0 = T(spec); if (!s0) return -1;
+    if (/^[A-Z]{1,2}$/i.test(s0)) { var n = 0; s0.toUpperCase().split('').forEach(function (ch) { n = n * 26 + ch.charCodeAt(0) - 64; }); return n - 1; }
+    return H.indexOf(hkey(s0));
+  }
+  var FHDR = { axis: ['axisid', 'axis', 'foundationid'], status: ['foundationworks', 'foundationstatus', 'constructionstatus', 'consstatus'],
+    area: ['areastatus', 'areareadiness'], earth: ['earthworks'], rmF: ['remarkfoundation'], rmU: ['remarkupperstructure'], sta: ['staid', 'staidassigned'],
+    seg: ['segmentid'], grp: ['structuregroup'], cls: ['foundationclass'], typ: ['foundationtype'], ch: ['chainagem', 'chainage', 'chainagetext'] };
+  function firstCol(H, names) { for (var i = 0; i < names.length; i++) { var j = H.indexOf(names[i]); if (j > -1) return j; } return -1; }
+  function fTable(x) {                           /* foundation data = TSV (snapshot / JSONP) or CSV (Publish to web, gviz) */
+    if (Array.isArray(x)) return x;
+    var t0 = String(x || ''), nl = t0.indexOf('\n'), l0 = nl > -1 ? t0.slice(0, nl) : t0;
+    return l0.indexOf('\t') > -1 ? t0.split(/\r?\n/).filter(function (l) { return l.trim() !== ''; }).map(function (l) { return l.split('\t'); }) : csvRows(t0.trim() + '\n');
+  }
+  function parseFoundation(input) {
+    var rows = fTable(input), hi = 0;
+    for (var i = 0; i < Math.min(rows.length, 10); i++) if (rows[i].map(hkey).indexOf('axisid') > -1) { hi = i; break; }
+    var hr = rows[hi] || [], H = hr.map(hkey), data = rows.slice(hi + 1).filter(function (r) { return r && r.some(function (c) { return T(c) !== ''; }); });
+    if (!data.length) return { error: 'no rows' };
+    function share(ci, f) { var n = 0, k = 0; if (ci < 0) return 0; data.forEach(function (r) { var v = T(r[ci]); if (v) { n++; if (f(v)) k++; } }); return n ? k / n : 0; }
+    function isAx(v) { return axisKeys(v).length > 0; }
+    function isNum(v) { return /^-?[\d.,]+$/.test(v); }
+    var notes = [], ai = colIdx(cfg.pondasikolomaxis || 'B', H);
+    if (share(ai, isAx) < 0.5) {
+      var a2 = firstCol(H, FHDR.axis);
+      if (share(a2, isAx) < 0.5) { a2 = -1; for (var c = 0; c < H.length; c++) if (share(c, isAx) >= 0.5) { a2 = c; break; } }
+      if (a2 < 0) return { error: 'no column with axis IDs (e.g. O2J3Z043) — check "Pondasi Kolom Axis"' };
+      notes.push('Axis column "' + (cfg.pondasikolomaxis || 'B') + '" holds no axis IDs — column ' + colL(a2) + ' ("' + T(hr[a2]) + '") is used.'); ai = a2;
+    }
+    var si = colIdx(cfg.pondasikolomstatus || 'R', H);
+    if (share(si, function () { return true; }) === 0 || share(si, isNum) > 0.5) {
+      var s2 = firstCol(H, FHDR.status);
+      if (s2 > -1) { notes.push('Status column "' + (cfg.pondasikolomstatus || 'R') + '" holds ' + (share(si, isNum) > 0.5 ? 'numbers' : 'nothing') + ' — column ' + colL(s2) + ' ("' + T(hr[s2]) + '") is used.'); si = s2; }
+    }
+    var C = {}; ['area', 'earth', 'rmF', 'rmU', 'sta', 'seg', 'grp', 'cls', 'typ', 'ch'].forEach(function (k) { C[k] = firstCol(H, FHDR[k]); });
+    var list = [], by = {}, bad = [];
+    data.forEach(function (r) {
+      var raw = T(r[ai]); if (!raw) return;
+      var keys = axisKeys(raw); if (!keys.length) { if (bad.length < 50) bad.push(raw); return; }
+      function g(k) { return C[k] > -1 ? T(r[C[k]]).replace(/\s*\n\s*/g, ' / ') : ''; }
+      var f = { n: list.length, raw: raw, keys: keys, st: si > -1 ? T(r[si]) || 'No status' : 'No status', area: g('area'), earth: g('earth'), rmF: g('rmF'), rmU: g('rmU'),
+        sta: g('sta') || '—', seg: g('seg'), grp: g('grp'), cls: g('cls'), typ: g('typ'), ch: g('ch'), lines: [], pk: {}, pks: [], mat: 'NONE' };
+      list.push(f); keys.forEach(function (k) { (by[k] = by[k] || []).push(f); });
+    });
+    if (!list.length) return { error: 'no axis rows' };
+    return { list: list, by: by, dup: Object.keys(by).filter(function (k) { return by[k].length > 1; }), bad: bad, notes: notes,
+      axisCol: colL(ai) + ' · ' + T(hr[ai]), statusCol: si > -1 ? colL(si) + ' · ' + T(hr[si]) : 'none' };
+  }
+  /* foundation stage colours (order = progress), material position per axis */
+  var FSC = [[/concret|complete|finish|done/i, '#2F8F5B', 1], [/rebar|form/i, '#3E7CB1', 2], [/pil/i, '#6C63C4', 3], [/excav/i, '#B28C22', 4],
+    [/clear|progress/i, '#CF7A30', 5], [/not\s*start|no status/i, '#9AA59E', 6], [/constraint|block|hold|stop/i, '#D14D4B', 7]];
+  function fMeta(st) { for (var i = 0; i < FSC.length; i++) if (FSC[i][0].test(st)) return { c: FSC[i][1], o: FSC[i][2] }; return { c: '#8A958F', o: 8 }; }
+  var FMAT = { ON: { t: 'Material on site', s: 'On site', c: 'var(--good)' }, PART: { t: 'Material partly on site', s: 'Partly on site', c: 'var(--warn)' },
+    OFF: { t: 'Material not on site yet', s: 'Not on site', c: 'var(--line-strong)' }, NONE: { t: 'No material in the packing lists', s: 'No material', c: 'transparent' } };
+  var FMO = ['ON', 'PART', 'OFF', 'NONE'];
+  var P_FREADY = words(cfg.pondasisiap || 'concreting, complete, completed, done, finish');
+  function fReady(st) { return !!hit(st, P_FREADY); }
+  var FD = null, FJ = null, FSRCN = { kind: 'none', name: '', at: null, notes: [] };
+  function fRows(k) { return FD.by[k] || (/[A-Z]$/.test(k) ? FD.by[k.slice(0, -1)] : null) || null; }
+  function fJoin() {                               /* every material line whose drawing number names an axis of the register */
+    if (!FD || !R || !R.items) return null;
+    if (FJ && FJ.R === R && FJ.items === R.items && FJ.FD === FD) return FJ;
+    FD.list.forEach(function (f) { f.lines = []; f.pk = {}; });
+    var unm = {}, matched = 0, axisLike = 0;
+    R.pk.forEach(function (p) {
+      linesOf(p).forEach(function (x) {
+        var ks = drawingAxes(x.it.dw); if (!ks.length) return;
+        axisLike++;
+        var hitF = [];
+        ks.forEach(function (k) { (fRows(k) || []).forEach(function (f) { if (hitF.indexOf(f) < 0) hitF.push(f); }); });
+        if (!hitF.length) { var pf = ks[0].slice(0, 2), u = unm[pf] = unm[pf] || { n: 0, ex: [] }; u.n++; if (u.ex.length < 3 && u.ex.indexOf(x.it.dw) < 0) u.ex.push(x.it.dw); return; }
+        matched++;
+        hitF.forEach(function (f) { f.lines.push({ p: p, b: x.b, it: x.it }); f.pk[p.id] = p; });
+      });
+    });
+    FD.list.forEach(function (f) {
+      var ps = Object.keys(f.pk).map(function (id) { return f.pk[id]; }), on = ps.filter(function (p) { return p.onsite; }).length;
+      f.pks = ps; f.mat = !ps.length ? 'NONE' : on === ps.length ? 'ON' : on ? 'PART' : 'OFF'; f.ready = fReady(f.st); f._q = null;
+    });
+    FJ = { R: R, items: R.items, FD: FD, unm: unm, matched: matched, axisLike: axisLike };
+    return FJ;
+  }
+  function fdOf(dw) {                              /* foundation(s) of one drawing number, for the drawing lists */
+    if (!FD) return null;
+    var ks = drawingAxes(dw); if (!ks.length) return null;
+    var fs = []; ks.forEach(function (k) { (fRows(k) || []).forEach(function (f) { if (fs.indexOf(f) < 0) fs.push(f); }); });
+    return { k: ks.length > 1 ? ks[0] + '…' + ks[ks.length - 1].slice(-3) : ks[0], fs: fs,
+      st: fs.length ? fs.map(function (f) { return f.st; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' / ') : 'not in foundation register' };
+  }
+  function fChip(st, small) {
+    var c = el('span', 'lg-fchip' + (small ? ' sm' : '')), m = fMeta(st), d = el('i'); d.style.background = m.c; c.appendChild(d);
+    c.appendChild(document.createTextNode(st)); c.title = 'Foundation: ' + st; return c;
+  }
+  function fdCell(td, dw) {
+    var x = fdOf(dw); if (!x) { td.textContent = '—'; td.className += ' z'; return; }
+    var w = el('span', 'lg-fdc'); w.appendChild(el('b', 'lg-mono', x.k));
+    if (x.fs.length) w.appendChild(fChip(x.st, true)); else w.appendChild(el('span', 'lg-sub', 'not in register'));
+    w.title = x.k + ' — ' + x.st + (x.fs[0] ? ' · ' + x.fs[0].sta + (x.fs[0].area ? ' · area ' + x.fs[0].area : '') : '');
+    td.appendChild(w);
+  }
+  function matChip(f) {
+    var c = el('span', 'lg-mchip m-' + f.mat), d = el('i'); d.style.background = FMAT[f.mat].c; c.appendChild(d);
+    var lay = {}; f.pks.forEach(function (p) { var k = p.onsite ? (p.lg === NOLOC ? 'On-site' : p.lg) : 'In transit'; lay[k] = (lay[k] || 0) + 1; });
+    var parts = Object.keys(lay).sort().map(function (k) { return k + (lay[k] > 1 ? ' ×' + lay[k] : ''); });
+    c.appendChild(document.createTextNode(f.mat === 'NONE' ? 'No material' : parts.join(' · '))); c.title = FMAT[f.mat].t; return c;
+  }
+  function fStatuses(list) {
+    var o = {}; list.forEach(function (f) { o[f.st] = (o[f.st] || 0) + 1; });
+    return Object.keys(o).sort(function (a, b) { return fMeta(a).o - fMeta(b).o || o[b] - o[a] || (a < b ? -1 : 1); });
+  }
+  function fStas() { var o = []; FD.list.forEach(function (f) { if (o.indexOf(f.sta) < 0) o.push(f.sta); }); return o; }
+  function fGap(f) { return f.mat === 'NONE' ? 4 : !f.ready && (f.mat === 'ON' || f.mat === 'PART') ? 0 : f.ready && f.mat === 'ON' ? 1 : f.ready ? 2 : 3; }
+  function scopeF(skip) {
+    skip = skip || ''; var q = U(state.fq).replace(/\s+/g, '');
+    return FD.list.filter(function (f) {
+      if (skip.indexOf('st') < 0 && state.fst !== 'ALL' && f.st !== state.fst) return false;
+      if (skip.indexOf('mat') < 0 && state.fmat !== 'ALL' && !(state.fmat === 'WITH' ? f.mat !== 'NONE' : f.mat === state.fmat)) return false;
+      if (skip.indexOf('sta') < 0 && state.fsta !== 'ALL' && f.sta !== state.fsta) return false;
+      if (!q) return true;
+      if (f._q == null) f._q = U([f.raw, f.keys.join(' '), f.sta, f.seg, f.grp, f.cls, f.typ, f.ch, f.st, f.area, f.earth, f.rmF, f.rmU].join(' ')).replace(/\s+/g, '');
+      if (f._q.indexOf(q) > -1) return true;
+      return f.lines.some(function (x) { return U(x.it.dw + ' ' + x.p.no).replace(/\s+/g, '').indexOf(q) > -1; });
+    });
+  }
+  function fName() {
+    var parts = [];
+    if (state.fsta !== 'ALL') parts.push(state.fsta);
+    if (state.fst !== 'ALL') parts.push('Foundation ' + state.fst);
+    if (state.fmat !== 'ALL') parts.push(state.fmat === 'WITH' ? 'axes with material' : FMAT[state.fmat].t);
+    if (state.fq) parts.push('search "' + state.fq + '"');
+    return parts.join(' · ');
+  }
+  function fReset() { return state.fst !== 'ALL' || state.fmat !== 'ALL' || state.fsta !== 'ALL' || state.fq ? { t: 'All axes', fn: function () { state.fst = 'ALL'; state.fmat = 'ALL'; state.fsta = 'ALL'; state.fq = ''; $('f-q').value = ''; state.fall = false; renderP5(); } } : null; }
+  function renderFFilters() {
+    function pick(k) { return function (v) { state[k] = v; state.fax = null; state.fall = false; $('f-tbl').scrollTop = 0; renderP5(); }; }
+    var sb = scopeF('st');
+    segRow('f-st', [{ v: 'ALL', t: 'All', n: sb.length }].concat(fStatuses(FD.list).map(function (k) { return { v: k, t: k, n: sb.filter(function (f) { return f.st === k; }).length, dot: fMeta(k).c, tip: fReady(k) ? 'Counts as foundation ready (setting "Pondasi Siap")' : '' }; })), state.fst, pick('fst'));
+    var mb = scopeF('mat');
+    segRow('f-mat', [{ v: 'ALL', t: 'All', n: mb.length }, { v: 'WITH', t: 'With material', n: mb.filter(function (f) { return f.mat !== 'NONE'; }).length, icon: 'box' }]
+      .concat(FMO.map(function (k) { return { v: k, t: FMAT[k].s, n: mb.filter(function (f) { return f.mat === k; }).length, dot: k === 'NONE' ? 'var(--track)' : FMAT[k].c, tip: FMAT[k].t }; })), state.fmat, pick('fmat'));
+    var ab = scopeF('sta');
+    segRow('f-sta', [{ v: 'ALL', t: 'All', n: ab.length }].concat(fStas().map(function (k) { return { v: k, t: k, n: ab.filter(function (f) { return f.sta === k; }).length }; })), state.fsta, pick('fsta'));
+  }
+  function renderFKpi(list) {
+    var kb = clear($('f-kpi')), withM = list.filter(function (f) { return f.mat !== 'NONE'; }), lines = new Set(), pk = {};
+    withM.forEach(function (f) { f.lines.forEach(function (x) { lines.add(x.it); }); f.pks.forEach(function (p) { pk[p.id] = 1; }); });
+    var front = list.filter(function (f) { return f.ready && f.mat === 'ON'; }), wait = list.filter(function (f) { return !f.ready && (f.mat === 'ON' || f.mat === 'PART'); });
+    var frontP = list.filter(function (f) { return f.ready && f.mat === 'PART'; }).length;
+    var fwait = list.filter(function (f) { return f.ready && (f.mat === 'OFF' || f.mat === 'NONE'); });
+    kb.appendChild(statCard('found', 'Axes with material', nf(withM.length), '', ['of ' + nf(list.length) + ' foundations · ' + nf(lines.size) + ' lines · ' + nf(Object.keys(pk).length) + ' pkgs']));
+    var fc = statCard('check', 'Erection front', nf(front.length), '', [front.length ? badge('good', 'foundation ready + material on site') : 'foundation ready + material on site']);
+    if (frontP) fc.appendChild(el('div', 'lg-ksub', '+ ' + nf(frontP) + ' with material partly on site'));
+    kb.appendChild(fc);
+    kb.appendChild(statCard('alert', 'Material waiting', nf(wait.length), '', [wait.length ? badge('warn', 'on site · foundation not ready') : 'material on site · foundation not ready']));
+    kb.appendChild(statCard('ship', 'Foundation waiting', nf(fwait.length), '', [nf(fwait.filter(function (f) { return f.mat === 'OFF'; }).length) + ' in transit · ' + nf(fwait.filter(function (f) { return f.mat === 'NONE'; }).length) + ' not in packing lists']));
+    Array.prototype.forEach.call(kb.children, function (c, i) {
+      var go0 = [function () { state.fmat = 'WITH'; state.fst = 'ALL'; }, function () { state.fmat = 'ON'; state.fst = 'ALL'; state.fsort = 'gap'; }, function () { state.fmat = 'WITH'; state.fst = 'ALL'; state.fsort = 'gap'; }, function () { state.fmat = 'ALL'; state.fst = 'ALL'; state.fsort = 'gap'; }][i];
+      c.classList.add('lg-kclick'); c.title = 'Show these axes'; rowKeys(c, function () { go0(); state.fax = null; state.fall = false; renderP5(); });
+    });
+  }
+  function renderFMx() {
+    var box = clear($('f-mx')), list = scopeF('st mat'), sts = fStatuses(list);
+    var h = el('div', 'sec-h'), h3 = el('h3'); h3.appendChild(chipIco('found')); h3.appendChild(document.createTextNode('Foundation status × material'));
+    h3.appendChild(infoIcon('Rows: foundation status from the foundation sheet (Foundation Works).\nColumns: where the material of that axis is — every packing-list line whose drawing number starts with the axis ID (e.g. 02J3Z043-HJ-1 → O2J3Z043).\nGreen = foundation ready (setting "Pondasi Siap") and material on site (light green: partly on site) · amber = material on site, foundation not ready · blue = foundation ready, material not on site.\nClick a number to list those axes.'));
+    h.appendChild(h3);
+    var hr0 = el('div', 'lg-fsrcw'); hr0.appendChild(el('span', 'muted', nf(list.length) + ' foundations' + (state.fsta !== 'ALL' ? ' · ' + state.fsta : ''))); hr0.appendChild(fSrcChip()); h.appendChild(hr0); box.appendChild(h);
+    var t = el('table', 'lt lg-fmx'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
+    th(tr, 'Foundation status', 'c-nm2'); FMO.forEach(function (k) { th(tr, FMAT[k].s); }); th(tr, 'Total'); hd.appendChild(tr); t.appendChild(hd);
+    var tot = { ON: 0, PART: 0, OFF: 0, NONE: 0 };
+    sts.forEach(function (st) {
+      var r = el('tr'), c0 = el('td', 'c-nm2'); c0.appendChild(fChip(st)); r.appendChild(c0);
+      var rd = fReady(st), n0 = 0;
+      FMO.forEach(function (k) {
+        var n = list.filter(function (f) { return f.st === st && f.mat === k; }).length; n0 += n; tot[k] += n;
+        var cls = 'cell' + (!n ? ' z' : rd && k === 'ON' ? ' g' : rd && k === 'PART' ? ' g2' : !rd && (k === 'ON' || k === 'PART') ? ' w' : rd && (k === 'OFF' || k === 'NONE') ? ' b' : '') + (state.fst === st && state.fmat === k ? ' on' : '');
+        var td = el('td', cls, n ? nf(n) : '·');
+        if (n) { td.title = n + ' axes · ' + st + ' · ' + FMAT[k].t; td.tabIndex = 0; td.addEventListener('click', function () { state.fst = st; state.fmat = k; state.fax = null; state.fall = false; renderP5(); }); }
+        r.appendChild(td);
+      });
+      r.appendChild(el('td', 'cum', nf(n0))); tb.appendChild(r);
+    });
+    var rt = el('tr', 'tot'); rt.appendChild(el('td', 'c-nm2', 'Total')); FMO.forEach(function (k) { rt.appendChild(el('td', 'cum', nf(tot[k]))); }); rt.appendChild(el('td', 'cum', nf(list.length))); tb.appendChild(rt);
+    t.appendChild(tb); var wr = el('div', 'dt-wrap lg-fmxw'); wr.appendChild(t); box.appendChild(wr);
+    /* linear view: every axis in sheet order, one row per STA section — colour = foundation status, underline = material */
+    var sw = el('div', 'lg-strip'), lab = el('div', 'lg-striph'); lab.appendChild(el('b', null, 'Linear view')); lab.appendChild(el('span', 'lg-sub', ' — each square is one foundation in the order of the sheet (chainage); underline = material position · click a square for its material'));
+    sw.appendChild(lab);
+    fStas().forEach(function (sta) {
+      var fs = list.filter(function (f) { return f.sta === sta; }); if (!fs.length) return;
+      var row = el('div', 'row'), lb = el('div', 'lab'); lb.appendChild(el('b', null, sta)); lb.appendChild(el('span', 'lg-sub', ' ' + nf(fs.length) + ' · ' + nf(fs.filter(function (f) { return f.mat !== 'NONE'; }).length) + ' with mat.')); row.appendChild(lb);
+      var cells = el('div', 'cells');
+      fs.forEach(function (f) {
+        var i = el('i', f.mat !== 'NONE' ? 'm' : ''); i.style.background = fMeta(f.st).c; if (f.mat !== 'NONE') i.style.setProperty('--m', FMAT[f.mat].c === 'transparent' ? 'transparent' : FMAT[f.mat].c);
+        i.setAttribute('data-n', f.n); i.title = f.raw + ' · ' + f.st + (f.mat !== 'NONE' ? ' · ' + FMAT[f.mat].t + ' (' + f.pks.length + ' pkg)' : '') + (f.ch ? ' · ' + f.ch : '');
+        cells.appendChild(i);
+      });
+      cells.addEventListener('click', function (e) { var n = e.target.getAttribute && e.target.getAttribute('data-n'); if (n != null) { state.fax = +n; renderP5(); } });
+      row.appendChild(cells); sw.appendChild(row);
+    });
+    var lg = el('div', 'legend'); fStatuses(list).forEach(function (st) { var sp0 = el('span'), i = el('i', 'sq'); i.style.background = fMeta(st).c; sp0.appendChild(i); sp0.appendChild(document.createTextNode(st)); lg.appendChild(sp0); });
+    ['ON', 'PART', 'OFF'].forEach(function (k) { var sp0 = el('span'), i = el('i', 'lg-ul'); i.style.background = FMAT[k].c; sp0.appendChild(i); sp0.appendChild(document.createTextNode(FMAT[k].s)); lg.appendChild(sp0); });
+    sw.appendChild(lg); box.appendChild(sw);
+    var J = fJoin(), nt = [];
+    nt.push('Axis = column ' + FD.axisCol + ' · status = column ' + FD.statusCol + ' · ' + nf(FD.list.length) + ' foundations, ' + nf(Object.keys(FD.by).length) + ' axis codes · source: ' + (FSRCN.name || 'embedded snapshot') + (FSRCN.at ? ' (' + hhmm(FSRCN.at) + ')' : ''));
+    nt.push(nf(J.matched) + ' of ' + nf(J.axisLike) + ' material lines with an axis-type drawing number are linked to a foundation.');
+    Object.keys(J.unm).sort().forEach(function (pf) { var u = J.unm[pf]; nt.push(nf(u.n) + ' line(s) ' + (pf === '01' ? 'of OLC-1 (drawings 01…)' : pf === '02' ? 'of OLC-2' : 'with prefix ' + pf) + ' have no foundation in this sheet — e.g. ' + u.ex.join(', ') + '.'); });
+    if (FD.dup.length) nt.push(nf(FD.dup.length) + ' axis ID(s) appear twice in the sheet (e.g. ' + FD.dup.slice(0, 3).join(', ') + ') — both foundations are shown.');
+    if (FD.bad.length) nt.push(nf(FD.bad.length) + ' value(s) in the axis column are not axis IDs (e.g. ' + FD.bad.slice(0, 3).join(', ') + ').');
+    FD.notes.concat(FSRCN.notes).forEach(function (x0) { nt.push(x0); });
+    var nb = el('div', 'lg-fnote'); nt.forEach(function (x0) { nb.appendChild(el('div', null, x0)); }); box.appendChild(nb);
+  }
+  var fBusy = false;
+  function fSrcChip() {                            /* where the foundation data comes from (live sheet / snapshot) + reload */
+    var live = FSRCN.kind === 'live', warn = FSRCN.notes.length > 0;
+    var b = el(fHas ? 'button' : 'span', 'upb lg-fsrc' + (live && !warn ? ' ok' : warn ? ' warn' : ''));
+    if (fHas) {
+      b.type = 'button'; b.disabled = fBusy;
+      var sv = s('svg', { width: 12, height: 12, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', 'class': fBusy ? 'spin' : '' }, b);
+      s('path', { d: 'M13.5 8a5.5 5.5 0 1 1-1.61-3.89M13.5 2.5v3h-3' }, sv);
+      b.addEventListener('click', function () { fBusy = true; renderP5(); refreshF().then(function () { fBusy = false; if (state.page === 5) renderP5(); }); });
+    }
+    b.appendChild(document.createTextNode(fBusy ? 'Loading foundation sheet…' : live ? 'Foundation sheet · live ' + hhmm(FSRCN.at) : FSRCN.kind === 'code' ? 'Foundation snapshot' + (warn ? ' · sheet not reachable' : '') : 'Foundation data'));
+    b.title = (FSRCN.name || '') + (FSRCN.notes.length ? '\n' + FSRCN.notes.join('\n') : '') + (fHas ? '\nClick to reload the foundation sheet now.' : '\nNo foundation link in the settings ("Pondasi Sumber" / "Pondasi Sheet ID") — embedded snapshot only.');
+    return b;
+  }
+  function renderFList(list) {
+    var wrap = clear($('f-tbl')), l2 = list.slice(), srt = state.fsort;
+    if (srt === 'mat') l2.sort(function (a, b) { return b.lines.length - a.lines.length || a.n - b.n; });
+    else if (srt === 'gap') l2.sort(function (a, b) { return fGap(a) - fGap(b) || a.n - b.n; });
+    headBack($('f-head'), 'Axis register', nf(l2.length) + ' foundation(s)' + (fName() ? ' · ' + fName() : ''), fReset(),
+      'One row per foundation of the foundation sheet, in sheet order. Material = packing-list lines whose drawing number starts with the axis ID (O / 0 treated alike, ranges such as "~ 5" expanded). Click a row for its material lines.');
+    fActions($('f-head'), l2);
+    var t = el('table', 'lt'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
+    heads(tr, [['Axis ID', 'c-nm2'], ['STA · chainage', 'c-desc'], ['Area · earth works', 'c-desc'], ['Foundation', 'c-st'], ['Material position', 'c-st'], ['Pkgs'], ['Lines'], ['Material status', 'c-desc'], ['Remark', 'lg-wrap'], ['']]);
+    var cap = state.fall ? l2.length : Math.min(l2.length, 300);
+    l2.slice(0, cap).forEach(function (f) {
+      var r = el('tr', 'go'), c0 = el('td', 'c-nm2'); c0.appendChild(el('span', 'lg-mono', f.raw));
+      var sg = [f.keys.length > 1 ? f.keys.length + ' axes' : '', f.grp, f.cls, f.typ].filter(Boolean).join(' · '); if (sg) c0.appendChild(el('small', null, sg)); r.appendChild(c0);
+      var c1 = el('td', 'c-desc', f.sta); if (f.ch) c1.appendChild(el('small', null, f.ch)); r.appendChild(c1);
+      var c3 = el('td', 'c-desc', f.area || '—'); if (f.earth) c3.appendChild(el('small', null, f.earth)); r.appendChild(c3);
+      var c4 = el('td', 'c-st'); c4.appendChild(fChip(f.st)); r.appendChild(c4);
+      var c5 = el('td', 'c-st'); c5.appendChild(matChip(f)); r.appendChild(c5);
+      r.appendChild(el('td', f.pks.length ? '' : 'z', nf(f.pks.length))); r.appendChild(el('td', f.lines.length ? 'cum' : 'z', nf(f.lines.length)));
+      var sc = {}; f.pks.forEach(function (p) { sc[p.st] = (sc[p.st] || 0) + 1; });
+      r.appendChild(el('td', 'c-desc' + (f.pks.length ? '' : ' z'), f.pks.length ? STO.filter(function (k) { return sc[k]; }).map(function (k) { return nf(sc[k]) + ' ' + ST[k].s.toLowerCase(); }).join(' · ') : '—'));
+      r.appendChild(el('td', 'lg-wrap lg-res', [f.rmF, f.rmU].filter(Boolean).join(' · ')));
+      var ch = el('td', 'c-chev'); ch.appendChild(chevI()); r.appendChild(ch);
+      rowKeys(r, function () { state.fax = f.n; renderP5(); $('f-tbl').scrollTop = 0; });
+      tb.appendChild(r);
+    });
+    hd.appendChild(tr); t.appendChild(hd); t.appendChild(tb); wrap.appendChild(t);
+    if (cap < l2.length) { var mb = el('div', 'lg-more'), b = el('button', 'upb'); b.type = 'button'; b.appendChild(ico('list', 12)); b.appendChild(document.createTextNode('Show all ' + nf(l2.length) + ' foundations')); b.addEventListener('click', function () { state.fall = true; renderFList(list); }); mb.appendChild(b); wrap.appendChild(mb); }
+    $('f-tip').textContent = 'Click an axis for its material lines (package, position, status, drawing) · Print / Excel take every axis of the filter';
+  }
+  function renderFAxis(f) {
+    $('f-title').textContent = f.raw;
+    headBack($('f-head'), f.raw, nf(f.lines.length) + ' material line(s) · ' + nf(f.pks.length) + ' package(s)', { t: 'All axes', fn: function () { state.fax = null; renderP5(); } },
+      'Foundation from the foundation sheet; material = packing-list lines whose drawing number starts with ' + f.keys.join(' / ') + '.');
+    fActions($('f-head'), [f], true);
+    var wrap = clear($('f-tbl')), gs = el('div', 'gstrip');
+    gs.appendChild(gateBox(f.ready ? 'ok' : /constraint|block/i.test(f.st) ? 'no' : 'part', 'found', 'Foundation', f.st, f.rmF || (f.ready ? 'ready (setting "Pondasi Siap")' : 'not ready')));
+    gs.appendChild(gateBox(f.area ? 'ok' : 'part', 'pin', 'Area · earth works', f.area || '—', f.earth || '—'));
+    gs.appendChild(gateBox('ok', 'ship', 'Location', f.sta, [f.ch, f.seg, f.grp, f.cls].filter(Boolean).join(' · ')));
+    gs.appendChild(gateBox(f.mat === 'ON' ? 'ok' : f.mat === 'PART' ? 'part' : 'no', 'box', 'Material', FMAT[f.mat].t, f.pks.length ? nf(f.pks.length) + ' package(s) · ' + nf(f.lines.length) + ' line(s)' : 'no drawing ' + f.keys[0] + '… in Batch 4–5'));
+    wrap.appendChild(gs);
+    if (f.rmU) { var nu = el('div', 'lg-next'); nu.innerHTML = '<b>Upper structure:</b> ' + esc(f.rmU); wrap.appendChild(nu); }
+    var t = el('table', 'lt'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
+    heads(tr, [['Package', 'c-nm2'], ['Position', 'c-desc'], ['Status', 'c-st'], ['MDR', 'c-sc'], ['Drawing No', 'c-code'], ['Description', 'lg-wrap'], ['Qty'], ['Unit', 'c-sc'], ['Total wt (kg)'], ['']]);
+    if (!f.lines.length) { var er = el('tr'), ec = el('td', 'z', 'No packing-list line has a drawing number of this axis (' + f.keys.join(', ') + ').'); ec.colSpan = 10; er.appendChild(ec); tb.appendChild(er); }
+    f.lines.forEach(function (x) {
+      var p = x.p, it = x.it, r = el('tr', 'go'), c0 = el('td', 'c-nm2'); c0.appendChild(el('span', 'lg-mono', p.no)); r.appendChild(c0);
+      var lc = el('td', 'c-desc' + (p.onsite ? '' : ' z')); lc.appendChild(locChip(p)); r.appendChild(lc);
+      var st = el('td', 'c-st'); st.appendChild(badge(p.lv, ST[p.st].s)); r.appendChild(st);
+      r.appendChild(el('td', 'c-sc' + (p.mdrCr >= 1 ? '' : ' z'), MDRL[p.mdr] || p.mdr)); r.appendChild(el('td', 'c-code lg-dw', it.dw || '—'));
+      var d = el('td', 'lg-wrap'); d.appendChild(document.createTextNode(it.d || '—')); if (it.cn) d.appendChild(el('span', 'lg-cn', it.cn)); r.appendChild(d);
+      r.appendChild(el('td', '', it.q == null ? '—' : num(it.q, it.q % 1 ? 2 : 0))); r.appendChild(el('td', 'c-sc', it.u || '—')); r.appendChild(el('td', '', it.tw == null ? '—' : num(it.tw, 1)));
+      var ch = el('td', 'c-chev'); ch.appendChild(chevI()); r.appendChild(ch);
+      r.title = 'Open package ' + p.no; rowKeys(r, function () { openPackage(p.id); });
+      tb.appendChild(r);
+    });
+    hd.appendChild(tr); t.appendChild(hd); t.appendChild(tb); wrap.appendChild(t);
+    $('f-tip').textContent = 'Click a line to open its package (gates, detail blocks, material lines)';
+  }
+  function fRowsX(list) {
+    var rows = [['Axis ID', 'Axis codes', 'STA ID', 'Chainage', 'Segment', 'Structure group', 'Foundation class', 'Foundation type', 'Area status', 'Earth works', 'Foundation status',
+      'Foundation ready', 'Remark foundation', 'Remark upper structure', 'Material', 'Packages', 'Material lines', 'Packages on site', 'Laydown / area', 'Ready', 'MDR pending', 'In transit', 'Package numbers', 'Drawing numbers']];
+    list.forEach(function (f) {
+      var on = f.pks.filter(function (p) { return p.onsite; }), lay = {}, dws = [];
+      on.forEach(function (p) { lay[p.lg === NOLOC ? 'On-site' : p.lg] = 1; });
+      f.lines.forEach(function (x) { if (x.it.dw && dws.indexOf(x.it.dw) < 0) dws.push(x.it.dw); });
+      rows.push([f.raw, f.keys.join(' '), f.sta, f.ch, f.seg, f.grp, f.cls, f.typ, f.area, f.earth, f.st, f.ready ? 'yes' : 'no', f.rmF, f.rmU, FMAT[f.mat].t, f.pks.length, f.lines.length, on.length,
+        Object.keys(lay).sort().join(', '), f.pks.filter(function (p) { return p.st === 'READY'; }).length, f.pks.filter(function (p) { return p.st === 'PEND'; }).length,
+        f.pks.filter(function (p) { return !p.onsite; }).length, f.pks.map(function (p) { return p.no; }).join(', '), dws.join(', ')]);
+    });
+    return rows;
+  }
+  function fDoc(list) {
+    var rows = list.map(function (f) {
+      var dws = []; f.lines.forEach(function (x) { if (x.it.dw && dws.indexOf(x.it.dw) < 0) dws.push(x.it.dw); });
+      var lay = {}; f.pks.forEach(function (p) { var k = p.onsite ? (p.lg === NOLOC ? 'On-site' : p.lg) : 'In transit'; lay[k] = (lay[k] || 0) + 1; });
+      return '<tr class="ix"><td><b>' + esc(f.raw) + '</b><small>' + esc(f.sta + (f.ch ? ' · ' + f.ch : '')) + '</small></td><td><i class="fs" style="background:' + fMeta(f.st).c + '"></i>' + esc(f.st) +
+        (f.rmF ? '<small>' + esc(f.rmF) + '</small>' : '') + '</td><td>' + esc(f.area || '—') + (f.earth ? '<small>' + esc(f.earth) + '</small>' : '') + '</td><td>' + esc(FMAT[f.mat].s) +
+        '<small>' + esc(Object.keys(lay).sort().map(function (k) { return k + (lay[k] > 1 ? ' ×' + lay[k] : ''); }).join(' · ')) + '</small></td><td class="n">' + nf(f.pks.length) + '</td><td class="n">' + nf(f.lines.length) +
+        '</td><td class="ds">' + (dws.length ? dws.map(function (d) { return '<span>' + esc(d) + '</span>'; }).join('') : '<i class="z">—</i>') + '</td></tr>';
+    });
+    var nm = list.filter(function (f) { return f.mat !== 'NONE'; }).length;
+    return docShell((list.length === 1 ? list[0].raw : fName() || 'All axes') + ' · foundation × material', nf(list.length) + ' foundation(s) · ' + nf(nm) + ' with material', cols([13, 15, 12, 13, 5, 5, 37]),
+      ['Axis · STA', 'Foundation status', 'Area · earth works', 'Material', 'Pkgs', 'Lines', 'Drawing numbers'], '<tbody>' + rows.join('') + '</tbody>',
+      'tr.ix{break-inside:auto}tr.ix td{padding:3pt 4pt}tr.ix b{font:700 8.6pt Consolas,"Courier New",monospace;display:block}tr.ix small{display:block}' +
+      'i.fs{display:inline-block;width:7pt;height:7pt;border-radius:1.5pt;margin-right:4pt;vertical-align:-.5pt}td.ds span{display:inline-block;margin:0 8pt 0 0;font:700 7.6pt Consolas,"Courier New",monospace;white-space:nowrap}');
+  }
+  function fActions(box, list, one) {
+    var pb = el('button', 'upb lg-act'); pb.type = 'button'; pb.appendChild(ico('print', 12)); pb.appendChild(document.createTextNode(one ? 'Print axis' : 'Print'));
+    pb.title = 'A4 landscape: axis, foundation status, area, material position and drawing numbers · ' + nf(list.length) + ' foundation(s)';
+    pb.addEventListener('click', function () { printHtml(fDoc(list)); });
+    var xb = el('button', 'upb lg-act'); xb.type = 'button'; xb.appendChild(ico('dl', 12)); xb.appendChild(document.createTextNode('Excel'));
+    xb.title = 'Excel (.xlsx): one row per foundation with its status and the material linked to it';
+    xb.addEventListener('click', function () {
+      var tag = (list.length === 1 ? list[0].raw : fName() || 'all axes').replace(/[\\\/:*?"<>|~]+/g, '-').replace(/\s*·\s*/g, ' ').replace(/\s+/g, ' ').slice(0, 80);
+      xlsxBlob('Foundation x material', fRowsX(list), [14, 22, 18, 13, 10, 16, 12, 10, 14, 12, 20, 8, 28, 28, 22, 9, 9, 9, 18, 7, 9, 9, 40, 60]).then(function (blob) {
+        download('Foundation x material ' + tag + ' ' + isoD(R.dd) + '.xlsx', blob); $('f-tip').textContent = 'Excel file ready: ' + nf(list.length) + ' foundation(s).';
+      });
+    });
+    box.appendChild(pb); box.appendChild(xb);
+  }
+  function renderP5() {
+    var msg = function (t) { clear($('f-kpi')); clear($('f-mx')).appendChild(el('div', 'd-empty', t)); clear($('f-tbl')); clear($('f-head')); };
+    $('f-mx').style.display = '';
+    if (!FD) {
+      $('f-title').textContent = 'Foundation × material';
+      msg(fHas ? (FSRCN.kind === 'error' ? 'The foundation sheet could not be read: ' + FSRCN.notes.join(' ') : 'Loading the foundation sheet…') :
+        'No foundation data yet — fill in "Pondasi Sumber" (Publish to web CSV link of the foundation tab) or "Pondasi Sheet ID" in the settings block.');
+      return;
+    }
+    if (!R.items) { msg('Loading material lines…'); ensureItems(function () { if (state.page === 5) renderP5(); }); return; }
+    fJoin(); renderFFilters();
+    var f0 = state.fax != null ? FD.list[state.fax] : null;
+    renderFKpi(scopeF('st mat'));
+    setSeg('f-sort', state.fsort); $('f-sort').style.visibility = f0 ? 'hidden' : '';
+    if (f0) { $('f-mx').style.display = 'none'; renderFAxis(f0); return; }
+    var nm = fName(); $('f-title').textContent = nm ? nm.charAt(0).toUpperCase() + nm.slice(1) : 'All axes';
+    renderFMx(); renderFList(scopeF());
+  }
+  /* loading the foundation sheet: embedded snapshot first, then the sheet (Publish to web CSV, or Sheet ID + tab via gviz) */
+  function fSrc() {
+    var pub = T(cfg.pondasisumber), sidF = T(cfg.pondasisheetid), tab = T(cfg.pondasitab), m0 = /\/spreadsheets\/d\/(?!e\/)([A-Za-z0-9_-]{20,})/.exec(sidF);
+    if (m0) sidF = m0[1];
+    if (!tab) { var g0 = /[?&#]gid=(\d+)/.exec(pub) || /[?&#]gid=(\d+)/.exec(T(cfg.pondasisheetid)); if (g0) tab = g0[1]; }
+    if (/\/spreadsheets\/d\/(?!e\/)/.test(pub)) { var m1 = /\/spreadsheets\/d\/([A-Za-z0-9_-]{20,})/.exec(pub); if (m1 && !sidF) sidF = m1[1]; pub = ''; }
+    return { pub: pub ? pubCsv(pub) : '', sid: sidF, tab: tab };
+  }
+  var FS = fSrc(), fHas = !!(FS.pub || FS.sid);
+  function fMethods() {
+    var ms = [];
+    if (FS.pub && /^https:\/\//i.test(FS.pub)) ms.push({ name: 'foundation sheet (Publish to web)', run: function () { return fetchText(FS.pub + (FS.pub.indexOf('?') > -1 ? '&' : '?') + '_=' + Date.now()); } });
+    if (FS.sid) {
+      var gv = 'https://docs.google.com/spreadsheets/d/' + encodeURIComponent(FS.sid) + '/gviz/tq?headers=1' + (FS.tab ? (/^\d+$/.test(FS.tab) ? '&gid=' + FS.tab : '&sheet=' + encodeURIComponent(FS.tab)) : '');
+      ms.push({ name: 'foundation sheet (Sheet ID)', run: function () { return fetchText(gv + '&tqx=out:csv&_=' + Date.now()); } });
+      ms.push({ name: 'foundation sheet (Sheet ID, JSONP)', run: function () { return jsonp(gv + '&_=' + Date.now()); } });
+    }
+    return ms;
+  }
+  var fSig = null;
+  function setFoundation(txt, kind, name) {
+    if (txt == null || txt === fSig) return;
+    var P = parseFoundation(txt);
+    if (P.error) { FSRCN.notes = [(name || 'foundation data') + ': ' + P.error]; if (!FD) FSRCN.kind = 'error'; if (R && state.page === 5) renderP5(); return; }
+    fSig = txt; FD = P; FJ = null; FSRCN = { kind: kind, name: name || (kind === 'code' ? 'snapshot embedded in this page' : 'foundation sheet'), at: kind === 'live' ? Date.now() : null, notes: [] };
+    if (R) { if (state.page === 5) renderP5(); else if (state.page === 3 && (state.pview === 'dwg' || state.pkg)) renderP3(); }
+  }
+  function refreshF() {
+    var ms = fMethods(); if (!ms.length) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var lg = [];
+      (function next(i) {
+        if (i >= ms.length) {
+          if (!FD) FSRCN.kind = 'error';
+          FSRCN.notes = ['Live foundation sheet not reachable — ' + (FD ? 'the ' + (FSRCN.kind === 'live' ? 'last loaded sheet' : 'embedded snapshot') + ' is shown' : 'no foundation data') + ' (' + lg.join(' · ') + ').'];
+          if (R && state.page === 5) renderP5(); resolve(); return;
+        }
+        ms[i].run().then(function (data) {
+          var txt = asText(data), P = parseFoundation(Array.isArray(data) ? data : txt);
+          if (P.error) throw new Error(P.error);
+          setFoundation(txt, 'live', ms[i].name); resolve();
+        }).catch(function (e) { lg.push(ms[i].name + ': ' + ((e && e.message) || e)); next(i + 1); });
+      })(0);
+    });
+  }
+
   /* ---------- 10. navigasi & render ---------- */
-  var NPG = 4, prevPage = 1;
+  var NPG = 5, prevPage = 1;
   function placePill(nv, from, to) {
     var p = nv.querySelector('.pill');
     if (!p) { p = el('span', 'pill'); p.setAttribute('aria-hidden', 'true'); nv.insertBefore(p, nv.firstChild); nv.classList.add('has-pill'); }
@@ -1204,7 +1622,7 @@
       var p = nv.querySelector('.pill'); p.style.transition = 'none'; placePill(nv, t0, t0); void p.offsetWidth; p.style.transition = '';
     });
   }
-  function renderPage(pg) { if (!R) return; if (pg === 1) renderP1(); else if (pg === 2) renderP2(); else if (pg === 3) renderP3(); else renderP4(); }
+  function renderPage(pg) { if (!R) return; if (pg === 1) renderP1(); else if (pg === 2) renderP2(); else if (pg === 3) renderP3(); else if (pg === 4) renderP4(); else renderP5(); }
   function go(page) {
     if (page === state.page || page > NPG) { if (page === state.page && R) renderPage(page); return; }
     var fwd = page > state.page; state.page = page; hideTip(); closeDrop();
@@ -1236,6 +1654,9 @@
   segBind('r-sort', 'rsort', function () { if (R) renderP2(); });
   segBind('p-sort', 'psort', function () { if (R) renderP3(); });
   segBind('p-view', 'pview', function () { state.pdall = false; if (R) renderP3(); });
+  segBind('f-sort', 'fsort', function () { state.fall = false; if (R) renderP5(); });
+  var fqT = null;
+  $('f-q').addEventListener('input', function (e) { clearTimeout(fqT); var v = e.target.value; fqT = setTimeout(function () { state.fq = v.trim(); state.fax = null; state.fall = false; if (R) renderP5(); }, 200); });
   var qT = null;
   $('p-q').addEventListener('input', function (e) {
     clearTimeout(qT); var v = e.target.value;
@@ -1270,7 +1691,7 @@
     return e.getAttribute('data-z') ? function () { return unzip(bytes(t)).then(text); } : t;
   }
   function settle(v) { return typeof v === 'function' ? v() : Promise.resolve(v); }
-  var EMB = { pkg: blockSrc('lg-data-pkg'), blk: blockSrc('lg-data-blk'), iss: blockSrc('lg-data-iss'), itm: blockSrc('lg-data-itm') };
+  var EMB = { pkg: blockSrc('lg-data-pkg'), blk: blockSrc('lg-data-blk'), iss: blockSrc('lg-data-iss'), itm: blockSrc('lg-data-itm'), fnd: blockSrc('lg-data-fnd') };
   var first = 'no embedded data';
   function showFirst() {
     if (first === true) return;
@@ -1282,6 +1703,7 @@
     first = render(EMB, 'code', []);
   }, function (e) { first = 'embedded data could not be unpacked (' + ((e && e.message) || e) + ')'; });
   embReady.then(showFirst);
+  if (EMB.fnd) settle(EMB.fnd).then(function (t0) { var e0 = $('lg-data-fnd'); setFoundation(t0, 'code', 'snapshot embedded in this page' + (e0 && e0.getAttribute('data-src') ? ' (' + e0.getAttribute('data-src') + ')' : '')); }, function () {});
 
   function pubCsv(u) {
     if (!u || !/docs\.google\.com\/spreadsheets/.test(u)) return u;
@@ -1361,7 +1783,7 @@
       b.setAttribute('aria-label', 'Refresh data from Google Sheets now'); b.title = 'Refresh now';
       var sv = s('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' }, b);
       s('path', { d: 'M13.5 8a5.5 5.5 0 1 1-1.61-3.89M13.5 2.5v3h-3' }, sv);
-      b.addEventListener('click', function (e) { e.stopPropagation(); refreshAll(); });
+      b.addEventListener('click', function (e) { e.stopPropagation(); refreshAll(); refreshF(); });
       box.appendChild(b);
       if (!fr.busy && fr.tryAt) box.appendChild(el('i', 'dot'));
       var t = el('span', 'ft', fr.busy ? (fr.tryAt ? 'Refreshing…' : 'Loading live data…') : fr.flash ? 'Updated just now' : fr.ok ? 'Updated ' + hhmm(fr.ok) : fr.tryAt ? 'Sheet not reachable' : '');
@@ -1402,9 +1824,13 @@
     ' · Readiness = packing list ' + nf(GW.PL) + ' · MDR ' + nf(GW.MDR) + ' · site ' + nf(GW.SITE) + ' · inspection ' + nf(GW.INSP) + ' · Ready = PL verified + MDR approved + received & inspected';
   setFresh();
   embReady.then(refreshAll);
+  embReady.then(function () { return refreshF(); });
+  if (every > 0 && fHas) setInterval(function () { if (!document.hidden) refreshF(); }, every * 60000);
   if (every > 0 && hasSrc) {
     setInterval(function () { if (!document.hidden) refreshAll(); }, every * 60000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden && fr.tryAt && Date.now() - fr.tryAt >= every * 60000) refreshAll(); });
   }
   window.__pmLogistics = { state: state, model: function () { return R; }, go: go, openPackage: openPackage, agg: agg, openFilter: openFilter, count: function () { return R ? scopeP().length : 0; },
-    drawingDoc: function (compact) { return dwgDoc(sortList(scopeP()), compact); }, drawingRows: function () { return dwgRows(sortList(scopeP())); } };
+    drawingDoc: function (compact) { return dwgDoc(sortList(scopeP()), compact); }, drawingRows: function () { return dwgRows(sortList(scopeP())); },
+    foundation: function () { return FD && R && R.items ? (fJoin(), { fd: FD, join: FJ }) : null; }, foundationDoc: function () { return FD ? fDoc(scopeF()) : null; },
+    foundationRows: function () { return FD ? fRowsX(scopeF()) : null; }, foundationSource: function () { return FSRCN; }, axisKeys: axisKeys, drawingAxes: drawingAxes };

@@ -53,6 +53,17 @@ Tema         : terang
   Skala        : lebar | penuh               Latar     : auto | transparan | abyss | tide | reef | dusk | kabut | pasir
   Batas Umur Data : hari setelah data date sebelum data ditandai "lama" (default 10).
   Gambar Latar : link foto (https://…) untuk halaman Welcome. Welcome : tampil | sembunyi
+  ── Halaman 05 · Foundations (status pondasi × status material per Axis) ──
+  Pondasi Sumber   : link "Publish to web" CSV tab pondasi (…/pub?gid=…&single=true&output=csv). Kosong = hanya snapshot di bawah.
+  Pondasi Sheet ID : (cadangan) link Bagikan / ID Google Sheet pondasi — akses umum "Siapa saja yang memiliki link: Pelihat".
+  Pondasi Tab      : gid (angka) atau nama tab pondasi untuk Sheet ID. Kosong = gid dari link "Pondasi Sumber".
+  Pondasi Kolom Axis   : kolom Axis ID — huruf kolom (B) atau judul kolom (Axis ID). Default B.
+  Pondasi Kolom Status : kolom status pondasi — huruf kolom (R) atau judul kolom (Foundation Works). Default R.
+                 Bila kolom yang ditulis ternyata kosong / berisi angka, dashboard memakai kolom berjudul "Axis ID" /
+                 "Foundation Works" dan menuliskannya di catatan halaman 05.
+  Pondasi Siap     : status pondasi yang berarti pondasi siap menerima material (front erection), pisahkan dengan koma.
+                 Pencocokan: drawing number material "02J3Z043-HJ-1" → Axis ID "O2J3Z043" (huruf O = angka 0 di awal);
+                 rentang "O2J2Z003 ~ 5" = 003, 004, 005; drawing "01J5Z001~01J5Z008" = 8 axis.
   Aturan Ready : Packing list terverifikasi + MDR Approved (atau tidak perlu) + diterima & diinspeksi (RFS + tanggal inspeksi)
                  — sama dengan aturan ETL (config/readiness_rules.json). Bila hasil di sini berbeda dengan kolom
                  "Readiness Status (ETL)", dashboard memberi tanda di "Data check".
@@ -82,6 +93,12 @@ Latar        : auto
 Batas Umur Data : 10
 Gambar Latar : {{IMAGE}}
 Welcome      : tampil
+Pondasi Sumber   : {{FND_SRC}}
+Pondasi Sheet ID : {{FND_SID}}
+Pondasi Tab      : {{FND_TAB}}
+Pondasi Kolom Axis   : B
+Pondasi Kolom Status : R
+Pondasi Siap     : concreting, complete, completed, done, finish
 </script>
 <!-- WELCOME PAGE · teks & section (boleh diubah; "Welcome Judul" / "Welcome Narasi" di pengaturan juga bisa) -->
 <script type="application/json" id="pm-welcome">{{WELCOME_JSON}}</script>
@@ -91,6 +108,8 @@ Welcome      : tampil
   Buka tab "Packages" di Google Sheet / Excel → Ctrl+A → Ctrl+C → paste menggantikan isi tag "lg-data-pkg".
   Lakukan hal yang sama untuk tab "Detail" (lg-data-blk) dan "Issues" (lg-data-iss).
   Baris material (lg-data-itm) dikompresi — buat ulang dengan build_pmis_embed.py, jangan diketik manual.
+  Data pondasi (lg-data-fnd) = snapshot terkompresi file pondasi (dipakai bila link pondasi tidak bisa dimuat);
+  buat ulang dengan build_pmis_embed.py --foundation <file.xlsx>.
   Sumber: {{DATA_INFO}}
 ====================================================================== -->
 {{DATA_BLOCKS}}
