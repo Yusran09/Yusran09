@@ -123,9 +123,23 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
       const x = window.__pmLogistics.foundation(), fd = x.fd, J = x.join, mat = {}, unm = {};
       fd.list.forEach((q) => { mat[q.mat] = (mat[q.mat] || 0) + 1; });
       Object.keys(J.unm).forEach((k) => { unm[k] = J.unm[k].n; });
+      const near = {}, segLines = {};
+      Object.keys(J.near).forEach((k) => { near[k] = [J.near[k].to, J.near[k].n]; });
+      Object.keys(fd.segs).forEach((k) => { if (fd.segs[k].lines.length) segLines[k] = fd.segs[k].lines.length; });
       return { n: fd.list.length, keys: Object.keys(fd.by).length, dup: fd.dup.length, bad: fd.bad.length, axisCol: fd.axisCol, statusCol: fd.statusCol,
-        matched: J.matched, axisLike: J.axisLike, unm, mat, perAxis: fd.list.map((q) => [q.raw, q.lines.length, q.pks.length, q.mat]) };
+        matched: J.matched, axisLike: J.axisLike, unm, mat, perAxis: fd.list.map((q) => [q.raw, q.lines.length, q.pks.length, q.mat]),
+        rel: { fixes: fd.fixes.map((x) => [x.f.raw0, x.f.raw]), near, segN: J.segN, segU: J.segU, segLines } };
     });
+    // default view: material on site → foundation (per laydown), then foundation ready → material
+    F.view0 = await f.evaluate(() => window.__pmLogistics.state.fview);
+    F.map = await f.evaluate(() => window.__pmLogistics.foundationMap());
+    F.siteRows = await rows(f, '#f-tbl tbody tr.go'); F.siteSeg = await rows(f, '#f-tbl tbody tr.lg-sgr');
+    const mdoc = await f.evaluate(() => window.__pmLogistics.foundationMapDoc());
+    F.mapDoc = { a: (mdoc.match(/<tr class="a">/g) || []).length, sg: (mdoc.match(/<tr class="sg">/g) || []).length, r: (mdoc.match(/<tr class="r">/g) || []).length, sections: (mdoc.match(/<h2[ >]/g) || []).length };
+    if (csvDir) { const [dm] = await Promise.all([p.waitForEvent('download'), f.click('#f-head button:has-text("Excel mapping")')]); await dm.saveAs(`${csvDir}/foundation-mapping.xlsx`); }
+    await f.click('#f-view [data-v="ready"]'); await p.waitForTimeout(700); await shot(p, '09c_foundation_ready', true);
+    F.readyRows = await rows(f, '#f-tbl tbody tr.go');
+    await f.click('#f-view [data-v="axis"]'); await p.waitForTimeout(700);
     F.kpi = await f.$$eval('#f-kpi .stat .v', (v) => v.map((x) => x.textContent.trim()));
     F.kpiSub = await f.$eval('#f-kpi .stat .sub', (e) => e.textContent.trim());
     F.mxRows = await f.$$eval('#f-mx table tbody tr:not(.tot)', (rs) => rs.map((r) => Array.from(r.children).map((c) => c.textContent.trim())));
@@ -137,7 +151,7 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
     const more = await f.$('#f-tbl .lg-more button'); if (more) { await more.click(); await p.waitForTimeout(900); }
     F.listAllShown = await rows(f, '#f-tbl tbody tr.go');
     const fdoc = await f.evaluate(() => window.__pmLogistics.foundationDoc()); F.docRows = (fdoc.match(/<tr class="ix">/g) || []).length;
-    if (csvDir) { const [dl] = await Promise.all([p.waitForEvent('download'), f.click('#f-head button:has-text("Excel")')]); await dl.saveAs(`${csvDir}/foundation.xlsx`); F.xlsxName = dl.suggestedFilename(); }
+    if (csvDir) { const [dl] = await Promise.all([p.waitForEvent('download'), f.click('#f-head button:has-text("Excel register")')]); await dl.saveAs(`${csvDir}/foundation.xlsx`); F.xlsxName = dl.suggestedFilename(); }
     F.cell = await f.evaluate(() => {
       const td = document.querySelector('#f-mx td.cell:not(.z)'); if (!td) return null;
       const out = { st: td.parentNode.children[0].textContent.trim(), col: Array.prototype.indexOf.call(td.parentNode.children, td), n: +td.textContent.replace(/[^\d]/g, '') };
@@ -151,7 +165,7 @@ const rows = (f, sel) => f.$$eval(sel, (r) => r.length);
     F.axis = { row: hitRow, title: await f.$eval('#f-title', (e) => e.textContent), gates: await rows(f, '#f-tbl .gstrip > *'), lines: await rows(f, '#f-tbl table tbody tr.go') };
     await f.click('#f-tbl table tbody tr.go'); await p.waitForTimeout(1000);
     F.lineOpens = await f.evaluate(() => ({ page: window.__pmLogistics.state.page, pkg: window.__pmLogistics.state.pkg }));
-    await f.evaluate(() => { Object.assign(window.__pmLogistics.state, { fq: '', fax: null, fst: 'ALL', fmat: 'WITH', fall: false, pkg: null }); document.getElementById('f-q').value = ''; });
+    await f.evaluate(() => { Object.assign(window.__pmLogistics.state, { fq: '', fax: null, fst: 'ALL', fmat: 'WITH', fview: 'site', fall: false, pkg: null }); document.getElementById('f-q').value = ''; });
     P.fnd = F;
   }
   { const cur = await f.evaluate(() => window.__pmLogistics.state.page); await f.click(`#pg${cur} .nav [data-go="1"]`); await p.waitForTimeout(800); }

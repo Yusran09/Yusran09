@@ -33,7 +33,7 @@ bila hasilnya berbeda dari kolom "Readiness Status (ETL)" (misalnya sheet sudah 
 | 02 Receiving | Grafik mingguan / kumulatif (ISO week, per tanggal inspeksi), drill-down Batch › Category › System › Package | Received %, Ready %, On site tanpa RFS, Readiness Index per grup |
 | 03 Packing List | Summary › Detail › Items: cari package/MDR/RFS/drawing, **tiga baris tombol filter**: Position (All · Laydown / area · Laydown 5 · Laydown 4 · Askara · On-site · Not on site), Status, MDR — angka di tiap tombol mengikuti filter lain; penanda lokasi di tiap baris, gate strip per package, blok split, baris material | Packages, detail blocks, material lines, open issues |
 | 04 Exceptions | Register isu dari ETL (R01–R18) per tipe & severity, klik untuk membuka package | Open issues, HIGH, packages affected |
-| 05 Foundations | **Status pondasi × status material per Axis** (sheet pondasi kolom B / R ↔ drawing number material): filter Foundation · Material · STA, matriks status × posisi material, *linear view* per STA, register axis, detail axis → baris material → package, Print / Excel | Axes with material, Erection front, Material waiting, Foundation waiting |
+| 05 Foundations | **Status pondasi × status material per Axis** (sheet pondasi kolom B / R ↔ drawing number material). Tiga tampilan: **On site → foundation** (default: material di tiap laydown → axis → status pondasi & area), **Ready → material** (pondasi siap tapi material belum lengkap di site), **Axis register**. Matriks status × posisi material, *linear view* per STA, detail axis → baris material → package. **Print mapping** / **Excel mapping** (3 sheet) | Axes with material, Erection front, Material waiting, Foundation waiting |
 
 Basis **Packages / Tonnage** bisa diganti di setiap halaman. Tema terang/gelap, cetak laporan, umur data
 ("Batas Umur Data") dan tanda kritikal berasal dari lapisan viewer PMIS yang sama.
@@ -88,7 +88,22 @@ prioritas pengiriman / pengeluaran material.
 | `O2J2Z003 ~ 5` | `02J2Z003-…`, `02J2Z004-…`, `02J2Z005-…` | Rentang di register dipecah per axis (003, 004, 005) |
 | `O2J2Z010 ~ 10b` | `02J2Z010B-…` | Huruf akhiran dipertahankan |
 | — | `01J5Z001~01J5Z008` | Rentang di drawing number = 8 axis |
+| — | `第一行：02J3Z001a--02J3Z007` (grating baris 1) | Teks di depan diabaikan; rentang dengan `~`, `--`, `-`, `_` = 001A, 001…007 |
+| Semua axis satu segmen (`O2J3AZ…`, 45 pondasi) | `02J3A-7H-6`, `02J3-6H-13`, `02J4-…`, `02J5-…` | **Level segmen**: drawing tanpa nomor axis → material untuk semua pondasi segmen itu (`02J3A` ↔ `O2J3AZ…`, `02J3` ↔ `O2J3Z…`) |
 | Kolom **R** `Foundation Works` | — | Status pondasi apa adanya (Concreting, Rebar & Form Works, Piling, Excavation, Not Started, Any Constraint, …) |
+
+**Toleransi typo ("beda 1 karakter"):**
+
+* **Typo di register (sheet pondasi):** axis ID yang sama dipakai dua kali, dan Segment ID salah satu baris menunjuk
+  segmen lain dengan huruf yang sama → baris itu dibaca dengan ID yang sesuai Segment ID-nya. Contoh di file sekarang:
+  25 baris dengan Segment **L2** tertulis `O2L3T001…025` → dibaca `O2L2T001…025`. Mohon diperbaiki juga di sumbernya
+  (sheet pondasi), karena typo yang sama ikut terbawa ke sheet turunan.
+* **Typo di drawing number:** kode yang tidak cocok persis ditautkan ke axis yang **hanya berbeda 1 karakter**
+  (diganti / kurang / lebih / dua huruf tertukar), dengan syarat: **line OLC sama** (`01` ≠ `02`), **nomor axis sama**,
+  dan **hanya ada satu** axis kandidat. Kandidat lebih dari satu → tidak ditautkan, dicatat. Setiap tautan typo
+  ditandai `≈` dan didaftar di catatan halaman 05 + bagian 3 print mapping + sheet "Relation checks".
+* Kenapa line OLC dikunci: 63 kode OLC-1 (`01J3Z011`) hanya beda 1 karakter dengan kode OLC-2 (`02J3Z011`) — itu
+  axis berbeda, bukan typo. Data sekarang: 0 tautan typo drawing (semua kode OLC-2 cocok persis).
 
 * **Posisi material per axis** (dari semua package yang punya baris dengan drawing axis tsb.): *On site* (semua package
   di site) · *Partly on site* · *Not on site* (semua masih in transit) · *No material* (tidak ada di Batch 4–5).
@@ -100,17 +115,32 @@ prioritas pengiriman / pengeluaran material.
   = material di site tapi pondasi belum siap, biru = pondasi siap, material belum di site. Klik angka → daftar axis.
 * **Linear view:** satu kotak per pondasi, urut seperti sheet (chainage), satu baris per STA; warna = status pondasi,
   garis bawah = posisi material. Klik kotak → detail axis.
+* **On site → foundation** (tampilan awal): per laydown (Laydown 5, Laydown 4, …) → *Foundation ready* (erection
+  front: material bisa dikirim ke axis-nya) → *Foundation not ready* (material menunggu di laydown) → *Segment
+  material* (drawing tanpa nomor axis). Tiap baris: axis · STA · chainage, status pondasi, area & earth works, package
+  di laydown itu (status), jumlah baris & berat, dan di mana sisa material axis tsb. (`also Laydown 4 ×2 · in transit ×3`).
+* **Ready → material**: pondasi siap tapi material belum lengkap di site — *Partly on site* (package yang belum tiba +
+  status MDR), *In transit*, *Not in the packing lists* (belum ada di Batch 4–5 → follow-up procurement / shipping).
+* **Print mapping** (A4 landscape, filter STA & pencarian berlaku): ringkasan per laydown → **1 · Material on site →
+  foundation** (per laydown, siap dulu, dengan package & drawing number di laydown itu; drawing satu keluarga ditulis
+  ringkas: `02J3A-7H- 1–6, 9`) → **2 · Foundation ready → material not on site** (per STA) → **3 · Relation checks**.
+  **Excel mapping** = 3 sheet: *On site to foundation* (satu baris per laydown · package · axis/segmen), *Ready -
+  material missing*, *Relation checks*.
 * **Register axis** (urut *Axis order* / *Gaps first* / *Most material*) dan **detail axis**: 4 gate (pondasi, area &
-  earth works, lokasi, material) + semua baris material (package, posisi/laydown, status, MDR, drawing, qty, berat);
-  klik baris → package di Packing List. **Print** (A4) dan **Excel** (satu baris per pondasi, 24 kolom) mengikuti filter.
+  earth works, lokasi, material) + semua baris material (package, posisi/laydown, status, MDR, drawing, qty, berat),
+  catatan typo dan material segmen; klik baris → package di Packing List. **Print register** / **Excel register**
+  (satu baris per pondasi, 24 kolom) mengikuti filter.
 * **Arah sebaliknya (material → pondasi):** Drawing list dan baris material package di halaman 03 punya kolom
   *Foundation · status*; Excel drawing list mendapat kolom `Axis (foundation)`, `Foundation status`, `Foundation STA`.
 * **Catatan pencocokan** di bawah matriks: kolom yang dipakai, jumlah baris material yang tertaut, baris tanpa pondasi
   per prefix (mis. OLC-1 `01…` bila sheet hanya berisi OLC-2), axis ID ganda (keduanya ditampilkan), nilai kolom B
   yang bukan axis ID, dan status koneksi sheet.
-* Snapshot 13 Nov 2026 (file pondasi yang diunggah): 1.085 pondasi (1.064 kode axis, 25 axis ID ganda) · 2.100 dari
-  4.574 baris material ber-drawing axis tertaut (semua baris OLC-2; 2.474 baris OLC-1 belum ada di sheet ini) ·
-  143 axis bermaterial (246 package): on site 4 · sebagian 116 · belum di site 23.
+* Snapshot 14 Nov 2026 (file pondasi yang diunggah): 1.085 pondasi · 25 typo register dikoreksi (tidak ada axis ganda
+  lagi) · 2.107 baris material level axis tertaut (semua OLC-2, termasuk 7 baris grating per rentang) · 3.672 baris
+  level segmen (02J3A 1.816 · 02J3 1.207 · 02J5 383 · 02J4 265 · 02J2 1) · OLC-1 belum ada di sheet ini (2.480 baris
+  axis + 2.092 baris segmen) · 143 axis bermaterial: on site 3 · sebagian 139 · belum di site 1 · Laydown 5: 141 axis
+  (32 pondasi siap) · Laydown 4: 87 axis (15 siap) · 189 pondasi siap tanpa material lengkap (31 sebagian, 158 belum
+  ada di packing list).
 
 ## 3. Arsitektur
 
@@ -142,7 +172,7 @@ Hasil (di `output/pmis/`, tidak di-commit karena berisi data proyek):
 | `LOGISTICS-PMIS-SHEET.xlsx` | 4 tab untuk Google Sheets (semua sel format teks, judul kolom di baris 1). |
 
 Opsi: `--sheet-id <ID>` (menulis Sheet ID ke pengaturan), `--image https://…` (foto halaman Welcome),
-`--project "Nama Proyek"`, `--no-data` (kode tanpa data, ±177 KB, untuk mode Google Sheets saja),
+`--project "Nama Proyek"`, `--no-data` (kode tanpa data, ±191 KB, untuk mode Google Sheets saja),
 `--no-sheet`, `--db`, `--out-dir`.
 
 Halaman 05 (pondasi):
@@ -209,13 +239,13 @@ ditanam sebagai snapshot terkompresi (blok `lg-data-fnd`, semua kolom dari A aga
 Builder mencoba layout berikut dan memakai yang pertama di bawah 1.000.000 byte; laporan build menyebut layout
 yang dipakai:
 
-1. Packages teks biasa (bisa diedit) · Detail, Issues, Items terkompresi — data sekarang: **±899 KB**, dengan
-   snapshot pondasi (±61 KB) **±961 KB**.
+1. Packages teks biasa (bisa diedit) · Detail, Issues, Items terkompresi — data sekarang: **±913 KB**, dengan
+   snapshot pondasi (±61 KB) **±975 KB** (sisa ±25 KB).
 2. Semua blok data terkompresi.
 3. Semua terkompresi dan baris material hanya dari Google Sheet (tab Items).
 
 Snapshot pondasi dipertahankan selama layout 1 atau 2 masih muat; bila tidak, snapshot dilepas lebih dulu (halaman 05
-memuat sheet pondasi saja) sebelum baris material dikeluarkan dari kode. Engine sendiri ±141 KB terkompresi; tiap
+memuat sheet pondasi saja) sebelum baris material dikeluarkan dari kode. Engine sendiri ±155 KB terkompresi; tiap
 batch baru (±300 package) menambah ±150–180 KB pada layout 1.
 
 ## 9. Risiko & kontrol
@@ -228,8 +258,10 @@ batch baru (±300 package) menambah ±150–180 KB pada layout 1.
 | Data rahasia (PO, consignee, material) | Output & sheet tidak di-commit; share sheet hanya "Pelihat"; gunakan `Cek Data : sembunyi` untuk publik |
 | Ukuran kode > 1 MB saat batch bertambah | Layout otomatis (bagian 8) atau `--no-data` + Google Sheets |
 | Aturan readiness berubah | Ubah `config/readiness_rules.json` (ETL) **dan** bobot/kata kunci di pengaturan dashboard dengan nilai yang sama |
-| Format axis ID / drawing berbeda (O vs 0, rentang, akhiran huruf) | Aturan pencocokan tetap (bagian 2) dan diuji terhadap cermin Python; baris yang tidak tertaut dihitung per prefix di catatan halaman 05 |
-| Axis ID ganda di sheet pondasi (contoh: 25 axis OLC-2 di dua segmen) | Kedua pondasi ditampilkan dan disebut di catatan — perbaiki di sheet pondasi bila salah input |
+| Format axis ID / drawing berbeda (O vs 0, rentang, akhiran huruf, teks di depan) | Aturan pencocokan tetap (bagian 2) dan diuji terhadap cermin Python; baris yang tidak tertaut dihitung per prefix di catatan halaman 05 |
+| Typo 1 karakter ditautkan ke axis yang salah | Hanya line OLC sama + nomor axis sama + satu kandidat; tiap tautan ditandai `≈` dan didaftar (print bagian 3, sheet Relation checks) untuk dicek |
+| Axis ID ganda di sheet pondasi | Bila Segment ID menunjukkan typo → dikoreksi + dicatat; bila tidak → kedua pondasi ditampilkan dan dicatat — perbaiki di sheet pondasi |
+| Material level segmen (drawing tanpa nomor axis) dianggap milik satu axis | Ditampilkan terpisah sebagai *Segment material* dengan status semua pondasi segmen (x dari y siap), tidak dihitung ke KPI per axis |
 | Sheet pondasi hanya berisi OLC-2 | Baris OLC-1 (`01…`) tampil sebagai "not in foundation register" — tambahkan tab/baris OLC-1 ke sheet pondasi |
 | Kolom B / R bergeser | Validasi isi kolom; fallback ke judul `Axis ID` / `Foundation Works` + catatan |
 | Link pondasi tidak bisa dibuka | Snapshot tetap tampil, tombol sumber berwarna kuning + alasan |
@@ -247,6 +279,6 @@ pmis_embed/
 │   ├── logistics.css.html     # gaya tambahan kecil (token DS v8)
 │   └── welcome.json           # teks halaman Welcome
 └── tests/
-    ├── run_pmis_tests.py      # build sementara + referensi ETL + cermin Python pencocokan pondasi + uji browser (43 cek)
+    ├── run_pmis_tests.py      # build sementara + referensi ETL + cermin Python pencocokan pondasi + uji browser (48 cek)
     └── test_pmis_embed.js     # skenario Playwright: offline, 5 halaman, live sheet + CSV pondasi, HP
 ```

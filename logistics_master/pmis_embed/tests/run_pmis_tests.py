@@ -68,22 +68,29 @@ def reference(db):
 
 # ---------------------------------------------------------------- page 05: foundation register x material (Python mirror)
 AXRE = re.compile(r"^[0O](\d)([A-Z])(\d{1,2})([A-Z]{1,2})(\d{3})([A-Z](?![A-Z]))?", re.ASCII)
+AXIN = re.compile(r"[0O]\d[A-Z]\d{1,2}[A-Z]{1,2}\d{3}", re.ASCII)
 F_READY = ("concreting", "complete", "completed", "done", "finish")      # default of the setting "Pondasi Siap"
 F_STATUSES = ("Concreting", "Rebar & Form Works", "Piling", "Excavation", "Not Started", "Any Constraint", "Land Clearing In Progress")
 F_HEAD = ["Point ID", "Axis ID", "Structure Group", "Foundation Class", "Segment ID", "STA ID", "Chainage (m)", "Chainage Basis", "Easting X",
           "Northing Y", "Latitude", "Longitude", "Longitude a", "Route ID", "Point Order", "Area Status", "Earth Works", "Foundation Works",
           "Remark\nFoundation", "Remark\nUpper Structure"]
+NOLOC = "On-site (no laydown)"
 
 
 def _u(s):
     return re.sub(r"\s+", "", unicodedata.normalize("NFKC", str(s or "").strip()).upper())
 
 
+def _key(m):
+    return "0" + "".join(m.group(i) for i in range(1, 6)) + (m.group(6) or "")
+
+
 def _span(m, k, to, suf):
     base, a = k[: len(k) - (4 if m.group(6) else 3)], int(m.group(5))
     if not to >= a or to - a > 60:
         return [k]
-    return [f"{base}{n:03d}" for n in range(a, to + 1)] + ([f"{base}{to:03d}{suf}"] if suf else [])
+    out = [k] if m.group(6) else []
+    return out + [f"{base}{n:03d}" for n in range(a, to + 1)] + ([f"{base}{to:03d}{suf}"] if suf else [])
 
 
 def axis_keys(raw):
@@ -92,59 +99,126 @@ def axis_keys(raw):
     m = AXRE.match(s)
     if not m:
         return []
-    k = "0" + "".join(m.group(i) for i in range(1, 6)) + (m.group(6) or "")
     r = re.fullmatch(r"~(\d{1,3})([A-Z])?", s[m.end():], re.ASCII)
-    return _span(m, k, int(r.group(1)), r.group(2) or "") if r else [k]
+    return _span(m, _key(m), int(r.group(1)), r.group(2) or "") if r else [_key(m)]
 
 
 def drawing_axes(dw):
-    """drawing number: '02J3Z043-HJ-1' -> 02J3Z043 · '01J5Z001~01J5Z008' -> 8 axes"""
+    """drawing number: '02J3Z043-HJ-1' -> 02J3Z043 · '01J5Z001~01J5Z008' -> 8 axes · '第一行：02J3Z001a--02J3Z007' -> 001A, 001..007"""
     s = _u(dw)
     m = AXRE.match(s)
     if not m:
-        return []
-    k = "0" + "".join(m.group(i) for i in range(1, 6)) + (m.group(6) or "")
-    r = re.match(r"~(?:[0O]\d[A-Z]\d{1,2}[A-Z]{1,2})?(\d{3})", s[m.end():], re.ASCII)
-    return _span(m, k, int(r.group(1)), "") if r else [k]
+        i = AXIN.search(s)
+        if not i or i.start() < 1 or re.search(r"[A-Z0-9]", s[:i.start()], re.ASCII):
+            return []
+        s = s[i.start():]
+        m = AXRE.match(s)
+        if not m:
+            return []
+    k, rest = _key(m), s[m.end():]
+    r = re.match(r"~(?:[0O]\d[A-Z]\d{1,2}[A-Z]{1,2})?(\d{3})", rest, re.ASCII)
+    if r:
+        return _span(m, k, int(r.group(1)), "")
+    e = re.match(r"(?:-{1,2}|_|至|TO)([0O]\d[A-Z]\d{1,2}[A-Z]{1,2}\d{3}[A-Z]?)", rest, re.ASCII)
+    m2 = AXRE.match(e.group(1)) if e else None
+    if not m2:
+        return [k]
+    k2 = _key(m2)
+    same = k2[: len(k2) - (4 if m2.group(6) else 3)] == k[: len(k) - (4 if m.group(6) else 3)]
+    return _span(m, k, int(m2.group(5)), m2.group(6) or "") if same else [k, k2]
+
+
+def seg_of_key(k):
+    m = AXRE.match(k)
+    return "0" + m.group(1) + m.group(2) + m.group(3) + m.group(4)[:-1] if m else ""
+
+
+def drawing_seg(dw):
+    m = re.match(r"[0O](\d)([A-Z])(\d{1,2})([A-Z]?)(?=[-_~(]|$)", _u(dw), re.ASCII)
+    return "0" + m.group(1) + m.group(2) + m.group(3) + m.group(4) if m else ""
+
+
+def near1(a, b):
+    la, lb, i = len(a), len(b), 0
+    if a == b or abs(la - lb) > 1:
+        return False
+    while i < la and i < lb and a[i] == b[i]:
+        i += 1
+    if la == lb:
+        return a[i + 1:] == b[i + 1:] or (i + 1 < la and a[i] == b[i + 1] and a[i + 1] == b[i] and a[i + 2:] == b[i + 2:])
+    return a[i:] == b[i + 1:] if la < lb else a[i + 1:] == b[i:]
+
+
+def _num(k):
+    m = re.search(r"(\d+)[A-Z]?$", k)
+    return int(m.group(1)) if m else None
 
 
 def foundation_fixture(db, path):
     """SYNTHETIC foundation register for the regression test only (written to the temporary folder, never to the
     outputs): axis IDs come from the drawing numbers of the ETL, statuses / STA are assigned in rotation. It covers
-    letter O and digit 0, a range row, a duplicated axis, a value that is no axis ID, axes left out (unmatched lines),
-    axes without material and an empty status."""
+    letter O and digit 0, a range row, a duplicated axis, a duplicated axis whose Segment ID shows the typo, a 1-character
+    typo between register and drawings, a value that is no axis ID, axes left out, axes without material, an empty status."""
     from openpyxl import Workbook
     c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     dws = [r[0] for r in c.execute("SELECT DISTINCT drawing_number FROM PACKAGE_DETAIL WHERE drawing_number IS NOT NULL")]
-    keys = sorted({k for d in dws for k in drawing_axes(d)})
+    keys = sorted({k for d in dws for k in drawing_axes(d) if AXRE.match(k)})
     if len(keys) < 12:
         return None
     keys = [k for i, k in enumerate(keys) if i % 9 != 4]                     # left out -> their lines stay unmatched
-    rows, used, i = [], set(), 0
+    rows, i, ranges = [], 0, 0
     while i < len(keys):
         k = keys[i]
         nxt = keys[i + 1:i + 3]
-        if (not rows or len(rows) % 25 == 3) and not k[-1].isalpha() and len(nxt) == 2 and all(
+        if ranges < 4 and not k[-1].isalpha() and len(nxt) == 2 and all(
                 n[:-3] == k[:-3] and not n[-1].isalpha() and int(n[-3:]) == int(k[-3:]) + j + 1 for j, n in enumerate(nxt)):
             rows.append("O" + k[1:] + " ~ " + str(int(nxt[-1][-3:])))         # range row "O2J2Z003 ~ 5"
+            ranges += 1
             i += 3
         else:
             rows.append(("O" + k[1:]) if i % 2 == 0 else k)
             i += 1
-        used.add(k)
+    singles = [r for r in rows if "~" not in r]
+    present = {kk for r in rows for kk in axis_keys(r)}
+    typo = None                                                               # 1-character typo: register Z -> X, drawings keep Z
+    for r in singles[20:]:
+        k = axis_keys(r)[0]
+        if "Z" not in k[3:-3]:
+            continue
+        t = k[:-3].replace("Z", "X") + k[-3:]
+        if len(t) != len(k) or t in present or sum(1 for rr in rows if k in axis_keys(rr)) != 1:
+            continue
+        others = [x for x in present if x != k and x[1] == k[1] and near1(k, x) and _num(x) == _num(k)]
+        if not others:
+            typo = (r, ("O" if r.startswith("O") else "0") + t[1:])
+            break
+    if typo:
+        rows[rows.index(typo[0])] = typo[1]
     base = keys[-1][:-3] if not keys[-1][-1].isalpha() else keys[-1][:-4]
     rows += [f"O{base[1:]}{n:03d}" for n in range(901, 906) if f"{base}{n:03d}" not in keys]   # axes without material
-    rows.insert(7, rows[5])                                                   # duplicated axis ID (other STA / status)
+    rows.insert(7, rows[5])                                                   # duplicated axis ID (same segment: stays a duplicate)
     rows.insert(11, "TBA")                                                    # not an axis ID
+    seg_typo = next((r for r in singles[30:] if r in rows and "~" not in r), None)
+
+    def segid(raw, n):
+        m = AXRE.match(_u(raw).replace(" ", ""))
+        return f"{m.group(2)}{m.group(3)} ({n})" if m else None
+    out = []
+    for n, raw in enumerate(rows):
+        st = "" if n == 9 else F_STATUSES[(n * 5 + n // 7) % len(F_STATUSES)]
+        out.append([n + 1, raw, "Tower Foundation", "Shallow" if n % 3 else "Pile Cap", segid(raw, n + 1), f"TEST STA {n // 40 + 1:02d}", f"T-{n * 10:05.2f}",
+                    "Point", 550000.0 + n * 12.5, 83000.0 + n * 3.25, 0.759, 0.511, None, "TEST Axis", n + 1, "Lahan Terbuka" if n % 5 else "KPC - RA",
+                    "Cut & Fill", st, "- line one\n- line two" if n % 4 == 0 else None, None])
+    if seg_typo:                                                              # same ID again, but its Segment ID names segment +5
+        m = AXRE.match(_u(seg_typo))
+        out.append([len(out) + 1, seg_typo, "Precast Line", "Shallow", f"{m.group(2)}{int(m.group(3)) + 5} (1)", "TEST STA 99", "T-99999.00", "Point",
+                    0.0, 0.0, 0.0, 0.0, None, "TEST Axis", len(out) + 1, "Lahan Terbuka", "Cut & Fill", "Concreting", None, None])
     wb = Workbook()
     ws = wb.active
     ws.title = "Map Area Readiness"
     ws.append(F_HEAD)
-    for n, raw in enumerate(rows):
-        st = "" if n == 9 else F_STATUSES[(n * 5 + n // 7) % len(F_STATUSES)]
-        ws.append([n + 1, raw, "Tower Foundation", "Shallow" if n % 3 else "Pile Cap", None, f"TEST STA {n // 40 + 1:02d}", f"T-{n * 10:05.2f}",
-                   "Point", 550000.0 + n * 12.5, 83000.0 + n * 3.25, 0.759, 0.511, None, "TEST Axis", n + 1, "Lahan Terbuka", "Cut & Fill", st,
-                   "- line one\n- line two" if n % 4 == 0 else None, None])
+    for r in out:
+        ws.append(r)
     wb.save(path)
     return path
 
@@ -154,7 +228,8 @@ def foundation_reference(db, tsv_text):
     T = [r.split("\t") for r in tsv_text.split("\n")]
     hk = [re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKC", h).lower()) for h in T[0]]
     ai, si = 1, 17                                                            # columns B and R (default settings)
-    ci = next((hk.index(n) for n in ("staid", "staidassigned") if n in hk), -1)
+    col = lambda *ns: next((hk.index(n) for n in ns if n in hk), -1)
+    ci, gi = col("staid", "staidassigned"), col("segmentid")
     found, by, bad = [], {}, []
     for r in T[1:]:
         r = r + [""] * (len(T[0]) - len(r))
@@ -165,36 +240,115 @@ def foundation_reference(db, tsv_text):
         if not ks:
             bad.append(raw)
             continue
-        f = dict(raw=raw, keys=ks, st=r[si].strip() or "No status", sta=(r[ci].strip() if ci > -1 else "") or "—", lines=0, pks=set())
+        f = dict(n=len(found), raw=raw, raw0=raw, keys=ks, st=r[si].strip() or "No status", sta=(r[ci].strip() if ci > -1 else "") or "—",
+                 seg=r[gi].strip() if gi > -1 else "", lines=0, pks=set(), nr=False)
         found.append(f)
         for k in ks:
-            by.setdefault(k, []).append(len(found) - 1)
+            by.setdefault(k, []).append(f)
+    fixes = []                                                                # duplicated ID + Segment ID that names another segment
+    if gi > -1:
+        for k in list(by):
+            fs = by[k]
+            if len(fs) < 2:
+                continue
+            m = AXRE.match(k)
+            sk = m.group(2) + m.group(3)
+            sg_of = lambda f: (re.match(r"([A-Z]+\d+)", _u(f["seg"]), re.ASCII) or [None, ""])[1] if f["seg"] else ""
+            if not any(sg_of(f) == sk for f in fs):
+                continue
+            for f in list(fs):
+                sg = sg_of(f)
+                if not sg or sg == sk or sg[0] != m.group(2):
+                    continue
+                nk = "0" + m.group(1) + sg + m.group(4) + m.group(5) + (m.group(6) or "")
+                if nk in by:
+                    continue
+                by[k].remove(f)
+                by[nk] = [f]
+                f["keys"] = [nk if x == k else x for x in f["keys"]]
+                if len(f["keys"]) == 1:
+                    f["raw"] = ("O" if f["raw0"][0].upper() == "O" else "0") + nk[1:]
+                fixes.append([f["raw0"], f["raw"]])
+    segs = {}
+    for f in found:
+        for k in f["keys"]:
+            s0 = seg_of_key(k)
+            if s0:
+                S = segs.setdefault(s0, dict(fs=[], lines=0, on=0))
+                if f not in S["fs"]:
+                    S["fs"].append(f)
+    keys = list(by)
+    near_c = {}
 
     def rows_of(k):
         return by.get(k) or (by.get(k[:-1]) if k[-1].isalpha() else None) or []
 
+    def fnear(k):
+        if k not in near_c:
+            c = [r for r in keys if r[1] == k[1] and near1(k, r) and (_num(k) is None or _num(r) is None or _num(k) == _num(r))]
+            near_c[k] = c[0] if len(c) == 1 else c or None
+        return near_c[k]
+
+    def link(dw):
+        ks, L = drawing_axes(dw), dict(fs=[], nr=[], amb=[], sg=None)
+        if not ks:
+            sg = drawing_seg(dw)
+            if sg:
+                L["sg"] = sg
+                return ks, L
+            t0 = re.sub(r"^O", "0", re.split(r"[-~_(]", _u(dw))[0])
+            if re.match(r"0\d[A-Z]", t0, re.ASCII) and 6 <= len(t0) <= 11:
+                ks = [t0]
+        for k in ks:
+            rs = rows_of(k)
+            if not rs:
+                c = fnear(k)
+                if isinstance(c, str):
+                    rs = by[c]
+                    L["nr"].append((k, c))
+                elif c:
+                    L["amb"].append(k)
+            for f in rs:
+                if f not in L["fs"]:
+                    L["fs"].append(f)
+        return ks, L
+
     c = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
-    onsite = {r[0]: r[1] for r in c.execute("SELECT package_id, site_location_group IS NOT NULL FROM PACKAGE_READINESS")}
-    matched = axis_like = 0
-    unm = Counter()
-    for pid, dw in c.execute("""SELECT b.package_id, d.drawing_number FROM PACKAGE_DETAIL d
-                                JOIN DETAIL_PACKAGES b ON b.detail_package_id = d.detail_package_id
-                                JOIN PACKAGE_READINESS r ON r.package_id = b.package_id
-                                WHERE d.item_type <> 'SUB_PACKAGE_REFERENCE'"""):
-        ks = drawing_axes(dw)
+    pk_info = {r[0]: dict(on=r[1] is not None, lg=r[1]) for r in c.execute("SELECT package_id, site_location_group FROM PACKAGE_READINESS")}
+    matched = axis_like = seg_n = 0
+    unm, seg_u, near, amb = Counter(), Counter(), {}, set()
+    f_lines = {f["n"]: [] for f in found}
+    seg_lines = {s0: [] for s0 in segs}
+    for lid, pid, dw in c.execute("""SELECT d.item_id, b.package_id, d.drawing_number FROM PACKAGE_DETAIL d
+                                     JOIN DETAIL_PACKAGES b ON b.detail_package_id = d.detail_package_id
+                                     JOIN PACKAGE_READINESS r ON r.package_id = b.package_id
+                                     WHERE d.item_type <> 'SUB_PACKAGE_REFERENCE' AND d.drawing_number IS NOT NULL"""):
+        ks, L = link(dw)
+        if L["sg"]:
+            if L["sg"] in segs:
+                seg_n += 1
+                seg_lines[L["sg"]].append((lid, pid))
+            else:
+                seg_u[L["sg"][:2]] += 1
+            continue
         if not ks:
             continue
         axis_like += 1
-        hits = {i for k in ks for i in rows_of(k)}
-        if not hits:
+        amb.update(L["amb"])
+        if not L["fs"]:
             unm[ks[0][:2]] += 1
             continue
         matched += 1
-        for i in hits:
-            found[i]["lines"] += 1
-            found[i]["pks"].add(pid)
+        for k, t0 in L["nr"]:
+            near.setdefault(k, [t0, 0])[1] += 1
+        for f in L["fs"]:
+            f["lines"] += 1
+            f["pks"].add(pid)
+            f_lines[f["n"]].append((lid, pid))
+            if L["nr"]:
+                f["nr"] = True
     for f in found:
-        on = sum(1 for q in f["pks"] if onsite[q])
+        on = sum(1 for q in f["pks"] if pk_info[q]["on"])
         f["mat"] = "NONE" if not f["pks"] else "ON" if on == len(f["pks"]) else "PART" if on else "OFF"
         f["ready"] = any(w in f["st"].lower() for w in F_READY)
     mx = {}
@@ -206,29 +360,65 @@ def foundation_reference(db, tsv_text):
     kpi = [len(with_m), sum(1 for f in found if f["ready"] and f["mat"] == "ON"),
            sum(1 for f in found if not f["ready"] and f["mat"] in ("ON", "PART")), sum(1 for f in found if f["ready"] and f["mat"] in ("OFF", "NONE"))]
     sample = max(found, key=lambda f: f["lines"])
-    live = next((f for f in found if f["mat"] != "NONE" and not f["ready"] and sum(1 for g in found if g["raw"] == f["raw"]) == 1), None)
+    live = next((f for f in found if f["mat"] != "NONE" and not f["ready"] and not f["nr"] and sum(1 for g in found if g["raw0"] == f["raw0"]) == 1), None)
+    # mapping: material on site per laydown -> axis / segment; ready foundations without all material on site
+    G = {}
+
+    def grp(lg):
+        return G.setdefault(lg, dict(ax={}, sg={}, ln=set(), sl=0))
+    for f in found:
+        for lid, pid in f_lines[f["n"]]:
+            if not pk_info[pid]["on"]:
+                continue
+            g = grp(pk_info[pid]["lg"])
+            a = g["ax"].setdefault(f["n"], dict(f=f, pk=set(), lines=0))
+            a["pk"].add(pid)
+            a["lines"] += 1
+            g["ln"].add(lid)
+    for s0 in sorted(segs):
+        for lid, pid in seg_lines[s0]:
+            if not pk_info[pid]["on"]:
+                continue
+            g = grp(pk_info[pid]["lg"])
+            a = g["sg"].setdefault(s0, dict(pk=set(), lines=0))
+            a["pk"].add(pid)
+            a["lines"] += 1
+            g["sl"] += 1
+    gs = sorted(G.items(), key=lambda kv: (kv[0] == NOLOC, -(len(kv[1]["ln"]) + kv[1]["sl"]), kv[0]))
+    fmap = dict(gs=[dict(name=name, ax=[[a["f"]["raw"], len(a["pk"]), a["lines"]] for a in sorted(g["ax"].values(), key=lambda a: (not a["f"]["ready"], a["f"]["n"]))],
+                         rdy=sum(1 for a in g["ax"].values() if a["f"]["ready"]), lines=len(g["ln"]), sg=[[s0, len(a["pk"]), a["lines"]] for s0, a in g["sg"].items()])
+                    for name, g in gs],
+                ready=[[f["raw"], f["mat"], sum(1 for q in f["pks"] if pk_info[q]["on"]), sum(1 for q in f["pks"] if not pk_info[q]["on"])] for f in found if f["ready"] and f["mat"] != "ON"])
+    n_checks = (len(fixes) + len(near) + len(amb) + sum(1 for s0 in segs if seg_lines[s0]) + len(unm) + len(seg_u)
+                + sum(1 for v in by.values() if len(v) > 1) + min(len(bad), 50))
+    xl_rows = sum(len(a["pk"]) for _, g in gs for a in list(g["ax"].values()) + list(g["sg"].values()))
 
     def status_of(dw):                                                        # foundation cells of the drawing list
-        ks = drawing_axes(dw)
+        ks, L = link(dw)
+        if L["sg"]:
+            S = segs.get(L["sg"])
+            if not S:
+                return L["sg"] + " (segment)", "not in foundation register"
+            rd = sum(1 for f in S["fs"] if any(w in f["st"].lower() for w in F_READY))
+            return L["sg"] + " (segment)", f"segment: {rd:,} of {len(S['fs']):,} foundations ready"
         if not ks:
             return None
-        fs = []
-        for k in ks:
-            for i in rows_of(k):
-                if i not in fs:
-                    fs.append(i)
         sts = []
-        for i in fs:
-            if found[i]["st"] not in sts:
-                sts.append(found[i]["st"])
-        return (ks[0] + "…" + ks[-1][-3:] if len(ks) > 1 else ks[0]), (" / ".join(sts) if fs else "not in foundation register")
+        for f in L["fs"]:
+            if f["st"] not in sts:
+                sts.append(f["st"])
+        st = " / ".join(sts) + (" · ≈ " + ", ".join(x for _, x in L["nr"]) if L["nr"] else "") if L["fs"] else "not in foundation register"
+        return (ks[0] + "…" + ks[-1][-3:] if len(ks) > 1 else ks[0]), st
 
     ref = dict(n=len(found), keys=len(by), dup=sum(1 for v in by.values() if len(v) > 1), bad=min(len(bad), 50), matched=matched, axisLike=axis_like,
-               unm=dict(unm), mat=dict(Counter(f["mat"] for f in found)), matrix=mx, kpi=kpi, withM=len(with_m),
+               unm=dict(unm), segU=dict(seg_u), segN=seg_n, segLines={s0: len(v) for s0, v in seg_lines.items() if v}, fixes=fixes,
+               near={k: v for k, v in near.items()}, mat=dict(Counter(f["mat"] for f in found)), matrix=mx, kpi=kpi, withM=len(with_m),
                pkgsWithM=len({q for f in with_m for q in f["pks"]}), linesSum=sum(f["lines"] for f in found),
                perAxis=[[f["raw"], f["lines"], len(f["pks"]), f["mat"]] for f in found],
                sample=dict(raw=sample["raw"], lines=sample["lines"], pkgs=len(sample["pks"])),
-               live=dict(raw=live["raw"], to="Concreting") if live else None)
+               live=dict(raw=live["raw0"], disp=live["raw"], to="Concreting") if live else None,
+               map=fmap, mapRows=dict(a=sum(len(g["ax"]) for _, g in gs), sg=sum(len(g["sg"]) for _, g in gs), r=len(fmap["ready"])),
+               xl=dict(s1=xl_rows, s2=len(fmap["ready"]), s3=n_checks))
     return ref, status_of
 
 
@@ -309,6 +499,14 @@ def main():
             if fstatus:                                     # foundation cells of every drawing-list line vs the Python mirror
                 bad = [r[15] for r in rows[1:] if (fstatus(r[15]) or ("", "")) != ((r[16] or ""), (r[17] or ""))]
                 R["pages"]["drawing"]["xlsxFoundation"] = dict(head=list(rows[0][16:19]), bad=len(bad), ex=bad[:3])
+        fm = tmp / "foundation-mapping.xlsx"
+        if fm.exists():
+            from openpyxl import load_workbook
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                wbm = load_workbook(fm, read_only=True)
+                R["pages"].setdefault("fnd", {})["xlMap"] = {ws.title: sum(1 for _ in ws.iter_rows(values_only=True)) - 1 for ws in wbm.worksheets}
         fx = tmp / "foundation.xlsx"
         if fx.exists():
             from openpyxl import load_workbook
@@ -378,6 +576,11 @@ def main():
                 F.get("n") == fr["n"] and F.get("keys") == fr["keys"] and F.get("dup") == fr["dup"] and F.get("bad") == fr["bad"]
                 and str(F.get("axisCol", "")).startswith("B ") and str(F.get("statusCol", "")).startswith("R "),
                 {k: (F.get(k), fr.get(k)) for k in ("n", "keys", "dup", "bad")} | {"cols": (F.get("axisCol"), F.get("statusCol"))})
+            rl = F.get("rel") or {}
+            chk("foundations: relation rules = Python mirror — register typo fixed by Segment ID, 1-character typo links, segment-level lines",
+                rl.get("fixes") == fr["fixes"] and rl.get("near") == fr["near"] and rl.get("segN") == fr["segN"] and rl.get("segU") == fr["segU"]
+                and rl.get("segLines") == fr["segLines"] and (src.startswith("real") or (len(fr["fixes"]) > 0 and len(fr["near"]) > 0)),
+                {k: (rl.get(k), fr.get(k)) for k in ("fixes", "near", "segN", "segU", "segLines")})
             chk("foundations: drawing numbers linked to axes = Python mirror (matched / axis-type / unmatched per prefix)",
                 F.get("matched") == fr["matched"] and F.get("axisLike") == fr["axisLike"] and F.get("unm") == fr["unm"],
                 (F.get("matched"), fr["matched"], F.get("axisLike"), fr["axisLike"], F.get("unm"), fr["unm"]))
@@ -390,6 +593,18 @@ def main():
             chk("foundations: status × material matrix on screen = Python mirror (+ total row)",
                 mx == fr["matrix"] and [num(v) for v in (F.get("mxTotal") or [])[1:]] == [sum(v[i] for v in fr["matrix"].values()) for i in range(5)],
                 (mx, fr["matrix"]))
+            mp = F.get("map") or {}
+            chk("foundations: default view = material on site → foundation; per laydown: axes, ready, lines, segment material = Python mirror",
+                F.get("view0") == "site" and mp.get("gs") == fr["map"]["gs"] and F.get("siteRows") == fr["mapRows"]["a"] and F.get("siteSeg") == fr["mapRows"]["sg"],
+                (F.get("view0"), F.get("siteRows"), F.get("siteSeg"), fr["mapRows"], [g["name"] for g in mp.get("gs") or []], [g["name"] for g in fr["map"]["gs"]]))
+            chk("foundations: foundation ready → material not (fully) on site = Python mirror (screen)",
+                mp.get("ready") == fr["map"]["ready"] and F.get("readyRows") == len(fr["map"]["ready"]), (F.get("readyRows"), len(fr["map"]["ready"])))
+            md = F.get("mapDoc") or {}
+            chk("foundations: Print mapping — section 1 axis + segment rows, section 2 ready rows",
+                [md.get("a"), md.get("sg"), md.get("r")] == [fr["mapRows"]["a"], fr["mapRows"]["sg"], fr["mapRows"]["r"]] and md.get("sections") == 3, (md, fr["mapRows"]))
+            xm = (F.get("xlMap") or {})
+            chk("foundations: Excel mapping — 3 sheets with one row per laydown · axis/segment · package, ready rows, relation checks",
+                list(xm.values()) == [fr["xl"]["s1"], fr["xl"]["s2"], fr["xl"]["s3"]], (xm, fr["xl"]))
             chk("foundations: KPI — axes with material · erection front · material waiting · foundation waiting",
                 [num(v) for v in F.get("kpi") or []] == fr["kpi"] and F.get("kpiSub", "").startswith(f"of {fr['n']:,} foundations · {fr['matched']:,} lines · {fr['pkgsWithM']:,} pkgs"),
                 (F.get("kpi"), fr["kpi"], F.get("kpiSub")))

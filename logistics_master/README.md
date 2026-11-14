@@ -50,9 +50,9 @@ Exceptions and Foundations. It reads embedded data or a Google Sheet (tabs Packa
 readiness with the ETL rules; any difference with the ETL is flagged.
 
 * `python3 pmis_embed/build_pmis_embed.py` writes `output/pmis/LOGISTICS-PMIS-KODE.txt` (paste into the website),
-  a local preview and `LOGISTICS-PMIS-SHEET.xlsx` (the four tabs for Google Sheets). Current size: ±899 KB, ±961 KB
+  a local preview and `LOGISTICS-PMIS-SHEET.xlsx` (the four tabs for Google Sheets). Current size: ±913 KB, ±975 KB
   with the foundation snapshot.
-* `python3 pmis_embed/tests/run_pmis_tests.py` runs 43 browser checks (all 1,153 packages equal to
+* `python3 pmis_embed/tests/run_pmis_tests.py` runs 48 browser checks (all 1,153 packages equal to
   `PACKAGE_READINESS`, all pages, the live-sheet path, the foundation matching against a Python mirror, phone layout,
   no JavaScript errors). It uses a synthetic foundation register built from the ETL drawing numbers, or the real one
   with `--foundation FILE`.
@@ -63,8 +63,12 @@ readiness with the ETL rules; any difference with the ETL is flagged.
 * Foundations (page 05): the foundation register (Axis ID in column B, Foundation Works in column R; live from a
   "Publish to web" CSV link, with a compressed snapshot in the code via `--foundation`) is linked to the material
   through the drawing number (`02J3Z043-HJ-1` → axis `O2J3Z043`; O = 0, ranges expanded). Per axis: foundation
-  status and where its material is (on site / partly / in transit / none); matrix, linear view per STA, axis detail,
-  print and Excel. The drawing list and package lines show the foundation status of each drawing.
+  status and where its material is (on site / partly / in transit / none); matrix, linear view per STA, axis detail.
+  Mapping views and print / Excel: material on site per laydown → axis → foundation and area status, and foundations
+  ready whose material is not on site. Segment drawings without axis number (`02J3A-7H-6`) are linked to the segment;
+  a register ID used twice is corrected from its Segment ID, and a drawing code 1 character from exactly one axis of
+  the same OLC line and number is linked as a typo (all listed under "Relation checks"). The drawing list and package
+  lines show the foundation status of each drawing.
 * How-to (Indonesian): [pmis_embed/README.md](pmis_embed/README.md).
 
 ## Folder structure

@@ -260,7 +260,7 @@
 
   /* ---------- 4. agregat (basis: package count | tonnage) ---------- */
   var state = { page: 1, basis: /^(ton|t\b|berat|weight)/i.test(cfg.basis) ? 't' : 'n', rview: 'wk', rsort: 'order', rb: null, rc: null, rs: null,
-    pb: null, pc: null, pg: null, pst: 'ALL', ploc: 'ALL', plocs: [], pmdr: 'ALL', pview: 'pkg', pdall: false, psort: 'order', fst: 'ALL', fmat: 'WITH', fsta: 'ALL', fq: '', fsort: 'axis', fax: null, fall: false, q: '', pkg: null, blk: null, pall: false, xsev: 'ALL', xtype: null, xall: false };
+    pb: null, pc: null, pg: null, pst: 'ALL', ploc: 'ALL', plocs: [], pmdr: 'ALL', pview: 'pkg', pdall: false, psort: 'order', fst: 'ALL', fmat: 'WITH', fsta: 'ALL', fq: '', fsort: 'axis', fview: 'site', fax: null, fall: false, q: '', pkg: null, blk: null, pall: false, xsev: 'ALL', xtype: null, xall: false };
   function agg(list) {
     var a = { n: list.length, t: 0, sc: 0, sct: 0, f: {} };
     ['READY', 'PEND', 'SITE', 'AWAIT', 'BLOCK', 'insp', 'onsite', 'mdr', 'pl', 'mdrRisk'].forEach(function (k) { a.f[k] = { n: 0, t: 0 }; });
@@ -964,9 +964,10 @@
     if (cap < l2.length) { var mb = el('div', 'lg-more'), b = el('button', 'upb'); b.type = 'button'; b.appendChild(ico('list', 12)); b.appendChild(document.createTextNode('Show all ' + nf(l2.length) + ' packages on screen')); b.addEventListener('click', function () { state.pdall = true; renderDwg(list); }); mb.appendChild(b); wrap.appendChild(mb); }
     $('p-tip').textContent = 'Print and Excel take every package of the filter: ' + nf(l2.length) + ' packages · ' + nf(stt.lines) + ' material lines (print list ≈ ' + nf(pages(stt, l2.length)) + ' A4 pages, compact ≈ ' + nf(pages(stt, l2.length, true)) + ') · click a package row to open it';
   }
-  function docShell(sub, stats, colgroup, thead, body, extraCss) {
+  function docShell(sub, stats, colgroup, thead, body, extraCss, o) {
+    o = o || {};
     var d0 = new Date(), stamp = d0.getDate() + ' ' + MS[d0.getMonth()] + ' ' + d0.getFullYear() + ' ' + ('0' + d0.getHours()).slice(-2) + ':' + ('0' + d0.getMinutes()).slice(-2);
-    var ttl = (cfg.judul || 'Logistics Readiness') + ' — Drawing list';
+    var ttl = (cfg.judul || 'Logistics Readiness') + ' — ' + (o.t || 'Drawing list');
     var css = '@page{size:A4 landscape;margin:10mm 10mm 12mm;@bottom-left{content:"' + esc(ttl).replace(/"/g, '') + '";font:7.5pt Arial,sans-serif;color:#6b7770}@bottom-right{content:"Page " counter(page) " / " counter(pages);font:7.5pt Arial,sans-serif;color:#6b7770}}' +
       '*{box-sizing:border-box}body{margin:0;font:8.6pt/1.32 "Segoe UI",Inter,Arial,sans-serif;color:#1e2b25;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
       'header{display:flex;justify-content:space-between;align-items:flex-end;gap:16pt;border-bottom:2px solid #263d33;padding-bottom:5pt;margin-bottom:6pt}h1{margin:0;font-size:14pt}' +
@@ -975,10 +976,10 @@
       'th{font-size:7pt;letter-spacing:.05em;text-transform:uppercase;text-align:left;color:#3a4741;background:#e9eee8;border-bottom:1px solid #263d33;padding:3pt 4pt}' +
       'td{padding:2pt 4pt;border-bottom:.6pt solid #dfe5de;vertical-align:top;overflow-wrap:anywhere}tr{break-inside:avoid}td.n{text-align:right;white-space:nowrap}' +
       'small{color:#6b7770;font-size:7.4pt}.z{color:#8a958f}footer{margin-top:6pt;color:#6b7770;font-size:7.5pt}@media screen{body{padding:18px;max-width:1300px;margin:0 auto}}' + (extraCss || '');
-    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>' + esc('Drawing list — ' + sub) + '</title><style>' + css + '</style></head><body>' +
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>' + esc((o.t || 'Drawing list') + ' — ' + sub) + '</title><style>' + css + '</style></head><body>' +
       '<header><div><h1>' + esc(ttl) + '</h1><p>' + esc(sub) + '</p></div><div class="r">Data date ' + esc(fdate(R.dd)) + '<br>' + stats + '<br>Printed ' + esc(stamp) + '</div></header>' +
-      '<table>' + colgroup + '<thead><tr>' + thead.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '</tr></thead>' + body + '</table>' +
-      '<footer>Material lines exactly as in the detail packing lists (Logistics ETL) · Position = Summary Remark column (U / T) and site tags (V / W) · weights are item weights.</footer></body></html>';
+      (o.raw || '<table>' + colgroup + '<thead><tr>' + thead.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '</tr></thead>' + body + '</table>') +
+      '<footer>' + (o.foot || 'Material lines exactly as in the detail packing lists (Logistics ETL) · Position = Summary Remark column (U / T) and site tags (V / W) · weights are item weights.') + '</footer></body></html>';
   }
   function cols(ws) { return '<colgroup>' + ws.map(function (w) { return '<col style="width:' + w + '%">'; }).join('') + '</colgroup>'; }
   function dwgDoc(list, compact) {
@@ -1004,7 +1005,7 @@
       ls.forEach(function (x) {
         var it = x.it, fx = FD ? fdOf(it.dw) : null;
         rows.push('<tr class="it"><td>' + esc(it.sn) + '</td><td>' + esc(it.d) + (it.cn ? ' <small>' + esc(it.cn) + '</small>' : '') + (it.sp ? ' <small>' + esc(it.sp) + '</small>' : '') + '</td><td class="dw">' + esc(it.dw || '—') +
-          (FD ? '</td><td>' + (fx ? '<b class="fa">' + esc(fx.k) + '</b> ' + (fx.fs.length ? '<i class="fs" style="background:' + fMeta(fx.st).c + '"></i>' : '') + esc(fx.fs.length ? fx.st : 'not in register') : '') : '') +
+          (FD ? '</td><td>' + (fx ? '<b class="fa">' + esc(fx.k) + '</b> ' + (fx.fs.length ? '<i class="fs" style="background:' + fMeta(fx.st).c + '"></i>' : '') + esc(fx.fs.length || fx.seg ? fx.st : 'not in register') : '') : '') +
           '</td><td>' + esc(it.eq) + '</td><td class="n">' + (it.q == null ? '' : num(it.q, it.q % 1 ? 2 : 0)) + '</td><td>' + esc(it.u) + '</td><td class="n">' + (it.tw == null ? '' : num(it.tw, 1)) +
           '</td><td>' + esc([split ? x.b.no : '', it.rm].filter(Boolean).join(' · ')) + '</td></tr>');
       });
@@ -1070,35 +1071,40 @@
   }
   function xEsc(v) { return String(v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '').replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function colL(i) { var s0 = ''; for (i++; i > 0; i = Math.floor((i - 1) / 26)) s0 = String.fromCharCode(65 + (i - 1) % 26) + s0; return s0; }
-  function xlsxBlob(sheet, rows, widths) {
+  function xlsxBlob(sheet, rows, widths) { return xlsxBook([{ n: sheet, r: rows, w: widths }]); }
+  function xlsxBook(sh) {                    /* .xlsx with one or more sheets: inline strings, bold header, frozen row 1, autofilter */
     var NSM = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', RNS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
       PNS = 'http://schemas.openxmlformats.org/package/2006/relationships', CT = 'application/vnd.openxmlformats-', X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
-    var last = colL(rows[0].length - 1), data = rows.map(function (r, ri) {
-      var cells = '';
-      r.forEach(function (v, ci) {
-        if (v == null || v === '') return;
-        var ref = colL(ci) + (ri + 1), st = ri ? '' : ' s="1"';
-        cells += typeof v === 'number' && isFinite(v) ? '<c r="' + ref + '"' + st + '><v>' + v + '</v></c>' : '<c r="' + ref + '" t="inlineStr"' + st + '><is><t xml:space="preserve">' + xEsc(v) + '</t></is></c>';
-      });
-      return '<row r="' + (ri + 1) + '">' + cells + '</row>';
-    }).join('');
+    function sheetXml(s0) {
+      var rows = s0.r, last = colL(rows[0].length - 1), data = rows.map(function (r, ri) {
+        var cells = '';
+        r.forEach(function (v, ci) {
+          if (v == null || v === '') return;
+          var ref = colL(ci) + (ri + 1), st = ri ? '' : ' s="1"';
+          cells += typeof v === 'number' && isFinite(v) ? '<c r="' + ref + '"' + st + '><v>' + v + '</v></c>' : '<c r="' + ref + '" t="inlineStr"' + st + '><is><t xml:space="preserve">' + xEsc(v) + '</t></is></c>';
+        });
+        return '<row r="' + (ri + 1) + '">' + cells + '</row>';
+      }).join('');
+      return X + '<worksheet xmlns="' + NSM + '"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+        '<cols>' + s0.w.map(function (wd, i) { return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + wd + '" customWidth="1"/>'; }).join('') + '</cols>' +
+        '<sheetData>' + data + '</sheetData><autoFilter ref="A1:' + last + rows.length + '"/></worksheet>';
+    }
     var files = [
       ['[Content_Types].xml', X + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="' + CT + 'package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
-        '<Override PartName="/xl/workbook.xml" ContentType="' + CT + 'officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="' + CT + 'officedocument.spreadsheetml.worksheet+xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="' + CT + 'officedocument.spreadsheetml.sheet.main+xml"/>' +
+        sh.map(function (s0, i) { return '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="' + CT + 'officedocument.spreadsheetml.worksheet+xml"/>'; }).join('') +
         '<Override PartName="/xl/styles.xml" ContentType="' + CT + 'officedocument.spreadsheetml.styles+xml"/></Types>'],
       ['_rels/.rels', X + '<Relationships xmlns="' + PNS + '"><Relationship Id="rId1" Type="' + RNS + '/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
-      ['xl/workbook.xml', X + '<workbook xmlns="' + NSM + '" xmlns:r="' + RNS + '"><sheets><sheet name="' + xEsc(sheet) + '" sheetId="1" r:id="rId1"/></sheets>' +
-        '<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">\'' + xEsc(sheet) + '\'!$A$1:$' + last + '$' + rows.length + '</definedName></definedNames></workbook>'],
-      ['xl/_rels/workbook.xml.rels', X + '<Relationships xmlns="' + PNS + '"><Relationship Id="rId1" Type="' + RNS + '/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="' + RNS + '/styles" Target="styles.xml"/></Relationships>'],
+      ['xl/workbook.xml', X + '<workbook xmlns="' + NSM + '" xmlns:r="' + RNS + '"><sheets>' + sh.map(function (s0, i) { return '<sheet name="' + xEsc(s0.n) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>'; }).join('') + '</sheets>' +
+        '<definedNames>' + sh.map(function (s0, i) { return '<definedName name="_xlnm._FilterDatabase" localSheetId="' + i + '" hidden="1">\'' + xEsc(s0.n) + '\'!$A$1:$' + colL(s0.r[0].length - 1) + '$' + s0.r.length + '</definedName>'; }).join('') + '</definedNames></workbook>'],
+      ['xl/_rels/workbook.xml.rels', X + '<Relationships xmlns="' + PNS + '">' + sh.map(function (s0, i) { return '<Relationship Id="rId' + (i + 1) + '" Type="' + RNS + '/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>'; }).join('') +
+        '<Relationship Id="rId' + (sh.length + 1) + '" Type="' + RNS + '/styles" Target="styles.xml"/></Relationships>'],
       ['xl/styles.xml', X + '<styleSheet xmlns="' + NSM + '"><fonts count="2"><font><sz val="10"/><name val="Calibri"/></font><font><b/><sz val="10"/><name val="Calibri"/></font></fonts>' +
         '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6ECE5"/><bgColor indexed="64"/></patternFill></fill></fills>' +
         '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
         '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs>' +
-        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
-      ['xl/worksheets/sheet1.xml', X + '<worksheet xmlns="' + NSM + '"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
-        '<cols>' + widths.map(function (wd, i) { return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + wd + '" customWidth="1"/>'; }).join('') + '</cols>' +
-        '<sheetData>' + data + '</sheetData><autoFilter ref="A1:' + last + rows.length + '"/></worksheet>']
-    ];
+        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>']
+    ].concat(sh.map(function (s0, i) { return ['xl/worksheets/sheet' + (i + 1) + '.xml', sheetXml(s0)]; }));
     var enc = new TextEncoder();
     return zipFiles(files.map(function (f) { return { n: f[0], d: enc.encode(f[1]) }; }), CT + 'officedocument.spreadsheetml.sheet');
   }
@@ -1111,7 +1117,7 @@
         var it = x.it;
         var fx = FD ? fdOf(it.dw) : null;
         rows.push([p.b, p.c, p.no, POSL[posOf(p)], posOf(p) === 'LAYDOWN' ? p.lg : '', ST[p.st].s, MDRL[p.mdr] || p.mdr, p.mdrNo, p.rfs, p.recv != null ? isoD(p.recv) : p.insp,
-          x.b.no, it.sn, it.d, it.cn, it.sp, it.dw].concat(FD ? [fx ? fx.k : '', fx ? fx.st : '', fx && fx.fs[0] ? fx.fs[0].sta : ''] : []).concat([it.eq, it.q, it.u, it.uw, it.tw, it.rm]));
+          x.b.no, it.sn, it.d, it.cn, it.sp, it.dw].concat(FD ? [fx ? fx.k : '', fx ? fx.st : '', fx ? fx.sta : ''] : []).concat([it.eq, it.q, it.u, it.uw, it.tw, it.rm]));
       });
     });
     return rows;
@@ -1203,6 +1209,7 @@
   function axSpan(m, k, to, suf) {
     var base = k.slice(0, k.length - (m[6] ? 4 : 3)), a = +m[5], out = [];
     if (!(to >= a) || to - a > 60) return [k];
+    if (m[6]) out.push(k);                                  /* "02J3Z001a--02J3Z007": 001A is a foundation of its own */
     for (var n = a; n <= to; n++) out.push(base + ('00' + n).slice(-3));
     if (suf) out.push(base + ('00' + to).slice(-3) + suf);
     return out;
@@ -1212,10 +1219,46 @@
     var k = axKey(m), r = /^~(\d{1,3})([A-Z])?$/.exec(s.slice(m[0].length));
     return r ? axSpan(m, k, +r[1], r[2] || '') : [k];
   }
-  function drawingAxes(dw) {                     /* material: "02J3Z043-HJ-1" → 02J3Z043 · "01J5Z001~01J5Z008" → 8 axes */
-    var s = U(dw).replace(/\s+/g, ''), m = AXRE.exec(s); if (!m) return [];
-    var k = axKey(m), r = /^~(?:[0O]\d[A-Z]\d{1,2}[A-Z]{1,2})?(\d{3})/.exec(s.slice(m[0].length));
-    return r ? axSpan(m, k, +r[1], '') : [k];
+  function drawingAxes(dw) {                     /* material: "02J3Z043-HJ-1" → 02J3Z043 · "01J5Z001~01J5Z008" → 8 axes · "第一行：02J3Z001a--02J3Z007" → 001A, 001…007 */
+    var s = U(dw).replace(/\s+/g, ''), m = AXRE.exec(s);
+    if (!m) { var i = s.search(/[0O]\d[A-Z]\d{1,2}[A-Z]{1,2}\d{3}/); if (i < 1 || /[A-Z0-9]/.test(s.slice(0, i))) return []; s = s.slice(i); m = AXRE.exec(s); if (!m) return []; }
+    var k = axKey(m), rest = s.slice(m[0].length), r = /^~(?:[0O]\d[A-Z]\d{1,2}[A-Z]{1,2})?(\d{3})/.exec(rest);
+    if (r) return axSpan(m, k, +r[1], '');
+    var e = /^(?:-{1,2}|_|至|TO)([0O]\d[A-Z]\d{1,2}[A-Z]{1,2}\d{3}[A-Z]?)/.exec(rest), m2 = e && AXRE.exec(e[1]);
+    if (!m2) return [k];
+    var k2 = axKey(m2);
+    return k2.slice(0, k2.length - (m2[6] ? 4 : 3)) === k.slice(0, k.length - (m[6] ? 4 : 3)) ? axSpan(m, k, +m2[5], m2[6] || '') : [k, k2];
+  }
+  /* segment level: "02J3A-7H-6" = trestle of segment J3A without axis number → the foundations O2J3AZ… of that segment */
+  function segOfKey(k) { var m = AXRE.exec(k); return m ? '0' + m[1] + m[2] + m[3] + m[4].slice(0, -1) : ''; }
+  function drawingSeg(dw) { var m = /^[0O](\d)([A-Z])(\d{1,2})([A-Z]?)(?=[-_~(]|$)/.exec(U(dw).replace(/\s+/g, '')); return m ? '0' + m[1] + m[2] + m[3] + m[4] : ''; }
+  function near1(a, b) {                         /* one character different: substituted, added, dropped or two swapped */
+    var la = a.length, lb = b.length, i = 0;
+    if (a === b || Math.abs(la - lb) > 1) return false;
+    while (i < la && i < lb && a.charAt(i) === b.charAt(i)) i++;
+    if (la === lb) return a.slice(i + 1) === b.slice(i + 1) || (a.charAt(i) === b.charAt(i + 1) && a.charAt(i + 1) === b.charAt(i) && a.slice(i + 2) === b.slice(i + 2));
+    return la < lb ? a.slice(i) === b.slice(i + 1) : a.slice(i + 1) === b.slice(i);
+  }
+  function fNear(k) {                            /* typo tolerance: the ONLY register axis 1 character away, same OLC line (01 ≠ 02), same axis number */
+    if (Object.prototype.hasOwnProperty.call(FD.nr, k)) return FD.nr[k];
+    var n0 = /(\d+)[A-Z]?$/.exec(k), c = FD.keys.filter(function (r) { var n1 = /(\d+)[A-Z]?$/.exec(r); return r.charAt(1) === k.charAt(1) && near1(k, r) && (!n0 || !n1 || +n0[1] === +n1[1]); });
+    return (FD.nr[k] = c.length === 1 ? c[0] : c.length ? c : null);
+  }
+  function axLink(dw) {                          /* one drawing number → its foundations: exact · ≈ 1-character typo · segment level */
+    var key = dw == null ? '' : String(dw); if (Object.prototype.hasOwnProperty.call(FD.lk, key)) return FD.lk[key];
+    var ks = drawingAxes(key), L = { ks: ks, fs: [], nr: [], amb: [] };
+    if (!ks.length) {
+      var sg = drawingSeg(key);
+      if (sg) { L.sg = sg; L.S = FD.segs[sg] || null; return (FD.lk[key] = L); }
+      var t0 = U(key).replace(/\s+/g, '').split(/[-~_(]/)[0].replace(/^O/, '0');    /* malformed axis code, e.g. 02J3Z43 */
+      if (/^0\d[A-Z]/.test(t0) && t0.length >= 6 && t0.length <= 11) L.ks = ks = [t0];
+    }
+    ks.forEach(function (k) {
+      var rs = fRows(k);
+      if (!rs) { var c = fNear(k); if (typeof c === 'string') { rs = FD.by[c]; L.nr.push([k, c]); } else if (c) L.amb.push([k, c]); }
+      (rs || []).forEach(function (f) { if (L.fs.indexOf(f) < 0) L.fs.push(f); });
+    });
+    return (FD.lk[key] = L);
   }
   function colIdx(spec, H) {                     /* "B" → column B · "Axis ID" → the column with that header */
     var s0 = T(spec); if (!s0) return -1;
@@ -1257,13 +1300,29 @@
       var raw = T(r[ai]); if (!raw) return;
       var keys = axisKeys(raw); if (!keys.length) { if (bad.length < 50) bad.push(raw); return; }
       function g(k) { return C[k] > -1 ? T(r[C[k]]).replace(/\s*\n\s*/g, ' / ') : ''; }
-      var f = { n: list.length, raw: raw, keys: keys, st: si > -1 ? T(r[si]) || 'No status' : 'No status', area: g('area'), earth: g('earth'), rmF: g('rmF'), rmU: g('rmU'),
+      var f = { n: list.length, raw: raw, raw0: raw, keys: keys, st: si > -1 ? T(r[si]) || 'No status' : 'No status', area: g('area'), earth: g('earth'), rmF: g('rmF'), rmU: g('rmU'),
         sta: g('sta') || '—', seg: g('seg'), grp: g('grp'), cls: g('cls'), typ: g('typ'), ch: g('ch'), lines: [], pk: {}, pks: [], mat: 'NONE' };
       list.push(f); keys.forEach(function (k) { (by[k] = by[k] || []).push(f); });
     });
     if (!list.length) return { error: 'no axis rows' };
-    return { list: list, by: by, dup: Object.keys(by).filter(function (k) { return by[k].length > 1; }), bad: bad, notes: notes,
-      axisCol: colL(ai) + ' · ' + T(hr[ai]), statusCol: si > -1 ? colL(si) + ' · ' + T(hr[si]) : 'none' };
+    /* register typo: the same axis ID twice and one row's Segment ID disagrees with it (O2L3T001 in segment L2) → that row becomes O2L2T001 */
+    var fixes = [];
+    if (C.seg > -1) Object.keys(by).forEach(function (k) {
+      var fs = by[k]; if (fs.length < 2) return;
+      var m = AXRE.exec(k), sk = m[2] + m[3], sgOf = function (f) { var x = /^([A-Z]+\d+)/.exec(U(f.seg)); return x ? x[1] : ''; };
+      if (!fs.some(function (f) { return sgOf(f) === sk; })) return;
+      fs.slice().forEach(function (f) {
+        var sg = sgOf(f); if (!sg || sg === sk || sg.charAt(0) !== m[2]) return;
+        var nk = '0' + m[1] + sg + m[4] + m[5] + (m[6] || ''); if (by[nk]) return;
+        by[k].splice(by[k].indexOf(f), 1); by[nk] = [f]; f.keys = f.keys.map(function (x) { return x === k ? nk : x; });
+        if (f.keys.length === 1) f.raw = (f.raw0.charAt(0).toUpperCase() === 'O' ? 'O' : '0') + nk.slice(1);
+        f.fix = (f.fix ? f.fix + ' · ' : '') + k + ' → ' + nk + ' (Segment ID ' + sg + ')'; fixes.push({ f: f, from: k, to: nk, seg: sg });
+      });
+    });
+    var segs = {};
+    list.forEach(function (f) { f.keys.forEach(function (k) { var s0 = segOfKey(k); if (!s0) return; var S = segs[s0] = segs[s0] || { code: s0, fs: [], lines: [], pk: {}, pks: [] }; if (S.fs.indexOf(f) < 0) S.fs.push(f); }); });
+    return { list: list, by: by, dup: Object.keys(by).filter(function (k) { return by[k].length > 1; }), bad: bad, notes: notes, fixes: fixes, segs: segs,
+      keys: Object.keys(by), nr: {}, lk: {}, axisCol: colL(ai) + ' · ' + T(hr[ai]), statusCol: si > -1 ? colL(si) + ' · ' + T(hr[si]) : 'none' };
   }
   /* foundation stage colours (order = progress), material position per axis */
   var FSC = [[/concret|complete|finish|done/i, '#2F8F5B', 1], [/rebar|form/i, '#3E7CB1', 2], [/pil/i, '#6C63C4', 3], [/excav/i, '#B28C22', 4],
@@ -1279,32 +1338,45 @@
   function fJoin() {                               /* every material line whose drawing number names an axis of the register */
     if (!FD || !R || !R.items) return null;
     if (FJ && FJ.R === R && FJ.items === R.items && FJ.FD === FD) return FJ;
-    FD.list.forEach(function (f) { f.lines = []; f.pk = {}; });
-    var unm = {}, matched = 0, axisLike = 0;
+    FD.list.forEach(function (f) { f.lines = []; f.pk = {}; f.nrs = ''; });
+    Object.keys(FD.segs).forEach(function (c0) { FD.segs[c0].lines = []; FD.segs[c0].pk = {}; });
+    var unm = {}, matched = 0, axisLike = 0, near = {}, amb = {}, segN = 0, segU = {};
     R.pk.forEach(function (p) {
       linesOf(p).forEach(function (x) {
-        var ks = drawingAxes(x.it.dw); if (!ks.length) return;
+        var L = axLink(x.it.dw), ln = { p: p, b: x.b, it: x.it };
+        if (L.sg) { if (L.S) { segN++; L.S.lines.push(ln); L.S.pk[p.id] = p; } else segU[L.sg.slice(0, 2)] = (segU[L.sg.slice(0, 2)] || 0) + 1; return; }
+        if (!L.ks.length) return;
         axisLike++;
-        var hitF = [];
-        ks.forEach(function (k) { (fRows(k) || []).forEach(function (f) { if (hitF.indexOf(f) < 0) hitF.push(f); }); });
-        if (!hitF.length) { var pf = ks[0].slice(0, 2), u = unm[pf] = unm[pf] || { n: 0, ex: [] }; u.n++; if (u.ex.length < 3 && u.ex.indexOf(x.it.dw) < 0) u.ex.push(x.it.dw); return; }
+        L.amb.forEach(function (a) { amb[a[0]] = a[1]; });
+        if (!L.fs.length) { var pf = L.ks[0].slice(0, 2), u = unm[pf] = unm[pf] || { n: 0, ex: [] }; u.n++; if (u.ex.length < 3 && u.ex.indexOf(x.it.dw) < 0) u.ex.push(x.it.dw); return; }
         matched++;
-        hitF.forEach(function (f) { f.lines.push({ p: p, b: x.b, it: x.it }); f.pk[p.id] = p; });
+        if (L.nr.length) { ln.nr = L.nr.map(function (a) { return a[0] + ' ≈ ' + a[1]; }).join(', '); L.nr.forEach(function (a) { var q = near[a[0]] = near[a[0]] || { from: a[0], to: a[1], n: 0, ex: x.it.dw }; q.n++; }); }
+        L.fs.forEach(function (f) { f.lines.push(ln); f.pk[p.id] = p; if (ln.nr) f.nrs = ln.nr; });
       });
     });
     FD.list.forEach(function (f) {
       var ps = Object.keys(f.pk).map(function (id) { return f.pk[id]; }), on = ps.filter(function (p) { return p.onsite; }).length;
       f.pks = ps; f.mat = !ps.length ? 'NONE' : on === ps.length ? 'ON' : on ? 'PART' : 'OFF'; f.ready = fReady(f.st); f._q = null;
     });
-    FJ = { R: R, items: R.items, FD: FD, unm: unm, matched: matched, axisLike: axisLike };
+    Object.keys(FD.segs).forEach(function (c0) {
+      var S = FD.segs[c0]; S.pks = Object.keys(S.pk).map(function (id) { return S.pk[id]; });
+      S.rd = S.fs.filter(function (f) { return f.ready; }).length; S.on = S.lines.filter(function (x) { return x.p.onsite; }).length;
+    });
+    FJ = { R: R, items: R.items, FD: FD, unm: unm, matched: matched, axisLike: axisLike, near: near, amb: amb, segN: segN, segU: segU };
     return FJ;
   }
+  function segSta(S) { var o = []; S.fs.forEach(function (f) { if (o.indexOf(f.sta) < 0) o.push(f.sta); }); return o.join(' / '); }
   function fdOf(dw) {                              /* foundation(s) of one drawing number, for the drawing lists */
     if (!FD) return null;
-    var ks = drawingAxes(dw); if (!ks.length) return null;
-    var fs = []; ks.forEach(function (k) { (fRows(k) || []).forEach(function (f) { if (fs.indexOf(f) < 0) fs.push(f); }); });
-    return { k: ks.length > 1 ? ks[0] + '…' + ks[ks.length - 1].slice(-3) : ks[0], fs: fs,
-      st: fs.length ? fs.map(function (f) { return f.st; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' / ') : 'not in foundation register' };
+    var L = axLink(dw), ks = L.ks;
+    if (L.sg) {
+      var S = L.S, rd = S ? S.fs.filter(function (f) { return fReady(f.st); }).length : 0;
+      return { k: L.sg + ' (segment)', fs: [], seg: S, sta: S ? segSta(S) : '', st: S ? 'segment: ' + nf(rd) + ' of ' + nf(S.fs.length) + ' foundations ready' : 'not in foundation register' };
+    }
+    if (!ks.length) return null;
+    var fs = L.fs;
+    return { k: ks.length > 1 ? ks[0] + '…' + ks[ks.length - 1].slice(-3) : ks[0], fs: fs, nr: L.nr, sta: fs[0] ? fs[0].sta : '',
+      st: fs.length ? fs.map(function (f) { return f.st; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(' / ') + (L.nr.length ? ' · ≈ ' + L.nr.map(function (a) { return a[1]; }).join(', ') : '') : 'not in foundation register' };
   }
   function fChip(st, small) {
     var c = el('span', 'lg-fchip' + (small ? ' sm' : '')), m = fMeta(st), d = el('i'); d.style.background = m.c; c.appendChild(d);
@@ -1313,8 +1385,8 @@
   function fdCell(td, dw) {
     var x = fdOf(dw); if (!x) { td.textContent = '—'; td.className += ' z'; return; }
     var w = el('span', 'lg-fdc'); w.appendChild(el('b', 'lg-mono', x.k));
-    if (x.fs.length) w.appendChild(fChip(x.st, true)); else w.appendChild(el('span', 'lg-sub', 'not in register'));
-    w.title = x.k + ' — ' + x.st + (x.fs[0] ? ' · ' + x.fs[0].sta + (x.fs[0].area ? ' · area ' + x.fs[0].area : '') : '');
+    if (x.fs.length) w.appendChild(fChip(x.st, true)); else w.appendChild(el('span', 'lg-sub', x.seg ? x.st : 'not in register'));
+    w.title = x.k + ' — ' + x.st + (x.sta ? ' · ' + x.sta : '') + (x.fs[0] && x.fs[0].area ? ' · area ' + x.fs[0].area : '') + (x.nr && x.nr.length ? '\nLinked with a 1-character typo: ' + x.nr.map(function (a) { return a[0] + ' ≈ ' + a[1]; }).join(', ') : '');
     td.appendChild(w);
   }
   function matChip(f) {
@@ -1336,20 +1408,20 @@
       if (skip.indexOf('mat') < 0 && state.fmat !== 'ALL' && !(state.fmat === 'WITH' ? f.mat !== 'NONE' : f.mat === state.fmat)) return false;
       if (skip.indexOf('sta') < 0 && state.fsta !== 'ALL' && f.sta !== state.fsta) return false;
       if (!q) return true;
-      if (f._q == null) f._q = U([f.raw, f.keys.join(' '), f.sta, f.seg, f.grp, f.cls, f.typ, f.ch, f.st, f.area, f.earth, f.rmF, f.rmU].join(' ')).replace(/\s+/g, '');
+      if (f._q == null) f._q = U([f.raw, f.raw0, f.keys.join(' '), f.sta, f.seg, f.grp, f.cls, f.typ, f.ch, f.st, f.area, f.earth, f.rmF, f.rmU].join(' ')).replace(/\s+/g, '');
       if (f._q.indexOf(q) > -1) return true;
       return f.lines.some(function (x) { return U(x.it.dw + ' ' + x.p.no).replace(/\s+/g, '').indexOf(q) > -1; });
     });
   }
-  function fName() {
+  function fName(staOnly) {
     var parts = [];
     if (state.fsta !== 'ALL') parts.push(state.fsta);
-    if (state.fst !== 'ALL') parts.push('Foundation ' + state.fst);
-    if (state.fmat !== 'ALL') parts.push(state.fmat === 'WITH' ? 'axes with material' : FMAT[state.fmat].t);
+    if (!staOnly && state.fst !== 'ALL') parts.push('Foundation ' + state.fst);
+    if (!staOnly && state.fmat !== 'ALL') parts.push(state.fmat === 'WITH' ? 'axes with material' : FMAT[state.fmat].t);
     if (state.fq) parts.push('search "' + state.fq + '"');
     return parts.join(' · ');
   }
-  function fReset() { return state.fst !== 'ALL' || state.fmat !== 'ALL' || state.fsta !== 'ALL' || state.fq ? { t: 'All axes', fn: function () { state.fst = 'ALL'; state.fmat = 'ALL'; state.fsta = 'ALL'; state.fq = ''; $('f-q').value = ''; state.fall = false; renderP5(); } } : null; }
+  function fReset(staOnly) { return (!staOnly && (state.fst !== 'ALL' || state.fmat !== 'ALL')) || state.fsta !== 'ALL' || state.fq ? { t: staOnly ? 'All STA' : 'All axes', fn: function () { if (!staOnly) { state.fst = 'ALL'; state.fmat = 'ALL'; } state.fsta = 'ALL'; state.fq = ''; $('f-q').value = ''; state.fall = false; renderP5(); } } : null; }
   function renderFFilters() {
     function pick(k) { return function (v) { state[k] = v; state.fax = null; state.fall = false; $('f-tbl').scrollTop = 0; renderP5(); }; }
     var sb = scopeF('st');
@@ -1357,7 +1429,8 @@
     var mb = scopeF('mat');
     segRow('f-mat', [{ v: 'ALL', t: 'All', n: mb.length }, { v: 'WITH', t: 'With material', n: mb.filter(function (f) { return f.mat !== 'NONE'; }).length, icon: 'box' }]
       .concat(FMO.map(function (k) { return { v: k, t: FMAT[k].s, n: mb.filter(function (f) { return f.mat === k; }).length, dot: k === 'NONE' ? 'var(--track)' : FMAT[k].c, tip: FMAT[k].t }; })), state.fmat, pick('fmat'));
-    var ab = scopeF('sta');
+    var axv = state.fview === 'axis', ab = scopeF(axv ? 'sta' : 'st mat sta');
+    $('f-st').parentNode.style.display = axv ? '' : 'none'; $('f-mat').parentNode.style.display = axv ? '' : 'none';
     segRow('f-sta', [{ v: 'ALL', t: 'All', n: ab.length }].concat(fStas().map(function (k) { return { v: k, t: k, n: ab.filter(function (f) { return f.sta === k; }).length }; })), state.fsta, pick('fsta'));
   }
   function renderFKpi(list) {
@@ -1373,8 +1446,8 @@
     kb.appendChild(statCard('alert', 'Material waiting', nf(wait.length), '', [wait.length ? badge('warn', 'on site · foundation not ready') : 'material on site · foundation not ready']));
     kb.appendChild(statCard('ship', 'Foundation waiting', nf(fwait.length), '', [nf(fwait.filter(function (f) { return f.mat === 'OFF'; }).length) + ' in transit · ' + nf(fwait.filter(function (f) { return f.mat === 'NONE'; }).length) + ' not in packing lists']));
     Array.prototype.forEach.call(kb.children, function (c, i) {
-      var go0 = [function () { state.fmat = 'WITH'; state.fst = 'ALL'; }, function () { state.fmat = 'ON'; state.fst = 'ALL'; state.fsort = 'gap'; }, function () { state.fmat = 'WITH'; state.fst = 'ALL'; state.fsort = 'gap'; }, function () { state.fmat = 'ALL'; state.fst = 'ALL'; state.fsort = 'gap'; }][i];
-      c.classList.add('lg-kclick'); c.title = 'Show these axes'; rowKeys(c, function () { go0(); state.fax = null; state.fall = false; renderP5(); });
+      var go0 = [function () { state.fview = 'axis'; state.fmat = 'WITH'; state.fst = 'ALL'; }, function () { state.fview = 'site'; }, function () { state.fview = 'site'; }, function () { state.fview = 'ready'; }][i];
+      c.classList.add('lg-kclick'); c.title = ['Axis register: axes with material', 'Material on site → foundation (foundation ready first)', 'Material on site → foundation (foundation not ready)', 'Foundation ready → material not on site'][i]; rowKeys(c, function () { go0(); state.fax = null; state.fall = false; renderP5(); });
     });
   }
   function renderFMx() {
@@ -1393,7 +1466,7 @@
         var n = list.filter(function (f) { return f.st === st && f.mat === k; }).length; n0 += n; tot[k] += n;
         var cls = 'cell' + (!n ? ' z' : rd && k === 'ON' ? ' g' : rd && k === 'PART' ? ' g2' : !rd && (k === 'ON' || k === 'PART') ? ' w' : rd && (k === 'OFF' || k === 'NONE') ? ' b' : '') + (state.fst === st && state.fmat === k ? ' on' : '');
         var td = el('td', cls, n ? nf(n) : '·');
-        if (n) { td.title = n + ' axes · ' + st + ' · ' + FMAT[k].t; td.tabIndex = 0; td.addEventListener('click', function () { state.fst = st; state.fmat = k; state.fax = null; state.fall = false; renderP5(); }); }
+        if (n) { td.title = n + ' axes · ' + st + ' · ' + FMAT[k].t; td.tabIndex = 0; td.addEventListener('click', function () { state.fst = st; state.fmat = k; state.fview = 'axis'; state.fax = null; state.fall = false; renderP5(); }); }
         r.appendChild(td);
       });
       r.appendChild(el('td', 'cum', nf(n0))); tb.appendChild(r);
@@ -1420,8 +1493,16 @@
     sw.appendChild(lg); box.appendChild(sw);
     var J = fJoin(), nt = [];
     nt.push('Axis = column ' + FD.axisCol + ' · status = column ' + FD.statusCol + ' · ' + nf(FD.list.length) + ' foundations, ' + nf(Object.keys(FD.by).length) + ' axis codes · source: ' + (FSRCN.name || 'embedded snapshot') + (FSRCN.at ? ' (' + hhmm(FSRCN.at) + ')' : ''));
-    nt.push(nf(J.matched) + ' of ' + nf(J.axisLike) + ' material lines with an axis-type drawing number are linked to a foundation.');
+    var nN = Object.keys(J.near), nA = Object.keys(J.amb), nNl = nN.reduce(function (s0, k) { return s0 + J.near[k].n; }, 0);
+    nt.push(nf(J.matched) + ' of ' + nf(J.axisLike) + ' material lines with an axis code in the drawing number are linked to a foundation' + (nNl ? ' (' + nf(nNl) + ' through a 1-character typo, listed below)' : '') + '.');
+    var sgs = Object.keys(FD.segs).filter(function (c0) { return FD.segs[c0].lines.length; }).sort();
+    if (J.segN) nt.push(nf(J.segN) + ' lines have a segment drawing without axis number (e.g. 02J3A-7H-6) and belong to every foundation of that segment: ' + sgs.map(function (c0) { var S = FD.segs[c0]; return c0 + ' ' + nf(S.lines.length) + ' lines → ' + nf(S.fs.length) + ' foundations'; }).join(' · ') + '.');
     Object.keys(J.unm).sort().forEach(function (pf) { var u = J.unm[pf]; nt.push(nf(u.n) + ' line(s) ' + (pf === '01' ? 'of OLC-1 (drawings 01…)' : pf === '02' ? 'of OLC-2' : 'with prefix ' + pf) + ' have no foundation in this sheet — e.g. ' + u.ex.join(', ') + '.'); });
+    Object.keys(J.segU).sort().forEach(function (pf) { nt.push(nf(J.segU[pf]) + ' segment-level line(s) ' + (pf === '01' ? 'of OLC-1 (e.g. 01J3-1H-3)' : 'with prefix ' + pf) + ' have no segment in this sheet.'); });
+    if (FD.fixes.length) nt.push('Typo fixed: ' + nf(FD.fixes.length) + ' axis ID(s) are used twice in the sheet and the Segment ID shows which one is wrong — ' + FD.fixes.slice(0, 3).map(function (x0) { return x0.f.raw0 + ' (segment ' + x0.seg + ', ' + x0.f.sta + ') → ' + x0.f.raw; }).join(' · ') + (FD.fixes.length > 3 ? ' …' : '') + '. Please correct the foundation sheet.');
+    nN.slice(0, 5).forEach(function (k) { var q = J.near[k]; nt.push('1-character typo linked: drawing ' + q.ex + ' (' + q.from + ') ≈ axis ' + q.to + ' · ' + nf(q.n) + ' line(s).'); });
+    if (nN.length > 5) nt.push('… ' + nf(nN.length - 5) + ' more 1-character links (see Print mapping / Excel mapping).');
+    if (nA.length) nt.push(nf(nA.length) + ' drawing code(s) are 1 character from more than one axis and are NOT linked (e.g. ' + nA.slice(0, 3).map(function (k) { return k + ' → ' + J.amb[k].slice(0, 3).join(' / '); }).join(' · ') + ').');
     if (FD.dup.length) nt.push(nf(FD.dup.length) + ' axis ID(s) appear twice in the sheet (e.g. ' + FD.dup.slice(0, 3).join(', ') + ') — both foundations are shown.');
     if (FD.bad.length) nt.push(nf(FD.bad.length) + ' value(s) in the axis column are not axis IDs (e.g. ' + FD.bad.slice(0, 3).join(', ') + ').');
     FD.notes.concat(FSRCN.notes).forEach(function (x0) { nt.push(x0); });
@@ -1447,13 +1528,13 @@
     else if (srt === 'gap') l2.sort(function (a, b) { return fGap(a) - fGap(b) || a.n - b.n; });
     headBack($('f-head'), 'Axis register', nf(l2.length) + ' foundation(s)' + (fName() ? ' · ' + fName() : ''), fReset(),
       'One row per foundation of the foundation sheet, in sheet order. Material = packing-list lines whose drawing number starts with the axis ID (O / 0 treated alike, ranges such as "~ 5" expanded). Click a row for its material lines.');
-    fActions($('f-head'), l2);
+    fActions($('f-head'), l2, false, 'axis');
     var t = el('table', 'lt'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
     heads(tr, [['Axis ID', 'c-nm2'], ['STA · chainage', 'c-desc'], ['Area · earth works', 'c-desc'], ['Foundation', 'c-st'], ['Material position', 'c-st'], ['Pkgs'], ['Lines'], ['Material status', 'c-desc'], ['Remark', 'lg-wrap'], ['']]);
     var cap = state.fall ? l2.length : Math.min(l2.length, 300);
     l2.slice(0, cap).forEach(function (f) {
       var r = el('tr', 'go'), c0 = el('td', 'c-nm2'); c0.appendChild(el('span', 'lg-mono', f.raw));
-      var sg = [f.keys.length > 1 ? f.keys.length + ' axes' : '', f.grp, f.cls, f.typ].filter(Boolean).join(' · '); if (sg) c0.appendChild(el('small', null, sg)); r.appendChild(c0);
+      var sg = [f.fix ? 'sheet: ' + f.raw0 + ' (typo fixed)' : '', f.nrs ? '≈ ' + f.nrs : '', f.keys.length > 1 ? f.keys.length + ' axes' : '', f.grp, f.cls, f.typ].filter(Boolean).join(' · '); if (sg) c0.appendChild(el('small', null, sg)); r.appendChild(c0);
       var c1 = el('td', 'c-desc', f.sta); if (f.ch) c1.appendChild(el('small', null, f.ch)); r.appendChild(c1);
       var c3 = el('td', 'c-desc', f.area || '—'); if (f.earth) c3.appendChild(el('small', null, f.earth)); r.appendChild(c3);
       var c4 = el('td', 'c-st'); c4.appendChild(fChip(f.st)); r.appendChild(c4);
@@ -1482,6 +1563,16 @@
     gs.appendChild(gateBox(f.mat === 'ON' ? 'ok' : f.mat === 'PART' ? 'part' : 'no', 'box', 'Material', FMAT[f.mat].t, f.pks.length ? nf(f.pks.length) + ' package(s) · ' + nf(f.lines.length) + ' line(s)' : 'no drawing ' + f.keys[0] + '… in Batch 4–5'));
     wrap.appendChild(gs);
     if (f.rmU) { var nu = el('div', 'lg-next'); nu.innerHTML = '<b>Upper structure:</b> ' + esc(f.rmU); wrap.appendChild(nu); }
+    var nx = [];
+    if (f.fix) nx.push('<b>Axis ID in the sheet:</b> ' + esc(f.raw0) + ' — read as ' + esc(f.raw) + ' (' + esc(f.fix) + '; the same ID is also used in another segment).');
+    if (f.nrs) nx.push('<b>Linked with a 1-character typo:</b> ' + esc(f.nrs) + ' (drawing code ≈ axis ID).');
+    var S0 = FD.segs[segOfKey(f.keys[0])];
+    if (S0 && S0.lines.length) {
+      var sl = {}; S0.lines.forEach(function (x) { if (x.p.onsite) { var k0 = lgName(x.p); sl[k0] = (sl[k0] || 0) + 1; } });
+      nx.push('<b>Segment material ' + esc(S0.code) + '</b> (drawings without axis number, for all ' + nf(S0.fs.length) + ' foundations of the segment, ' + nf(S0.rd) + ' ready): ' + nf(S0.lines.length) + ' lines in ' + nf(S0.pks.length) + ' packages · on site ' + nf(S0.on) +
+        (S0.on ? ' (' + esc(Object.keys(sl).sort().map(function (k0) { return k0 + ' ' + nf(sl[k0]); }).join(' · ')) + ')' : '') + '.');
+    }
+    if (nx.length) { var nb0 = el('div', 'lg-next'); nb0.innerHTML = nx.join('<br>'); wrap.appendChild(nb0); }
     var t = el('table', 'lt'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
     heads(tr, [['Package', 'c-nm2'], ['Position', 'c-desc'], ['Status', 'c-st'], ['MDR', 'c-sc'], ['Drawing No', 'c-code'], ['Description', 'lg-wrap'], ['Qty'], ['Unit', 'c-sc'], ['Total wt (kg)'], ['']]);
     if (!f.lines.length) { var er = el('tr'), ec = el('td', 'z', 'No packing-list line has a drawing number of this axis (' + f.keys.join(', ') + ').'); ec.colSpan = 10; er.appendChild(ec); tb.appendChild(er); }
@@ -1522,16 +1613,30 @@
         '</td><td class="ds">' + (dws.length ? dws.map(function (d) { return '<span>' + esc(d) + '</span>'; }).join('') : '<i class="z">—</i>') + '</td></tr>';
     });
     var nm = list.filter(function (f) { return f.mat !== 'NONE'; }).length;
-    return docShell((list.length === 1 ? list[0].raw : fName() || 'All axes') + ' · foundation × material', nf(list.length) + ' foundation(s) · ' + nf(nm) + ' with material', cols([13, 15, 12, 13, 5, 5, 37]),
+    return docShell((list.length === 1 ? list[0].raw : fName() || 'All axes') + ' · foundation register', nf(list.length) + ' foundation(s) · ' + nf(nm) + ' with material', cols([13, 15, 12, 13, 5, 5, 37]),
       ['Axis · STA', 'Foundation status', 'Area · earth works', 'Material', 'Pkgs', 'Lines', 'Drawing numbers'], '<tbody>' + rows.join('') + '</tbody>',
       'tr.ix{break-inside:auto}tr.ix td{padding:3pt 4pt}tr.ix b{font:700 8.6pt Consolas,"Courier New",monospace;display:block}tr.ix small{display:block}' +
-      'i.fs{display:inline-block;width:7pt;height:7pt;border-radius:1.5pt;margin-right:4pt;vertical-align:-.5pt}td.ds span{display:inline-block;margin:0 8pt 0 0;font:700 7.6pt Consolas,"Courier New",monospace;white-space:nowrap}');
+      'i.fs{display:inline-block;width:7pt;height:7pt;border-radius:1.5pt;margin-right:4pt;vertical-align:-.5pt}td.ds span{display:inline-block;margin:0 8pt 0 0;font:700 7.6pt Consolas,"Courier New",monospace;white-space:nowrap}',
+      { t: 'Foundation register', foot: 'Foundation = foundation sheet (Axis ID · Foundation Works) · material = packing-list lines whose drawing number starts with the axis ID (O = 0, ranges expanded).' });
   }
-  function fActions(box, list, one) {
-    var pb = el('button', 'upb lg-act'); pb.type = 'button'; pb.appendChild(ico('print', 12)); pb.appendChild(document.createTextNode(one ? 'Print axis' : 'Print'));
+  function fActions(box, list, one, mode) {
+    if (!one) {
+      var mp = el('button', 'upb lg-act'); mp.type = 'button'; mp.appendChild(ico('print', 12)); mp.appendChild(document.createTextNode('Print mapping'));
+      mp.title = 'A4 landscape: 1 material on site → foundation per laydown · 2 foundation ready → material not on site · 3 relation checks (STA filter and search apply)';
+      mp.addEventListener('click', function () { printHtml(fMapDoc(scopeF('st mat'))); });
+      var mx = el('button', 'upb lg-act'); mx.type = 'button'; mx.appendChild(ico('dl', 12)); mx.appendChild(document.createTextNode('Excel mapping'));
+      mx.title = 'Excel (.xlsx), 3 sheets: on site → foundation (one row per laydown · package · axis), ready foundations with material missing, relation checks';
+      mx.addEventListener('click', function () {
+        var tag = (fName(true) || 'all').replace(/[\\\/:*?"<>|~]+/g, '-').replace(/\s*·\s*/g, ' ').replace(/\s+/g, ' ').slice(0, 60);
+        xlsxBook(fMapX(scopeF('st mat'))).then(function (blob) { download('Foundation x material mapping ' + tag + ' ' + isoD(R.dd) + '.xlsx', blob); $('f-tip').textContent = 'Excel mapping ready (3 sheets).'; });
+      });
+      box.appendChild(mp); box.appendChild(mx);
+      if (mode !== 'axis') return;
+    }
+    var pb = el('button', 'upb lg-act'); pb.type = 'button'; pb.appendChild(ico('print', 12)); pb.appendChild(document.createTextNode(one ? 'Print axis' : 'Print register'));
     pb.title = 'A4 landscape: axis, foundation status, area, material position and drawing numbers · ' + nf(list.length) + ' foundation(s)';
     pb.addEventListener('click', function () { printHtml(fDoc(list)); });
-    var xb = el('button', 'upb lg-act'); xb.type = 'button'; xb.appendChild(ico('dl', 12)); xb.appendChild(document.createTextNode('Excel'));
+    var xb = el('button', 'upb lg-act'); xb.type = 'button'; xb.appendChild(ico('dl', 12)); xb.appendChild(document.createTextNode(one ? 'Excel' : 'Excel register'));
     xb.title = 'Excel (.xlsx): one row per foundation with its status and the material linked to it';
     xb.addEventListener('click', function () {
       var tag = (list.length === 1 ? list[0].raw : fName() || 'all axes').replace(/[\\\/:*?"<>|~]+/g, '-').replace(/\s*·\s*/g, ' ').replace(/\s+/g, ' ').slice(0, 80);
@@ -1540,6 +1645,220 @@
       });
     });
     box.appendChild(pb); box.appendChild(xb);
+  }
+  /* ---- mapping: material on site → foundation (per laydown) · foundation ready → material not on site ---- */
+  function lgName(p) { return p.lg === NOLOC ? POSL.ONSITE : p.lg; }
+  function wtTxt(kg) { return !kg ? '—' : kg >= 100 ? nf1(kg / 1000) + ' t' : num(kg, 0) + ' kg'; }
+  function vals(o) { return Object.keys(o).map(function (k) { return o[k]; }); }
+  function fHere(f) { return f.pks.filter(function (p) { return p.onsite; }); }
+  function fMiss(f) { return f.pks.filter(function (p) { return !p.onsite; }); }
+  function stBreak(fs) { var o = {}; fs.forEach(function (f) { o[f.st] = (o[f.st] || 0) + 1; }); return fStatuses(fs).map(function (k) { return k + ' ' + nf(o[k]); }).join(' · '); }
+  function areaTxt(fs) { var o = {}; fs.forEach(function (f) { var k = f.area || '—'; o[k] = (o[k] || 0) + 1; }); return Object.keys(o).sort(function (a, b) { return o[b] - o[a]; }).map(function (k) { return k + (fs.length > 1 ? ' ×' + nf(o[k]) : ''); }).join(' · '); }
+  function segTxt(f) { var S = FD.segs[segOfKey(f.keys[0])]; return S && S.lines.length ? 'segment ' + S.code + ': ' + nf(S.on) + ' of ' + nf(S.lines.length) + ' lines on site' : ''; }
+  function fRest(a) {                                /* where the other packages of this axis are */
+    var o = {}, n = 0;
+    a.f.pks.forEach(function (p) { if (a.pk[p.id]) return; n++; var k = p.onsite ? lgName(p) : 'in transit'; o[k] = (o[k] || 0) + 1; });
+    return n ? 'also ' + Object.keys(o).sort().map(function (k) { return k + ' ×' + o[k]; }).join(' · ') : 'all its material is here';
+  }
+  function fMap(list) {
+    var inL = {}, G = {}, gl = [];
+    list.forEach(function (f) { inL[f.n] = 1; });
+    function grp(p) { var g = lgName(p); if (!G[g]) { G[g] = { name: g, ax: [], axi: {}, sg: [], sgi: {}, ln: new Set(), sl: 0, wt: 0, pk: {} }; gl.push(G[g]); } return G[g]; }
+    function add(a, x) { a.pk[x.p.id] = x.p; a.lines.push(x); a.wt += x.it.tw || 0; if (x.it.dw && a.dw.indexOf(x.it.dw) < 0) a.dw.push(x.it.dw); }
+    list.forEach(function (f) {
+      f.lines.forEach(function (x) {
+        if (!x.p.onsite) return;
+        var g = grp(x.p), a = g.axi[f.n] || (g.axi[f.n] = g.ax[g.ax.length] = { f: f, pk: {}, lines: [], wt: 0, dw: [] });
+        add(a, x); if (!g.ln.has(x.it)) { g.ln.add(x.it); g.wt += x.it.tw || 0; } g.pk[x.p.id] = 1;
+      });
+    });
+    Object.keys(FD.segs).sort().forEach(function (c0) {
+      var S = FD.segs[c0]; if (!S.fs.some(function (f) { return inL[f.n]; })) return;
+      S.lines.forEach(function (x) {
+        if (!x.p.onsite) return;
+        var g = grp(x.p), a = g.sgi[c0] || (g.sgi[c0] = g.sg[g.sg.length] = { S: S, pk: {}, lines: [], wt: 0, dw: [] });
+        add(a, x); g.sl++; g.wt += x.it.tw || 0; g.pk[x.p.id] = 1;
+      });
+    });
+    gl.sort(function (a, b) { return (a.name === POSL.ONSITE) - (b.name === POSL.ONSITE) || (b.ln.size + b.sl) - (a.ln.size + a.sl) || (a.name < b.name ? -1 : 1); });
+    gl.forEach(function (g) { g.ax.sort(function (a, b) { return (b.f.ready ? 1 : 0) - (a.f.ready ? 1 : 0) || a.f.n - b.f.n; }); });
+    return { gs: gl, ready: list.filter(function (f) { return f.ready && f.mat !== 'ON'; }) };
+  }
+  function mRow(tb, n, cls, b, txt) { var r = el('tr', cls), c = el('td'); c.colSpan = n; if (b) c.appendChild(el('b', 'lg-pkno', b)); c.appendChild(el('span', 'lg-pkmeta', txt)); r.appendChild(c); tb.appendChild(r); }
+  function pkCell(ps, loc) {
+    var td = el('td', 'lg-wrap lg-pks');
+    if (!ps.length) { td.textContent = '—'; td.className += ' z'; return td; }
+    ps.forEach(function (p) { var s0 = el('span', 'lg-pkx'); s0.appendChild(el('b', 'lg-mono', p.no)); s0.appendChild(el('i', p.st === 'READY' && !loc ? 'ok' : null, loc ? lgName(p) : p.st === 'READY' ? ST[p.st].s : (p.onsite ? ST[p.st].s + ' · ' : p.st === 'AWAIT' ? '' : ST[p.st].s + ' · ') + 'MDR ' + (MDRL[p.mdr] || p.mdr))); td.appendChild(s0); });
+    return td;
+  }
+  function axHead(r, f) {
+    var c0 = el('td', 'c-nm2'); c0.appendChild(el('span', 'lg-mono', f.raw)); c0.appendChild(el('small', null, [f.fix ? 'sheet: ' + f.raw0 : '', f.sta, f.ch].filter(Boolean).join(' · '))); r.appendChild(c0);
+    var c1 = el('td', 'c-st'); c1.appendChild(fChip(f.st)); if (f.rmF) c1.title = f.rmF; r.appendChild(c1);
+    var c2 = el('td', 'c-desc', f.area || '—'); if (f.earth) c2.appendChild(el('small', null, f.earth)); r.appendChild(c2);
+  }
+  function axOpen(r, f) { var ch = el('td', 'c-chev'); ch.appendChild(chevI()); r.appendChild(ch); r.title = 'Open axis ' + f.raw; rowKeys(r, function () { state.fax = f.n; renderP5(); $('f-tbl').scrollTop = 0; }); }
+  function renderFSite(list) {
+    var M = fMap(list), wrap = clear($('f-tbl')), nAx = 0, nRd = 0, nLn = 0;
+    M.gs.forEach(function (g) { nAx += g.ax.length; nRd += g.ax.filter(function (a) { return a.f.ready; }).length; nLn += g.ln.size + g.sl; });
+    headBack($('f-head'), 'Material on site → foundation', nf(M.gs.length) + ' position(s) · ' + nf(nAx) + ' axis rows, ' + nf(nRd) + ' with foundation ready · ' + nf(nLn) + ' lines', fReset(true),
+      'Every material line on site (laydown from the Summary Remark / site tags), with the foundation of its axis (drawing number → Axis ID) and the area status. Per laydown: foundation ready first (erection front), then not ready (material waits), then segment material (drawings without axis number, e.g. 02J3A-7H-6, which serve all foundations of the segment).');
+    fActions($('f-head'), list, false, 'map');
+    var t = el('table', 'lt lg-map'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
+    heads(tr, [['Axis · STA', 'c-nm2'], ['Foundation', 'c-st'], ['Area · earth works', 'c-desc'], ['Packages here', 'lg-wrap'], ['Lines'], ['Weight'], ['Rest of the axis material', 'lg-rest'], ['']]);
+    if (!M.gs.length) mRow(tb, 8, '', '', 'No material on site for these foundations.');
+    M.gs.forEach(function (g) {
+      var rdy = g.ax.filter(function (a) { return a.f.ready; });
+      mRow(tb, 8, 'lg-mg', g.name, [nf(g.ax.length) + ' axes (' + nf(rdy.length) + ' foundation ready)', nf(g.ln.size) + ' axis lines', g.sl ? nf(g.sl) + ' segment lines' : '', nf1(g.wt / 1000) + ' t'].filter(Boolean).join(' · '));
+      [[rdy, 'Foundation ready — erection front: the material can go to its axis', 'g'], [g.ax.filter(function (a) { return !a.f.ready; }), 'Foundation not ready — the material waits at ' + g.name, 'w']].forEach(function (s0) {
+        if (!s0[0].length) return;
+        mRow(tb, 8, 'lg-ms ' + s0[2], '', s0[1] + ' · ' + nf(s0[0].length) + ' axes');
+        s0[0].forEach(function (a) {
+          var r = el('tr', 'go'); axHead(r, a.f); r.appendChild(pkCell(vals(a.pk))); r.appendChild(el('td', 'cum', nf(a.lines.length))); r.appendChild(el('td', '', wtTxt(a.wt)));
+          r.appendChild(el('td', 'lg-rest' + (a.f.mat === 'ON' ? '' : ' lg-warn'), fRest(a))); axOpen(r, a.f); tb.appendChild(r);
+        });
+      });
+      if (g.sg.length) {
+        mRow(tb, 8, 'lg-ms s', '', 'Segment material — drawing without axis number, serves every foundation of the segment · ' + nf(g.sg.length) + ' segment(s)');
+        g.sg.forEach(function (a) {
+          var S = a.S, r = el('tr', 'lg-sgr'), c0 = el('td', 'c-nm2'); c0.appendChild(el('span', 'lg-mono', S.code + '-…')); c0.appendChild(el('small', null, segSta(S))); r.appendChild(c0);
+          var c1 = el('td', 'c-st'); c1.appendChild(el('b', null, nf(S.rd) + ' of ' + nf(S.fs.length) + ' ready')); c1.title = stBreak(S.fs); r.appendChild(c1);
+          r.appendChild(el('td', 'c-desc', areaTxt(S.fs))); r.appendChild(pkCell(vals(a.pk))); r.appendChild(el('td', 'cum', nf(a.lines.length))); r.appendChild(el('td', '', wtTxt(a.wt)));
+          r.appendChild(el('td', 'lg-rest', 'segment total ' + nf(S.lines.length) + ' lines · ' + nf(S.on) + ' on site')); r.appendChild(el('td')); tb.appendChild(r);
+        });
+      }
+    });
+    hd.appendChild(tr); t.appendChild(hd); t.appendChild(tb); wrap.appendChild(t);
+    $('f-tip').textContent = 'Click an axis for all its material lines · Print mapping / Excel mapping: this list + foundations ready without material + relation checks';
+  }
+  function renderFReady(list) {
+    var M = fMap(list), rd = M.ready, wrap = clear($('f-tbl'));
+    headBack($('f-head'), 'Foundation ready → material', nf(rd.length) + ' ready foundation(s) without all their material on site', fReset(true),
+      'Foundations whose status counts as ready (setting "Pondasi Siap") but whose material is not (completely) on site: partly on site, still in transit, or not in the packing lists at all.');
+    fActions($('f-head'), list, false, 'map');
+    var t = el('table', 'lt lg-map'), hd = el('thead'), tr = el('tr'), tb = el('tbody');
+    heads(tr, [['Axis · STA', 'c-nm2'], ['Foundation', 'c-st'], ['Area · earth works', 'c-desc'], ['On site', 'lg-wrap'], ['Not on site yet', 'lg-wrap'], ['Segment material', 'lg-rest'], ['']]);
+    if (!rd.length) mRow(tb, 7, '', '', 'Every ready foundation has its material on site.');
+    [['PART', 'Material partly on site — packages still missing'], ['OFF', 'Material in transit — nothing on site yet'], ['NONE', 'No material in the packing lists (Batch 4–5) — follow up procurement / shipping']].forEach(function (G0) {
+      var fs = rd.filter(function (f) { return f.mat === G0[0]; }); if (!fs.length) return;
+      mRow(tb, 7, 'lg-mg', FMAT[G0[0]].s, G0[1] + ' · ' + nf(fs.length) + ' foundation(s)');
+      fs.forEach(function (f) {
+        var r = el('tr', 'go'); axHead(r, f); r.appendChild(pkCell(fHere(f), true));
+        var c4 = pkCell(fMiss(f)); if (f.mat === 'NONE') { c4.textContent = 'no drawing ' + f.keys[0] + '… in the packing lists'; c4.className += ' z'; } r.appendChild(c4);
+        r.appendChild(el('td', 'lg-rest', segTxt(f) || '—')); axOpen(r, f); tb.appendChild(r);
+      });
+    });
+    hd.appendChild(tr); t.appendChild(hd); t.appendChild(tb); wrap.appendChild(t);
+    $('f-tip').textContent = 'Click an axis for its material lines · Print mapping / Excel mapping include this list';
+  }
+  function fChecks() {                               /* relation checks for the print and the Excel */
+    var J = fJoin(), o = [];
+    FD.fixes.forEach(function (x0) { o.push(['Register typo fixed (Segment ID)', x0.f.raw0, x0.f.raw, 1, x0.f.sta + ' · Segment ID ' + x0.seg + ' · the same ID is used in another segment']); });
+    Object.keys(J.near).forEach(function (k) { var q = J.near[k]; o.push(['1-character typo linked', q.from, q.to, q.n, 'e.g. drawing ' + q.ex]); });
+    Object.keys(J.amb).forEach(function (k) { o.push(['1 character from several axes — not linked', k, J.amb[k].join(' / '), '', '']); });
+    Object.keys(FD.segs).sort().forEach(function (c0) { var S = FD.segs[c0]; if (S.lines.length) o.push(['Segment drawing (no axis number)', c0 + '-…', nf(S.fs.length) + ' foundations of ' + c0, S.lines.length, nf(S.on) + ' lines on site · ' + nf(S.rd) + ' foundations ready']); });
+    Object.keys(J.unm).sort().forEach(function (pf) { o.push(['No foundation in the sheet', 'drawings ' + pf + '…', '', J.unm[pf].n, (pf === '01' ? 'OLC-1 · ' : '') + 'e.g. ' + J.unm[pf].ex.join(', ')]); });
+    Object.keys(J.segU).sort().forEach(function (pf) { o.push(['Segment not in the sheet', 'drawings ' + pf + '…', '', J.segU[pf], pf === '01' ? 'OLC-1 segment drawings' : '']); });
+    FD.dup.forEach(function (k) { o.push(['Axis ID used twice (not resolved)', k, '', FD.by[k].length, FD.by[k].map(function (f) { return f.sta; }).join(' / ')]); });
+    FD.bad.forEach(function (v) { o.push(['Not an axis ID (column ' + FD.axisCol.split(' ')[0] + ')', v, '', '', '']); });
+    return o;
+  }
+  function dwPack(ds) {                              /* print: "02J3A-7H-1", "-2", "-3", "-9" → "02J3A-7H- 1–3, 9" (every number kept) */
+    var g = {}, o = [];
+    ds.forEach(function (d) { var m = /^(.+-)([1-9]\d{0,3})$/.exec(d); if (!m) { o.push({ s: d }); return; } if (!g[m[1]]) { g[m[1]] = []; o.push({ k: m[1] }); } g[m[1]].push(+m[2]); });
+    return o.map(function (x) {
+      if (x.s != null) return '<span>' + esc(x.s) + '</span>';
+      var ns = g[x.k].sort(function (a, b) { return a - b; }); if (ns.length === 1) return '<span>' + esc(x.k + ns[0]) + '</span>';
+      var rs = [], a = ns[0], b = ns[0];
+      for (var i = 1; i <= ns.length; i++) { var n = ns[i]; if (n === b + 1) b = n; else { rs.push(a === b ? String(a) : b === a + 1 ? a + ', ' + b : a + '–' + b); a = b = n; } }
+      return '<span>' + esc(x.k) + '<em>' + rs.join(', ') + '</em></span>';
+    }).join(' ');
+  }
+  function fMapDoc(list) {
+    var M = fMap(list), nm = fName(true), cnt = { PART: 0, OFF: 0, NONE: 0 };
+    M.ready.forEach(function (f) { cnt[f.mat]++; });
+    function pks(ps, loc) {                         /* packages grouped by status (or by laydown), one run per group */
+      if (!ps.length) return '<i class="z">—</i>';
+      var g = {}, o = [];
+      ps.forEach(function (p) { var k = loc ? lgName(p) : ST[p.st].s + (p.st === 'READY' ? '' : ' · MDR ' + (MDRL[p.mdr] || p.mdr)); if (!g[k]) { g[k] = []; o.push(k); } g[k].push(p.no); });
+      return o.map(function (k) {
+        var ns = g[k], a = ns.length > 1 ? ns[0] : '';           /* shared start of the package numbers, e.g. "P5-HHI-8321-", written once */
+        ns.forEach(function (s0) { var i = 0; while (i < a.length && a.charAt(i) === s0.charAt(i)) i++; a = a.slice(0, i); });
+        var j = a.lastIndexOf('-'), pf = j >= 5 ? a.slice(0, j + 1) : '';
+        return '<span class="p"><i>' + esc(k) + ' (' + ns.length + ')' + (pf ? ', ' + esc(pf) + '…' : '') + ':</i> ' + ns.map(function (n0) { return '<b>' + esc(n0.slice(pf.length)) + '</b>'; }).join(' · ') + '</span>';
+      }).join('');
+    }
+    function dws(a) { return dwPack(a.dw); }
+    function ax(f, short) {
+      return '<td><b class="ax">' + esc(f.raw) + '</b><small>' + esc([f.sta, f.ch].filter(Boolean).join(' · ')) + '</small>' + (f.fix ? '<small class="fx">sheet: ' + esc(f.raw0) + ' (typo fixed)</small>' : '') + (f.nrs ? '<small class="fx">≈ ' + esc(f.nrs) + '</small>' : '') +
+        '</td><td><i class="fs" style="background:' + fMeta(f.st).c + '"></i>' + esc(f.st) + (f.rmF && !short ? '<small>' + esc(f.rmF) + '</small>' : '') + '</td><td>' + esc(f.area || '—') + (f.earth ? '<small>' + esc(f.earth) + '</small>' : '') + '</td>';
+    }
+    var sum = '<table class="sm">' + cols([28, 12, 14, 12, 12, 12, 10]) + '<thead><tr><th>Material on site · position</th><th>Axes</th><th>Foundation ready</th><th>Not ready</th><th>Axis lines</th><th>Segment lines</th><th>t</th></tr></thead><tbody>' +
+      M.gs.map(function (g) { var r0 = g.ax.filter(function (a) { return a.f.ready; }).length; return '<tr><td><b>' + esc(g.name) + '</b></td><td class="n">' + nf(g.ax.length) + '</td><td class="n">' + nf(r0) + '</td><td class="n">' + nf(g.ax.length - r0) + '</td><td class="n">' + nf(g.ln.size) + '</td><td class="n">' + nf(g.sl) + '</td><td class="n">' + nf1(g.wt / 1000) + '</td></tr>'; }).join('') +
+      '</tbody></table><table class="sm">' + cols([64, 36]) + '<thead><tr><th>Foundation ready · material not on site</th><th>Foundations</th></tr></thead><tbody>' +
+      ['PART', 'OFF', 'NONE'].map(function (k) { return '<tr><td>' + esc({ PART: 'Partly on site (packages missing)', OFF: 'In transit (nothing on site)', NONE: 'Not in the packing lists (Batch 4–5)' }[k]) + '</td><td class="n">' + nf(cnt[k]) + '</td></tr>'; }).join('') +
+      '<tr class="t"><td>Total</td><td class="n">' + nf(M.ready.length) + '</td></tr></tbody></table>';
+    var b1 = M.gs.map(function (g) {
+      var rdy = g.ax.filter(function (a) { return a.f.ready; }), h = '<tr class="g"><td colspan="7"><b>' + esc(g.name) + '</b>' + esc(nf(g.ax.length) + ' axes · ' + nf(rdy.length) + ' foundation ready · ' + nf(g.ln.size) + ' axis lines' + (g.sl ? ' · ' + nf(g.sl) + ' segment lines' : '') + ' · ' + nf1(g.wt / 1000) + ' t') + '</td></tr>';
+      [[rdy, 'Foundation ready — erection front: material can go to its axis', 'r'], [g.ax.filter(function (a) { return !a.f.ready; }), 'Foundation not ready — material waits at ' + g.name, 'n']].forEach(function (s0) {
+        if (!s0[0].length) return;
+        h += '<tr class="s ' + s0[2] + '"><td colspan="7">' + esc(s0[1] + ' · ' + nf(s0[0].length) + ' axes') + '</td></tr>' + s0[0].map(function (a) {
+          return '<tr class="a">' + ax(a.f) + '<td>' + pks(vals(a.pk)) + '</td><td class="n">' + nf(a.lines.length) + '<small>' + wtTxt(a.wt) + '</small></td><td class="ds">' + dws(a) + '</td><td>' + esc(fRest(a)) + '</td></tr>';
+        }).join('');
+      });
+      if (g.sg.length) h += '<tr class="s g2"><td colspan="7">Segment material — drawing without axis number, serves every foundation of the segment</td></tr>' + g.sg.map(function (a) {
+        var S = a.S; return '<tr class="sg"><td><b class="ax">' + esc(S.code) + '-…</b><small>' + esc(segSta(S)) + '</small></td><td>' + nf(S.rd) + ' of ' + nf(S.fs.length) + ' foundations ready<small>' + esc(stBreak(S.fs)) + '</small></td><td>' + esc(areaTxt(S.fs)) +
+          '</td><td>' + pks(vals(a.pk)) + '</td><td class="n">' + nf(a.lines.length) + '<small>' + wtTxt(a.wt) + '</small></td><td class="ds">' + dws(a) + '</td><td>segment total ' + nf(S.lines.length) + ' lines · ' + nf(S.on) + ' on site</td></tr>';
+      }).join('');
+      return '<tbody>' + h + '</tbody>';
+    }).join('') || '<tbody><tr><td colspan="7" class="z">No material on site for these foundations.</td></tr></tbody>';
+    var b2 = ['PART', 'OFF', 'NONE'].map(function (k) {
+      var fs = M.ready.filter(function (f) { return f.mat === k; }), st0 = null; if (!fs.length) return '';
+      return '<tbody><tr class="g"><td colspan="6"><b>' + esc(FMAT[k].s) + '</b>' + esc({ PART: 'packages still missing', OFF: 'nothing on site yet', NONE: 'no drawing of the axis in the packing lists (Batch 4–5)' }[k] + ' · ' + nf(fs.length) + ' foundations') + '</td></tr>' +
+        fs.map(function (f) {
+          var sh = f.sta !== st0 ? '<tr class="s t2"><td colspan="6">' + esc(f.sta) + '</td></tr>' : ''; st0 = f.sta;
+          return sh + '<tr class="r"><td><b class="ax">' + esc(f.raw) + '</b><small>' + esc(f.ch || '') + '</small>' + (f.fix ? '<small class="fx">sheet: ' + esc(f.raw0) + ' (typo fixed)</small>' : '') + (f.nrs ? '<small class="fx">≈ ' + esc(f.nrs) + '</small>' : '') +
+            '</td><td><i class="fs" style="background:' + fMeta(f.st).c + '"></i>' + esc(f.st) + '</td><td>' + esc([f.area, f.earth].filter(Boolean).join(' · ') || '—') + '</td><td>' + pks(fHere(f), true) + '</td><td>' +
+            (k === 'NONE' ? '<i class="z">not in the packing lists</i>' : pks(fMiss(f))) + '</td><td>' + esc(segTxt(f) || '—') + '</td></tr>';
+        }).join('') + '</tbody>';
+    }).join('') || '<tbody><tr><td colspan="6" class="z">Every ready foundation has its material on site.</td></tr></tbody>';
+    var ck = fChecks();
+    var html = '<div class="sum">' + sum + '</div>' +
+      '<h2>1 · Material on site → foundation</h2><p class="i">Per laydown / position: every axis with material there — foundation status, area status, the packages and drawing numbers at this position, and where the rest of the axis material is. Foundation ready first (erection front), then not ready (material waits). Segment material (drawing without axis number, e.g. 02J3A-7H-6) is listed per segment.</p>' +
+      '<table class="m1">' + cols([11, 13, 9, 22, 5, 28, 12]) + '<thead><tr><th>Axis · STA</th><th>Foundation status</th><th>Area · earth works</th><th>Packages here</th><th>Lines</th><th>Drawing numbers here</th><th>Rest of the axis material</th></tr></thead>' + b1 + '</table>' +
+      '<h2 class="pb">2 · Foundation ready → material not (fully) on site</h2><p class="i">Foundations whose status counts as ready (setting "Pondasi Siap": ' + esc(P_FREADY.join(', ')) + ') but whose material is not completely on site.</p>' +
+      '<table class="m2">' + cols([11, 12, 13, 22, 26, 16]) + '<thead><tr><th>Axis · STA</th><th>Foundation status</th><th>Area · earth works</th><th>On site</th><th>Not on site yet (status · MDR)</th><th>Segment material</th></tr></thead>' + b2 + '</table>' +
+      '<h2>3 · Relation checks (foundation sheet ↔ drawing numbers)</h2><table class="sm">' + cols([26, 13, 18, 8, 35]) + '<thead><tr><th>Check</th><th>Code</th><th>Linked to</th><th>Lines</th><th>Detail</th></tr></thead><tbody>' +
+      (ck.map(function (r) { return '<tr><td>' + esc(r[0]) + '</td><td><b class="ax">' + esc(r[1]) + '</b></td><td>' + esc(r[2]) + '</td><td class="n">' + (r[3] === '' ? '' : nf(r[3])) + '</td><td>' + esc(r[4]) + '</td></tr>'; }).join('') || '<tr><td colspan="5" class="z">No remarks.</td></tr>') + '</tbody></table>';
+    var nAx = 0; M.gs.forEach(function (g) { nAx += g.ax.length; });
+    return docShell(nm || 'All foundations', nf(M.gs.length) + ' position(s) · ' + nf(nAx) + ' axis rows · ' + nf(M.ready.length) + ' ready without material · foundation data: ' + esc(FSRCN.kind === 'live' ? 'live ' + hhmm(FSRCN.at) : 'snapshot'), '', [], '',
+      'h2{font-size:11pt;margin:12pt 0 3pt;color:#1e2b25}h2.pb{break-before:page}p.i{margin:0 0 5pt;color:#4a5750;font-size:7.8pt}.sum{display:flex;gap:14pt;align-items:flex-start}.sum table{width:auto;flex:1}' +
+      'table.sm td,table.sm th{padding:2pt 5pt}tr.t td{font-weight:700;border-top:1pt solid #263d33}tr.g td{background:#e3ebe1;border-top:1.4pt solid #263d33;padding:4pt;font-size:8.2pt}tr.g b{font-size:10pt;margin-right:8pt}' +
+      'tr.s td{font-weight:700;font-size:7.6pt;padding:3pt 4pt;letter-spacing:.02em}tr.s.r td{color:#1f6b43;background:#eef6f0}tr.s.n td{color:#8a5a12;background:#fbf3e6}tr.s.g2 td{color:#3b4a6b;background:#eef1f7}tr.s.t2 td{color:#33413a;background:#f4f6f3;font-weight:600}' +
+      'tr.a,tr.r,tr.sg{break-inside:avoid}b.ax{font:700 8.6pt Consolas,"Courier New",monospace;display:block}td small{display:block}small.fx{color:#a1531c}' +
+      'span.p{display:block}span.p i{font-style:normal;color:#5d6a63;font-size:7.2pt}span.p b{font:700 7.6pt Consolas,"Courier New",monospace;white-space:nowrap}' +
+      'td.ds{line-height:1.45}td.ds span{font:700 7.2pt Consolas,"Courier New",monospace;margin-right:3pt}td.ds span em{font:400 7.2pt Arial,sans-serif;color:#33413a;margin-left:1pt}' +
+      'i.fs{display:inline-block;width:7pt;height:7pt;border-radius:1.5pt;margin-right:4pt;vertical-align:-.5pt}',
+      { t: 'Foundation × material mapping', raw: html, foot: 'Foundation = foundation sheet (Axis ID · Foundation Works · Area Status) · material = packing-list lines, position from the Summary Remark / site tags · axis link = drawing number starts with the Axis ID (O = 0, ranges expanded, 1-character typos within the same OLC line linked and listed in section 3).' });
+  }
+  function fMapX(list) {                             /* Excel mapping: 3 sheets */
+    var M = fMap(list), s1 = [['Position', 'Package No', 'Batch', 'Category', 'Package status', 'MDR status', 'Link', 'Axis ID', 'Axis ID in sheet', 'Segment', 'STA ID', 'Chainage', 'Foundation status', 'Foundation ready', 'Area status', 'Earth works', 'Remark foundation', 'Lines', 'Weight (kg)', 'Drawing numbers']];
+    function part(a, p) { var ls = a.lines.filter(function (x) { return x.p === p; }), d = [], w = 0, hw = false; ls.forEach(function (x) { if (x.it.tw != null) { hw = true; w += x.it.tw; } if (x.it.dw && d.indexOf(x.it.dw) < 0) d.push(x.it.dw); }); return { ls: ls, d: d, w: hw ? Math.round(w * 10) / 10 : '' }; }
+    M.gs.forEach(function (g) {
+      g.ax.forEach(function (a) { var f = a.f; vals(a.pk).forEach(function (p) { var q = part(a, p);
+        s1.push([g.name, p.no, p.b, p.c, ST[p.st].s, MDRL[p.mdr] || p.mdr, q.ls.some(function (x) { return x.nr; }) ? 'axis (1-character typo)' : 'axis', f.raw, f.raw0 !== f.raw ? f.raw0 : '', segOfKey(f.keys[0]), f.sta, f.ch, f.st, f.ready ? 'yes' : 'no', f.area, f.earth, f.rmF, q.ls.length, q.w, q.d.join(', ')]); }); });
+      g.sg.forEach(function (a) { var S = a.S; vals(a.pk).forEach(function (p) { var q = part(a, p);
+        s1.push([g.name, p.no, p.b, p.c, ST[p.st].s, MDRL[p.mdr] || p.mdr, 'segment (no axis number)', '', '', S.code, segSta(S), '', stBreak(S.fs), nf(S.rd) + ' of ' + nf(S.fs.length), areaTxt(S.fs), '', '', q.ls.length, q.w, q.d.join(', ')]); }); });
+    });
+    var s2 = [['Axis ID', 'Axis ID in sheet', 'STA ID', 'Chainage', 'Foundation status', 'Remark foundation', 'Area status', 'Earth works', 'Material', 'Packages on site', 'On site at', 'Packages not on site', 'Package numbers not on site', 'MDR of those packages', 'Material lines of the axis', 'Segment material']];
+    M.ready.forEach(function (f) {
+      var h = fHere(f), m = fMiss(f), at = [], md = [];
+      h.forEach(function (p) { if (at.indexOf(lgName(p)) < 0) at.push(lgName(p)); }); m.forEach(function (p) { var x = MDRL[p.mdr] || p.mdr; if (md.indexOf(x) < 0) md.push(x); });
+      s2.push([f.raw, f.raw0 !== f.raw ? f.raw0 : '', f.sta, f.ch, f.st, f.rmF, f.area, f.earth, FMAT[f.mat].t, h.length, at.join(', '), m.length, m.map(function (p) { return p.no; }).join(', '), md.join(', '), f.lines.length, segTxt(f)]);
+    });
+    var s3 = [['Check', 'Code', 'Linked to', 'Lines', 'Detail']].concat(fChecks());
+    return [{ n: 'On site to foundation', r: s1, w: [18, 26, 7, 8, 13, 13, 16, 12, 12, 9, 18, 13, 20, 9, 16, 12, 28, 7, 10, 60] },
+      { n: 'Ready - material missing', r: s2, w: [12, 12, 18, 13, 18, 28, 16, 12, 22, 9, 18, 9, 40, 18, 9, 30] },
+      { n: 'Relation checks', r: s3, w: [34, 16, 22, 8, 50] }];
   }
   function renderP5() {
     var msg = function (t) { clear($('f-kpi')); clear($('f-mx')).appendChild(el('div', 'd-empty', t)); clear($('f-tbl')); clear($('f-head')); };
@@ -1553,11 +1872,15 @@
     if (!R.items) { msg('Loading material lines…'); ensureItems(function () { if (state.page === 5) renderP5(); }); return; }
     fJoin(); renderFFilters();
     var f0 = state.fax != null ? FD.list[state.fax] : null;
+    var vw = state.fview;
     renderFKpi(scopeF('st mat'));
-    setSeg('f-sort', state.fsort); $('f-sort').style.visibility = f0 ? 'hidden' : '';
+    setSeg('f-sort', state.fsort); setSeg('f-view', vw);
+    $('f-sort').style.display = f0 || vw !== 'axis' ? 'none' : ''; $('f-view').style.display = f0 ? 'none' : '';
     if (f0) { $('f-mx').style.display = 'none'; renderFAxis(f0); return; }
-    var nm = fName(); $('f-title').textContent = nm ? nm.charAt(0).toUpperCase() + nm.slice(1) : 'All axes';
-    renderFMx(); renderFList(scopeF());
+    var nm = fName(vw !== 'axis');
+    $('f-title').textContent = vw === 'axis' ? (nm ? nm.charAt(0).toUpperCase() + nm.slice(1) : 'All axes') : (vw === 'site' ? 'Material on site → foundation' : 'Foundation ready → material') + (nm ? ' · ' + nm : '');
+    renderFMx();
+    if (vw === 'site') renderFSite(scopeF('st mat')); else if (vw === 'ready') renderFReady(scopeF('st mat')); else renderFList(scopeF());
   }
   /* loading the foundation sheet: embedded snapshot first, then the sheet (Publish to web CSV, or Sheet ID + tab via gviz) */
   function fSrc() {
@@ -1655,6 +1978,7 @@
   segBind('p-sort', 'psort', function () { if (R) renderP3(); });
   segBind('p-view', 'pview', function () { state.pdall = false; if (R) renderP3(); });
   segBind('f-sort', 'fsort', function () { state.fall = false; if (R) renderP5(); });
+  segBind('f-view', 'fview', function () { state.fax = null; state.fall = false; $('f-tbl').scrollTop = 0; if (R) renderP5(); });
   var fqT = null;
   $('f-q').addEventListener('input', function (e) { clearTimeout(fqT); var v = e.target.value; fqT = setTimeout(function () { state.fq = v.trim(); state.fax = null; state.fall = false; if (R) renderP5(); }, 200); });
   var qT = null;
@@ -1833,4 +2157,10 @@
   window.__pmLogistics = { state: state, model: function () { return R; }, go: go, openPackage: openPackage, agg: agg, openFilter: openFilter, count: function () { return R ? scopeP().length : 0; },
     drawingDoc: function (compact) { return dwgDoc(sortList(scopeP()), compact); }, drawingRows: function () { return dwgRows(sortList(scopeP())); },
     foundation: function () { return FD && R && R.items ? (fJoin(), { fd: FD, join: FJ }) : null; }, foundationDoc: function () { return FD ? fDoc(scopeF()) : null; },
-    foundationRows: function () { return FD ? fRowsX(scopeF()) : null; }, foundationSource: function () { return FSRCN; }, axisKeys: axisKeys, drawingAxes: drawingAxes };
+    foundationRows: function () { return FD ? fRowsX(scopeF()) : null; }, foundationSource: function () { return FSRCN; }, foundationMapDoc: function () { return FD ? fMapDoc(scopeF('st mat')) : null; }, foundationMapRows: function () { return FD ? fMapX(scopeF('st mat')) : null; },
+    foundationMap: function () {
+      if (!FD || !fJoin()) return null;
+      var M = fMap(scopeF('st mat'));
+      return { gs: M.gs.map(function (g) { return { name: g.name, ax: g.ax.map(function (a) { return [a.f.raw, Object.keys(a.pk).length, a.lines.length]; }), rdy: g.ax.filter(function (a) { return a.f.ready; }).length, lines: g.ln.size,
+        sg: g.sg.map(function (a) { return [a.S.code, Object.keys(a.pk).length, a.lines.length]; }) }; }), ready: M.ready.map(function (f) { return [f.raw, f.mat, fHere(f).length, fMiss(f).length]; }) };
+    }, axisKeys: axisKeys, drawingAxes: drawingAxes };
